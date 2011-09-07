@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.8.1
+# Dropbox Uploader Script v0.8.2
 #
 # Copyright (C) 2010-2011 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -17,45 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-#
-# CHANGELOG:
-#
-# Version 0.8.1 - 31/08/2011
-# Modified by Dawid Ferenczy (www.ferenczy.cz)
-#  - added prompt for the Dropbox password from keyboard, if there is no password
-#    hardcoded or given as script command line parameter (interactive mode)
-#  - added INTERACTIVE_MODE variable - when set to 1 show CURL progress bar.
-#    Set to 1 automatically when there is no password hardcoded or given as
-#    parameter. Controls verbosity of CURL.
-#
-# Version 0.7.1 - 10/03/2011:
-# - Minor bug fixes
-# 
-# Version 0.7 - 10/03/2011:
-# - New command line interface
-# - Code clean
-#
-# Version 0.6 - 11/01/2011:
-# - Fixed issue with spaces in file/forder name
-#
-# Version 0.5 - 04/01/2011:
-# - Recursive directory upload
-#
-# Version 0.4 - 29/12/2010:
-# - Now works on BSD and MAC
-# - Interactive prompt for username and password
-# - Speeded up the uploading process
-# - Debug mode
-#
-# Version 0.3 - 18/11/2010:
-# - Regex updated
-#
-# Version 0.2 - 04/09/2010:
-# - Removed dependencies from tempfile
-# - Code clean
-#
-# Version 0.1 - 23/08/2010:
-# - Initial release
 #
 
 #DROPBOX ACCOUNT
@@ -85,11 +46,7 @@ UPLOAD_URL="https://dl-web.dropbox.com/upload"
 COOKIE_FILE="/tmp/du_cookie_$RANDOM"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
 BIN_DEPS="curl sed grep tr pwd"
-VERSION="0.8.1"
-
-#Set to 1 to show CURL progress bar. Sets automatically to 1 when there is no password
-#hardcoded or given as parameter. Controls verbosity of CURL.
-INTERACTIVE_MODE=0
+VERSION="0.8.2"
 
 if [ $DEBUG -ne 0 ]; then
     set -x
@@ -130,9 +87,18 @@ function dropbox_upload
 {
     UPLOAD_FILE=$1
     DEST_FOLDER=$2
-
+    
     print " > Uploading '$UPLOAD_FILE' to 'DROPBOX$DEST_FOLDER'..."
-    curl -s -i -b $COOKIE_FILE -o $RESPONSE_FILE -F "plain=yes" -F "dest=$DEST_FOLDER" -F "t=$TOKEN" -F "file=@$UPLOAD_FILE"  "$UPLOAD_URL"
+
+    #Show the progress bar during the file upload
+    if [ $VERBOSE -eq 1 ]; then
+    	CURL_PARAMETERS="--progress-bar"
+    	print "\n"
+    else
+    	CURL_PARAMETERS="-s --show-error"
+    fi
+
+    curl $CURL_PARAMETERS -i -b $COOKIE_FILE -o $RESPONSE_FILE -F "plain=yes" -F "dest=$DEST_FOLDER" -F "t=$TOKEN" -F "file=@$UPLOAD_FILE"  "$UPLOAD_URL"
     grep "HTTP/1.1 302 FOUND" "$RESPONSE_FILE" > /dev/null
 
     if [ $? -ne 0 ]; then
@@ -193,7 +159,7 @@ function usage() {
     echo -e "Usage: $0 [OPTIONS]..."
     echo -e "\nOptions:"
     echo -e "\t-u [USERNAME] (required if not hardcoded)"
-    echo -e "\t-p [PASSWORD] (required if not hardcoded)"
+    echo -e "\t-p [PASSWORD]"
     echo -e "\t-f [FILE/FOLDER] (required)"
     echo -e "\t-d [REMOTE_FOLDER] (default: /)"
     echo -e "\t-v Verbose mode"
@@ -229,20 +195,7 @@ while getopts "u:p:f:d:v" opt; do
     esac
 done
 
-# interactive mode - prompt for the Dropbox password, if not hardcoded or given as parameter
-if [ "$LOGIN_PASSWD" == "" ]; then
-	read -s -p "Password: " LOGIN_PASSWD
-	echo
-	INTERACTIVE_MODE=1
-fi
-
-if [ $INTERACTIVE_MODE == 1 ]; then
-	CURL_PARAMETERS="--progress-bar"
-else
-	CURL_PARAMETERS="-s --show-error"
-fi
-
-if [ $optn -lt 1 ] || [ "$LOGIN_EMAIL" == "" ] || [ "$LOGIN_PASSWD" == "" ]; then
+if [ $optn -lt 1 ] || [ "$LOGIN_EMAIL" == "" ]; then
 	usage;
 	exit 1;
 fi
@@ -255,15 +208,21 @@ print "Dropbox Uploader v$VERSION\n"
 
 #CHECK FILE/DIR
 if [ ! -r "$UPLOAD_FILE" ]; then
-    echo -e "Error reading '$1'"
+    echo -e "Please specify a valid file or directory (-f)"
     remove_temp_files
     exit 1
+fi
+
+#Prompt for password
+if [ "$LOGIN_PASSWD" == "" ]; then
+	read -s -p "Password: " LOGIN_PASSWD
+	echo
 fi
 
 #LOAD LOGIN PAGE
 if [ $SKIP_LOADING_LOGIN_PAGE -eq 0 ]; then
     print " > Loading Login Page..."
-    curl -s -i -o "$RESPONSE_FILE" "$LOGIN_URL"
+    curl -s --show-error -i -o "$RESPONSE_FILE" "$LOGIN_URL"
 
     if [ $? -ne 0 ]; then
         print " Failed!\n"
@@ -285,7 +244,7 @@ fi
 
 #LOGIN
 print " > Logging in..."
-curl $CURL_PARAMETERS -i -c $COOKIE_FILE -o $RESPONSE_FILE --data "login_email=$LOGIN_EMAIL&login_password=$LOGIN_PASSWD&t=$TOKEN" "$LOGIN_URL"
+curl -s --show-error -i -c $COOKIE_FILE -o $RESPONSE_FILE --data "login_email=$LOGIN_EMAIL&login_password=$LOGIN_PASSWD&t=$TOKEN" "$LOGIN_URL"
 grep "location: /home" $RESPONSE_FILE > /dev/null
 
 if [ $? -ne 0 ]; then
@@ -298,7 +257,7 @@ fi
 
 #LOAD HOME
 print " > Loading Home..."
-curl -s -i -b "$COOKIE_FILE" -o "$RESPONSE_FILE" "$HOME_URL"
+curl -s --show-error -i -b "$COOKIE_FILE" -o "$RESPONSE_FILE" "$HOME_URL"
 
 if [ $? -ne 0 ]; then
     print " Failed!\n"

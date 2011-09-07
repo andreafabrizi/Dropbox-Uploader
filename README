@@ -1,3 +1,7 @@
+Author: Andrea Fabrizi
+Email:  andrea.fabrizi@gmail.com
+Web:    http://www.andreafabrizi.it
+
 Dropbox Uploader is a BASH script which can be used to upload files to Dropbox, 
 an online file sharing, synchronization and backup service. 
 
@@ -7,11 +11,55 @@ Usage: ./dropbox_uploader.sh [OPTIONS]...
 
 Options:
 	-u [USERNAME] (required if not hardcoded)
-	-p [PASSWORD] (required if not hardcoded)
+	-p [PASSWORD]
 	-f [FILE/FOLDER] (required)
 	-d [REMOTE_FOLDER] (default: /)
 	-v Verbose mode
 
-Author: Andrea Fabrizi
-Email:  andrea.fabrizi@gmail.com
-Web:    http://www.andreafabrizi.it
+Examples:
+    ./dropbox_uploader.sh -u andrea.fabrizi@gmail.com -f /etc/passwd -v
+    ./dropbox_uploader.sh -u andrea.fabrizi@gmail.com -f /var/backup/ -v
+
+
+CHANGELOG:
+
+Version 0.8.2 - 07/09/2011:
+- Removed INTERACTIVE_MODE variable (now the progress bar is shown in VERBOSE mode)
+- Improved command line interface and error messages
+- Minor bug fixes
+
+Version 0.8.1 - 31/08/2011 (by Dawid Ferenczy - www.ferenczy.cz)
+- added prompt for the Dropbox password from keyboard, if there is no password 
+  hardcoded or given as script command line parameter (interactive mode)
+- added INTERACTIVE_MODE variable - when set to 1 show CURL progress bar.
+  Set to 1 automatically when there is no password hardcoded or given as
+  parameter. Controls verbosity of CURL.
+
+Version 0.7.1 - 10/03/2011:
+- Minor bug fixes
+
+Version 0.7 - 10/03/2011:
+- New command line interface
+- Code clean
+
+Version 0.6 - 11/01/2011:
+- Fixed issue with spaces in file/forder name
+
+Version 0.5 - 04/01/2011:
+- Recursive directory upload
+
+Version 0.4 - 29/12/2010:
+- Now works on BSD and MAC
+- Interactive prompt for username and password
+- Speeded up the uploading process
+- Debug mode
+
+Version 0.3 - 18/11/2010:
+- Regex updated
+
+Version 0.2 - 04/09/2010:
+- Removed dependencies from tempfile
+- Code clean
+
+Version 0.1 - 23/08/2010:
+- Initial release
