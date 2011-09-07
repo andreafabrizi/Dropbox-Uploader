@@ -1,0 +1,17 @@
+Dropbox Uploader is a BASH script which can be used to upload files to Dropbox, 
+an online file sharing, synchronization and backup service. 
+
+It's written in BASH scripting language and only needs cURL (CLI).
+
+Usage: ./dropbox_uploader.sh [OPTIONS]...
+
+Options:
+	-u [USERNAME] (required if not hardcoded)
+	-p [PASSWORD] (required if not hardcoded)
+	-f [FILE/FOLDER] (required)
+	-d [REMOTE_FOLDER] (default: /)
+	-v Verbose mode
+
+Author: Andrea Fabrizi
+Email:  andrea.fabrizi@gmail.com
+Web:    http://www.andreafabrizi.it
