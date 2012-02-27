@@ -20,6 +20,9 @@ Examples:
 
 CHANGELOG:
 
+Version 0.9.1 - 27/02/2012:
+- Fixed problem with spaces in dst file name
+
 Version 0.9 - 27/02/2012:
 - Code rewritten from scratch (CLI changed)
 - Improved security and stability using official dropbox API, no more username/password needed!
