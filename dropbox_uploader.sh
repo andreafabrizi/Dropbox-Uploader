@@ -68,6 +68,13 @@ function remove_temp_files
     fi
 }
 
+#Replace spaces
+function urlencode
+{
+    str=$1
+    echo ${str// /%20}
+}
+
 #USAGE
 function usage() {
     echo -e "Dropbox Uploader v$VERSION"
@@ -98,8 +105,8 @@ case $COMMAND in
 upload)
 
     FILE_SRC=$2
-    FILE_DST=$3
-    
+    FILE_DST=$(urlencode "$3")
+
     #Checking FILE_SRC
     if [ ! -f "$FILE_SRC" ]; then
         echo -e "Please specify a valid source file!"
