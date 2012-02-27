@@ -7,21 +7,22 @@ an online file sharing, synchronization and backup service.
 
 It's written in BASH scripting language and only needs cURL (CLI).
 
-Usage: ./dropbox_uploader.sh [OPTIONS]...
+Usage: ./dropbox_uploader.sh COMMAND [PARAMETERS]...
 
-Options:
-	-u [USERNAME] (required if not hardcoded)
-	-p [PASSWORD]
-	-f [FILE/FOLDER] (required)
-	-d [REMOTE_FOLDER] (default: /)
-	-v Verbose mode
+Commands:
+	 upload [LOCAL_FILE] [DESTINATION_FILE]
+	 info
 
 Examples:
-    ./dropbox_uploader.sh -u andrea.fabrizi@gmail.com -f /etc/passwd -v
-    ./dropbox_uploader.sh -u andrea.fabrizi@gmail.com -f /var/backup/ -v
+    ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
+    ./dropbox_uploader.sh upload /etc/passwd
 
 
 CHANGELOG:
+
+Version 0.9 - 27/02/2012:
+- Code rewritten from scratch (CLI changed)
+- Improved security and stability using official dropbox API, no more username/password needed!
 
 Version 0.8.2 - 07/09/2011:
 - Removed INTERACTIVE_MODE variable (now the progress bar is shown in VERBOSE mode)
