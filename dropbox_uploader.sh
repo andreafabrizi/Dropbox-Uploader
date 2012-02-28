@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9
+# Dropbox Uploader Script v0.9.2
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -33,11 +33,10 @@ API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
+APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
-APPKEY="7s6g8l8snnbd676"
-APPSECRET="xn6it23jky8q5y1"
 BIN_DEPS="curl sed"
-VERSION="0.9"
+VERSION="0.9.2"
 
 umask 077
 
@@ -82,9 +81,12 @@ function usage() {
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
     echo -e "\nCommands:"
     echo -e "\t upload [LOCAL_FILE] [DESTINATION_FILE]"
-    echo -e "\t info"
-
+    echo -e "\t info   - Print some info about your Dropbox account"
+    echo -e "\t unlink - Unlink this script from you Dropbox account"
+    
+    echo -en "\n"
     remove_temp_files
+    exit 1
 }
 
 #CHECK DEPENDENCIES
@@ -97,9 +99,103 @@ for i in $BIN_DEPS; do
     fi
 done
 
-#CHECK PARAMS
+#CHECKING FOR AUTH FILE
+if [ -f $CONFIG_FILE ]; then
+      
+    #Loading data...
+    APPKEY=$(sed -n -e 's/APPKEY:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
+    APPSECRET=$(sed -n -e 's/APPSECRET:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
+    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
+    OAUTH_ACCESS_TOKEN=$(sed -n -e 's/OAUTH_ACCESS_TOKEN:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
+    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
+
+#NEW SETUP...
+else
+
+    echo -ne "\n This is the first time you run this script.\n"
+    echo -ne " Please open this URL from your Browser, and access using your account:\n\n -> $APP_CREATE_URL\n"
+    echo -ne "\n If you haven't already done, click \"Create an App\" and fill in the\n"
+    echo -ne " form with the following data:\n\n"
+    echo -ne "  App name: MyUploader$RANDOM$RANDOM\n"
+    echo -ne "  Description: What do you want...\n"
+    echo -ne "  Access level: Full Dropbox\n\n"
+    echo -ne " Now, click on the \"Create\" button.\n\n"
+    
+    echo -ne " When your new App is successfully created, please insert the\n"
+    echo -ne " App Key and App Secret:\n\n"
+
+    #Getting the app key and secret from the user
+    while (true); do
+        
+        echo -n " # App key: "
+        read APPKEY
+
+        echo -n " # App secret: "
+        read APPSECRET
+
+        echo -ne " > App key is $APPKEY and App secret is $APPSECRET, it's ok? [y/n]"
+        read answer
+        if [ "$answer" == "y" ]; then
+            break;
+        fi
+
+    done
+
+    #TOKEN REQUESTS
+    echo -ne "\n > Token request... "
+    time=$(utime)
+    curl -k -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL"
+    OAUTH_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
+    OAUTH_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
+
+    if [ "$OAUTH_TOKEN" != "" -a "$OAUTH_TOKEN_SECRET" != "" ]; then
+        echo -ne "OK\n"
+    else
+        echo -ne " FAILED\n\n Verify your App key and secret...\n\n"
+        remove_temp_files
+        exit 1
+    fi
+
+    while (true); do
+
+        #USER AUTH
+        echo -ne "\n Please visit this URL from your Browser, and allow Dropbox Uploader\n"
+        echo -ne " to access your DropBox account:\n\n --> ${API_USER_AUTH_URL}?oauth_token=$OAUTH_TOKEN\n"
+        echo -ne "\nPress enter when done...\n"
+        read
+
+        #API_ACCESS_TOKEN_URL
+        echo -ne " > Access Token request... "
+        time=$(utime)
+        curl -k -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL"
+        OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
+        OAUTH_ACCESS_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
+        OAUTH_ACCESS_UID=$(sed -n -e 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
+        
+        if [ "$OAUTH_ACCESS_TOKEN" != "" -a "$OAUTH_ACCESS_TOKEN_SECRET" != "" -a "$OAUTH_ACCESS_UID" != "" ]; then
+            echo -ne "OK\n"
+            
+            #Saving data
+            echo "APPKEY:$APPKEY" > $CONFIG_FILE
+            echo "APPSECRET:$APPSECRET" >> $CONFIG_FILE
+            echo "OAUTH_ACCESS_TOKEN:$OAUTH_ACCESS_TOKEN" >> $CONFIG_FILE
+            echo "OAUTH_ACCESS_TOKEN_SECRET:$OAUTH_ACCESS_TOKEN_SECRET" >> $CONFIG_FILE
+            
+            echo -ne "\n Setup completed!\n"
+            break
+        else
+            print " FAILED\n"
+        fi
+
+    done;
+    
+    remove_temp_files     
+    exit 0
+fi
+
 COMMAND=$1
 
+#CHECKING PARAMS VALUES
 case $COMMAND in
 
 upload)
@@ -124,80 +220,19 @@ upload)
 info)
     #Nothing to do...
     ;;
-    
+
+unlink)
+    #Nothing to do...
+    ;;
+        
 *)
     usage
-    exit 1
     ;;
 esac
 
 ################
 #### START  ####
 ################
-
-print " > Looking for auth file... "
-
-#CONFIG FILE FOUND
-if [ -f $CONFIG_FILE ]; then
-    
-    print "FOUND\n"
-    
-    #Loading tokens...
-    OAUTH_ACCESS_TOKEN=$(sed -n -e 's/OAUTH_ACCESS_TOKEN:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
-    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' $CONFIG_FILE)
-
-#CONFIG FILE NOT FOUND
-else
-
-    print "NOT FOUND\n"
-
-    #TOKEN REQUESTS
-    print " > Token request... "
-    time=$(utime)
-    curl -k -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL"
-    OAUTH_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
-    OAUTH_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
-
-    if [ "$OAUTH_TOKEN" != "" -a "$OAUTH_TOKEN_SECRET" != "" ]; then
-        print "OK\n"
-    else
-        print " Failed!\n"
-        remove_temp_files
-        exit 1
-    fi
-
-    while (true); do
-
-        #USER AUTH
-        print "\n This is the first time you run this script.\n"
-        print " Please visit this URL from your Browser, and allow Dropbox Uploader to access your DropBox account:\n ${API_USER_AUTH_URL}?oauth_token=$OAUTH_TOKEN\n"
-        print "\nPress enter when done...\n"
-        read
-
-        #API_ACCESS_TOKEN_URL
-        print " > Access Token request... "
-        time=$(utime)
-        curl -k -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL"
-        OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_UID=$(sed -n -e 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
-        
-        if [ "$OAUTH_ACCESS_TOKEN" != "" -a "$OAUTH_ACCESS_TOKEN_SECRET" != "" -a "$OAUTH_ACCESS_UID" != "" ]; then
-            print "OK\n"
-            
-            #Saving TOKENS
-            echo "OAUTH_ACCESS_TOKEN:$OAUTH_ACCESS_TOKEN" > $CONFIG_FILE
-            echo "OAUTH_ACCESS_TOKEN_SECRET:$OAUTH_ACCESS_TOKEN_SECRET" >> $CONFIG_FILE
-            
-            break
-        else
-            print " Failed!\n"
-        fi
-
-    done;
-
-fi
-
 
 #COMMAND EXECUTION
 case "$COMMAND" in
@@ -235,10 +270,21 @@ case "$COMMAND" in
         cat "$RESPONSE_FILE" | grep "{"
         
         ;;
+
+
+    unlink)
+
+        echo -ne "\n Are you sure you want unlink this script from your Dropbox account? [y/n]"
+        read answer
+        if [ "$answer" == "y" ]; then
+            echo -ne "Done!\n"
+            rm -fr $CONFIG_FILE
+        fi
         
+        ;;
+                
     *)
         usage
-        exit 1
         ;;
         
 esac
