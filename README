@@ -7,67 +7,94 @@ an online file sharing, synchronization and backup service.
 
 It's written in BASH scripting language and only needs cURL (CLI).
 
+USAGE:
+======
+
 Usage: ./dropbox_uploader.sh COMMAND [PARAMETERS]...
 
+[%%]: Required param
+<%%>: Optional param
+
 Commands:
-	 upload [LOCAL_FILE] [DESTINATION_FILE]
-	 info   - Print some info about your Dropbox account
-	 unlink - Unlink this script from you Dropbox account
+	 upload   [LOCAL_FILE]  <REMOTE_FILE> (Upload a local file to remote Dropbox folder)
+	 download [REMOTE_FILE] <LOCAL_FILE>  (Download a file from Dropbox to local folder)
+	 info                                 (Print some info about your Dropbox account)
+	 unlink                               (Unlink this script from you Dropbox account)
 
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload /etc/passwd
+    ./dropbox_uploader.sh download /backup.zip
 
+
+HOW TO USE A PROXY:
+===================
+
+To use a proxy server, simply set the "https_proxy" environment variable:
+    
+    export https_proxy=http://192.168.0.1:8080
+    
 
 CHANGELOG:
+==========
 
-Version 0.9.2 - 28/02/2012:
-- Increased security, now any user can create your own Dropbox App
+Version 0.9.3 - 01 Mar 2012:
+- Implemented download command
+- Improved info output
+- Fixed utime function
+- Added dependency check for basename
+- The script always returns 1 when errors occurs
+- Improved error handling
+- Fixed problem with spaces in config file name
+- Minor bug fixes
 
-Version 0.9.1 - 27/02/2012:
+Version 0.9.2 - 28 Feb 2012:
+- Increased security, now any user can create his own Dropbox App
+
+Version 0.9.1 - 27 Feb 2012:
 - Fixed problem with spaces in dst file name
 
-Version 0.9 - 27/02/2012:
+Version 0.9 - 27 Feb 2012:
 - Code rewritten from scratch (CLI changed)
 - Improved security and stability using official dropbox API, no more username/password needed!
 
-Version 0.8.2 - 07/09/2011:
+Version 0.8.2 - 07 Sep 2011:
 - Removed INTERACTIVE_MODE variable (now the progress bar is shown in VERBOSE mode)
 - Improved command line interface and error messages
 - Minor bug fixes
 
-Version 0.8.1 - 31/08/2011 (by Dawid Ferenczy - www.ferenczy.cz)
+Version 0.8.1 - 31 Aug 2011 (by Dawid Ferenczy - www.ferenczy.cz)
 - added prompt for the Dropbox password from keyboard, if there is no password 
   hardcoded or given as script command line parameter (interactive mode)
 - added INTERACTIVE_MODE variable - when set to 1 show CURL progress bar.
   Set to 1 automatically when there is no password hardcoded or given as
   parameter. Controls verbosity of CURL.
 
-Version 0.7.1 - 10/03/2011:
+Version 0.7.1 - 10 Mar 2011:
 - Minor bug fixes
 
-Version 0.7 - 10/03/2011:
+Version 0.7 - 10 Mar 2011:
 - New command line interface
 - Code clean
 
-Version 0.6 - 11/01/2011:
+Version 0.6 - 11 Gen 2011:
 - Fixed issue with spaces in file/forder name
 
-Version 0.5 - 04/01/2011:
+Version 0.5 - 04 Gen 2011:
 - Recursive directory upload
 
-Version 0.4 - 29/12/2010:
+Version 0.4 - 29 Dec 2010:
 - Now works on BSD and MAC
 - Interactive prompt for username and password
 - Speeded up the uploading process
 - Debug mode
 
-Version 0.3 - 18/11/2010:
+Version 0.3 - 18 Nov 2010:
 - Regex updated
 
-Version 0.2 - 04/09/2010:
+Version 0.2 - 04 Sep 2010:
 - Removed dependencies from tempfile
 - Code clean
 
-Version 0.1 - 23/08/2010:
+Version 0.1 - 23 Aug 2010:
 - Initial release
