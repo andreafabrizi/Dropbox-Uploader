@@ -2,8 +2,7 @@ Author: Andrea Fabrizi
 Email:  andrea.fabrizi@gmail.com
 Web:    http://www.andreafabrizi.it
 
-Dropbox Uploader is a BASH script which can be used to upload and download files from Dropbox, 
-an online file sharing, synchronization and backup service. 
+Dropbox Uploader is a BASH script which can be used to upload and download files from Dropbox, an online file sharing, synchronization and backup service. 
 
 It's written in BASH scripting language and only needs cURL (CLI).
 
@@ -16,11 +15,20 @@ Usage: ./dropbox_uploader.sh COMMAND [PARAMETERS]...
 <%%>: Optional param
 
 Commands:
-	 upload   [LOCAL_FILE]  <REMOTE_FILE> (Upload a local file to remote Dropbox folder)
-	 download [REMOTE_FILE] <LOCAL_FILE>  (Download a file from Dropbox to local folder)
-     delete   [REMOTE_FILE]               (Remove a remote file from Dropbox)
-	 info                                 (Print some info about your Dropbox account)
-	 unlink                               (Unlink this script from you Dropbox account)
+	 upload   [LOCAL_FILE]  <REMOTE_FILE> 
+        (Upload local file to remote Dropbox folder)
+
+	 download [REMOTE_FILE] <LOCAL_FILE>  
+        (Download file from Dropbox to local folder)
+
+     delete   [REMOTE_FILE] 
+        (Remove a remote file from Dropbox)
+
+	 info          
+        (Print some info about your Dropbox account)
+
+	 unlink
+        (Unlink this script from you Dropbox account)
 
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
