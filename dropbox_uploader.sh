@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9.3
+# Dropbox Uploader Script v0.9.4
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -33,11 +33,12 @@ API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
 API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files/dropbox"
+API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
-BIN_DEPS="curl sed basename"
-VERSION="0.9.3"
+BIN_DEPS="curl sed basename grep"
+VERSION="0.9.4"
 
 umask 077
 
@@ -84,6 +85,7 @@ function usage() {
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
+    echo -e "\t delete   [REMOTE_FILE]"
     echo -e "\t info"
     echo -e "\t unlink"
     
@@ -182,7 +184,7 @@ else
         OAUTH_ACCESS_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_UID=$(sed -n -e 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
         
-        if [ "$OAUTH_ACCESS_TOKEN" != "" -a "$OAUTH_ACCESS_TOKEN_SECRET" != "" -a "$OAUTH_ACCESS_UID" != "" ]; then
+        if [ -n "$OAUTH_ACCESS_TOKEN" -a -n "$OAUTH_ACCESS_TOKEN_SECRET" -a -n "$OAUTH_ACCESS_UID" ]; then
             echo -ne "OK\n"
             
             #Saving data
@@ -250,6 +252,19 @@ info)
     #Nothing to do...
     ;;
 
+delete)
+
+    FILE_DST=$(urlencode "$2")    
+
+    #Checking FILE_DST
+    if [ -z "$FILE_DST" ]; then
+        echo -e "Please specify a valid destination file!"
+        remove_temp_files
+        exit 1
+    fi
+
+    ;;
+
 unlink)
     #Nothing to do...
     ;;
@@ -278,14 +293,14 @@ case "$COMMAND" in
         print " > Uploading $FILE_SRC to $FILE_DST... \n"  
         time=$(utime)
         curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
-        
+               
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -eq 0 ]; then
             print " > DONE\n"
         else
-            print " > ERROR\n"
-            print "   NB: If the problem persists, try to unlink this script from your\n"
+            print " > FAILED\n"
+            print "   If the problem persists, try to unlink this script from your\n"
             print "   Dropbox account, then setup again ($0 unlink).\n"
             remove_temp_files
             exit 1
@@ -312,8 +327,8 @@ case "$COMMAND" in
         if [ $? -eq 0 ]; then
             print " > DONE\n"
         else
-            print " > ERROR\n"
-            print "   NB: If the problem persists, try to unlink this script from your\n"
+            print " > FAILED\n"
+            print "   If the problem persists, try to unlink this script from your\n"
             print "   Dropbox account, then setup again ($0 unlink).\n"
             rm -fr "$FILE_DST"
             remove_temp_files
@@ -330,24 +345,36 @@ case "$COMMAND" in
         time=$(utime)
         CURL_PARAMETERS="-s --show-error"
         curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL"
-   
-        echo -ne "\nName:\t"
-        sed -n -e 's/.*\"display_name\":\s*\"*\([^"]*\)\",.*/\1/p' "$RESPONSE_FILE"
 
-        echo -ne "\nUID:\t"
-        sed -n -e 's/.*\"uid\":\s*\"*\([^"]*\)\"*,.*/\1/p' "$RESPONSE_FILE"
-
-        echo -ne "\nEmail:\t"
-        sed -n -e 's/.*\"email\":\s*\"*\([^"]*\)\"*.*/\1/p' "$RESPONSE_FILE"
+        #Check
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+        if [ $? -eq 0 ]; then
         
-        echo -ne "\nQuota:\t"
-        sed -n -e 's/.*\"quota\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
+            echo -ne "\nName:\t"
+            sed -n -e 's/.*\"display_name\":\s*\"*\([^"]*\)\",.*/\1/p' "$RESPONSE_FILE"
 
-        echo -ne "\nUsed:\t"
-        sed -n -e 's/.*\"normal\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
-                
-        echo ""
-               
+            echo -ne "\nUID:\t"
+            sed -n -e 's/.*\"uid\":\s*\"*\([^"]*\)\"*,.*/\1/p' "$RESPONSE_FILE"
+
+            echo -ne "\nEmail:\t"
+            sed -n -e 's/.*\"email\":\s*\"*\([^"]*\)\"*.*/\1/p' "$RESPONSE_FILE"
+            
+            echo -ne "\nQuota:\t"
+            sed -n -e 's/.*\"quota\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
+
+            echo -ne "\nUsed:\t"
+            sed -n -e 's/.*\"normal\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
+                    
+            echo ""
+            
+        else
+            print " > FAILED\n"
+            print "   If the problem persists, try to unlink this script from your\n"
+            print "   Dropbox account, then setup again ($0 unlink).\n"
+            remove_temp_files
+            exit 1
+        fi
+                         
         ;;
 
 
@@ -361,7 +388,27 @@ case "$COMMAND" in
         fi
         
         ;;
-                
+
+
+   delete)
+     
+        print " > Deleting $FILE_DST... "  
+        time=$(utime)
+        CURL_PARAMETERS="-s --show-error"
+        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=dropbox&path=$FILE_DST" "$API_DELETE_URL"
+
+        #Check
+        grep "\"is_deleted\": true" "$RESPONSE_FILE" > /dev/null
+        if [ $? -eq 0 ]; then
+            print " DONE\n"
+        else    
+            print " FAILED\n"
+            remove_temp_files
+            exit 1
+        fi
+        ;;
+
+   
     *)
         usage
         ;;
