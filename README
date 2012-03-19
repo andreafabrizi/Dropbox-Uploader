@@ -15,20 +15,21 @@ Usage: ./dropbox_uploader.sh COMMAND [PARAMETERS]...
 <%%>: Optional param
 
 Commands:
-	 upload   [LOCAL_FILE]  <REMOTE_FILE> 
-        (Upload local file to remote Dropbox folder)
 
-	 download [REMOTE_FILE] <LOCAL_FILE>  
-        (Download file from Dropbox to local folder)
+ upload   [LOCAL_FILE]  <REMOTE_FILE> 
+ - Upload local file to remote Dropbox folder
 
-     delete   [REMOTE_FILE] 
-        (Remove a remote file from Dropbox)
+ download [REMOTE_FILE] <LOCAL_FILE>  
+ - Download file from Dropbox to local folder
 
-	 info          
-        (Print some info about your Dropbox account)
+ delete   [REMOTE_FILE] 
+ - Remove a remote file from Dropbox
 
-	 unlink
-        (Unlink this script from you Dropbox account)
+ info          
+ - Print some info about your Dropbox account
+
+ unlink
+ - Unlink this script from you Dropbox account
 
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
