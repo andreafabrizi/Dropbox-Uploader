@@ -2,7 +2,7 @@ Author: Andrea Fabrizi
 Email:  andrea.fabrizi@gmail.com
 Web:    http://www.andreafabrizi.it
 
-Dropbox Uploader is a BASH script which can be used to upload files to Dropbox, 
+Dropbox Uploader is a BASH script which can be used to upload and download files from Dropbox, 
 an online file sharing, synchronization and backup service. 
 
 It's written in BASH scripting language and only needs cURL (CLI).
@@ -31,12 +31,18 @@ HOW TO USE A PROXY:
 ===================
 
 To use a proxy server, simply set the "https_proxy" environment variable:
-    
+
+    export HTTP_PROXY_USER=XXXX
+    export HTTP_PROXY_PASSWORD=YYYY
     export https_proxy=http://192.168.0.1:8080
     
 
 CHANGELOG:
 ==========
+
+Version 0.9.4 - 19 Mar 2012:
+- Implemented delete command
+- Minor changes
 
 Version 0.9.3 - 01 Mar 2012:
 - Implemented download command
