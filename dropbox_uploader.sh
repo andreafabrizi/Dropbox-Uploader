@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9.4
+# Dropbox Uploader Script v0.9.5
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -34,11 +34,12 @@ API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
 API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files/dropbox"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
+API_METADATA_URL="https://api.dropbox.com/1/metadata/dropbox"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
-BIN_DEPS="curl sed basename grep"
-VERSION="0.9.4"
+BIN_DEPS="curl sed basename grep cut stat"
+VERSION="0.9.5"
 
 umask 077
 
@@ -265,6 +266,19 @@ delete)
 
     ;;
 
+list)
+
+    DIR_DST=$(urlencode "$2")    
+
+    #Checking DIR_DST
+    if [ -z "$DIR_DST" ]; then
+        echo -e "Please specify a valid dropbox directory!"
+        remove_temp_files
+        exit 1
+    fi
+
+    ;;
+    
 unlink)
     #Nothing to do...
     ;;
@@ -282,6 +296,14 @@ esac
 case "$COMMAND" in
 
     upload)
+
+        if [ $(stat --format="%s" "$FILE_SRC") -gt 150000000 ]; then
+            print " > FAILED\n"
+            print "   Due to a dropbox API limitation you can't upload files\n"
+            print "   bigger than 150mb.\n"
+            remove_temp_files
+            exit 1
+        fi
 
         #Show the progress bar during the file upload
         if [ $VERBOSE -eq 1 ]; then
@@ -351,19 +373,19 @@ case "$COMMAND" in
         if [ $? -eq 0 ]; then
         
             echo -ne "\nName:\t"
-            sed -n -e 's/.*\"display_name\":\s*\"*\([^"]*\)\",.*/\1/p' "$RESPONSE_FILE"
+            sed -n -e 's/.*"display_name":\s*"*\([^"]*\)",.*/\1/p' "$RESPONSE_FILE"
 
             echo -ne "\nUID:\t"
-            sed -n -e 's/.*\"uid\":\s*\"*\([^"]*\)\"*,.*/\1/p' "$RESPONSE_FILE"
+            sed -n -e 's/.*"uid":\s*"*\([^"]*\)"*,.*/\1/p' "$RESPONSE_FILE"
 
             echo -ne "\nEmail:\t"
-            sed -n -e 's/.*\"email\":\s*\"*\([^"]*\)\"*.*/\1/p' "$RESPONSE_FILE"
+            sed -n -e 's/.*"email":\s*"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE"
             
             echo -ne "\nQuota:\t"
-            sed -n -e 's/.*\"quota\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
+            sed -n -e 's/.*"quota":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
 
             echo -ne "\nUsed:\t"
-            sed -n -e 's/.*\"normal\":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
+            sed -n -e 's/.*"normal":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
                     
             echo ""
             
@@ -398,16 +420,71 @@ case "$COMMAND" in
         curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=dropbox&path=$FILE_DST" "$API_DELETE_URL"
 
         #Check
-        grep "\"is_deleted\": true" "$RESPONSE_FILE" > /dev/null
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -eq 0 ]; then
-            print " DONE\n"
+            print "DONE\n"
         else    
-            print " FAILED\n"
+            print "FAILED\n"
             remove_temp_files
             exit 1
         fi
         ;;
 
+
+   list)
+     
+        print " > Listing $DIR_DST... "  
+        time=$(utime)
+        CURL_PARAMETERS="-s --show-error"
+        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+       
+        #Check
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+        if [ $? -eq 0 ]; then
+                  
+            IS_DIR=$(head -c1000 "$RESPONSE_FILE" | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
+            
+            #It's a directory
+            if [ "$IS_DIR" == "true" ]; then
+            
+                print "DONE\n"
+            
+                #Extracting directory content [...]
+                DIR_CONTENT=$(sed -n -e 's/[^[]*\[\([^]]*\).*/\1/p' "$RESPONSE_FILE")
+                
+                #Replace "}, {" with "}\n{"
+                DIR_CONTENT=$(echo "$DIR_CONTENT" | sed 's/},\s*{/\}\r\n\{/g')
+                
+                #Extracing files and subfolders
+                echo "$DIR_CONTENT" | sed -n -e 's/.*"path":\s*"\([^"]*\)",.*"is_dir":\s*\([^"]*\),.*/\1\t\2/p' > $RESPONSE_FILE
+                
+                #Foreach line...
+                while read line; do
+                
+                    FILE=$(echo "$line" | cut -f 1)
+                    FILE=$(basename "$FILE")
+                    TYPE=$(echo "$line" | cut -f 2)
+                    
+                    if [ "$TYPE" == "false" ]; then
+                        echo " [F] $FILE"
+                    else
+                        echo " [D] $FILE"
+                    fi
+                done < $RESPONSE_FILE
+            
+            #It's a file
+            else
+                print "FAILED $DIR_DST is not a directory!\n"
+                remove_temp_files
+                exit 1
+            fi
+            
+        else    
+            print "FAILED\n"
+            remove_temp_files
+            exit 1
+        fi
+        ;;
    
     *)
         usage
