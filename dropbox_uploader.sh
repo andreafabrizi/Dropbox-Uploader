@@ -356,10 +356,10 @@ case "$COMMAND" in
 
     rupload)
 
-      for FILE_SRC in $(ls -a $FILE_SRC_DIR); do
+      for FILE_SRC in $(find $FILE_SRC_DIR); do
 
         if [ ! -f $FILE_SRC ]; then
-            print " > $FILE_SRC is not a proper file to upload (maybe a directory)!\n"
+            print " > $FILE_SRC is not a proper file to upload...skipping!\n"
             #remove_temp_files
             continue 
         fi
