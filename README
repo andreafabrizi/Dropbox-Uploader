@@ -20,7 +20,7 @@ Commands:
  - Upload local file to remote Dropbox folder
 
  rupload   [LOCAL_DIRECTORY]  [REMOTE_DIRECTORY]
- - Upload all files from local directory remote Dropbox folder
+ - Upload local directory recursively to remote Dropbox folder
 
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
@@ -37,7 +37,7 @@ Commands:
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload /etc/passwd
-    ./dropbox_uploader.sh rupload /etc/ /server/etc/backup/
+    ./dropbox_uploader.sh rupload /etc/ /server/backup/
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)
