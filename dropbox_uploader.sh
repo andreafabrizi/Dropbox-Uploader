@@ -4,6 +4,8 @@
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
+# `rupload` command by Marcel Hecko <maco@blava.net>
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -85,6 +87,7 @@ function usage() {
     echo -e "\nCommands:"
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
+    echo -e "\t upload   [LOCAL_DIRECTORY]  [REMOTE_DIRECTORY]"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
     echo -e "\t delete   [REMOTE_FILE]"
     echo -e "\t info"
@@ -230,6 +233,27 @@ upload)
     
     ;;
 
+rupload)
+
+    FILE_SRC_DIR="$2"
+    FILE_DST_DIR=$(urlencode "$3")
+
+    #Checking FILE_SRC_DIR
+    if [ $FILE_SRC_DIR == "" ]; then
+        echo -e "Please specify a valid source directory!"
+        remove_temp_files
+        exit 1
+    fi
+
+    #Checking FILE_DST_DIR
+    if [ "$FILE_DST_DIR" == "" ]; then
+        echo -e "Please specify a valid destination directory!"
+        remove_temp_files
+        exit 1
+    fi
+
+    ;;
+
 download)
 
     FILE_SRC=$(urlencode "$2")
@@ -328,6 +352,51 @@ case "$COMMAND" in
             exit 1
         fi
         
+        ;;
+
+    rupload)
+
+      for FILE_SRC in $(ls -a $FILE_SRC_DIR); do
+
+        if [ ! -f $FILE_SRC ]; then
+            print " > $FILE_SRC is not a proper file to upload (maybe a directory)!\n"
+            #remove_temp_files
+            continue 
+        fi
+
+        if [ $(stat --format="%s" "$FILE_SRC") -gt 150000000 ]; then
+            print " > FAILED\n"
+            print "   Due to a dropbox API limitation you can't upload files\n"
+            print "   bigger than 150mb.\n"
+            remove_temp_files
+            exit 1
+        fi
+
+        #Show the progress bar during the file upload
+        if [ $VERBOSE -eq 1 ]; then
+                CURL_PARAMETERS="--progress-bar"
+        else
+                CURL_PARAMETERS="-s --show-error"
+        fi
+
+        print " > Uploading $FILE_SRC to directory $FILE_DST_DIR... \n"
+        time=$(utime)
+        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$FILE_DST_DIR/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+
+        #Check
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+        if [ $? -eq 0 ]; then
+            print " > DONE\n"
+        else
+            print " > FAILED\n"
+            print "   If the problem persists, try to unlink this script from your\n"
+            print "   Dropbox account, then setup again ($0 unlink).\n"
+            remove_temp_files
+            exit 1
+        fi
+
+      done
+
         ;;
 
 
