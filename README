@@ -2,9 +2,10 @@ Author: Andrea Fabrizi
 Email:  andrea.fabrizi@gmail.com
 Web:    http://www.andreafabrizi.it
 
-Dropbox Uploader is a BASH script which can be used to upload and download files from Dropbox, an online file sharing, synchronization and backup service. 
+Dropbox Uploader is a BASH script which can be used to upload, download, delete or list files from Dropbox, an online file sharing, synchronization and backup service. 
 
 It's written in BASH scripting language and only needs cURL (CLI).
+
 
 USAGE:
 ======
@@ -25,6 +26,9 @@ Commands:
  delete   [REMOTE_FILE] 
  - Remove a remote file from Dropbox
 
+ list     [REMOTE_DIRECTORY]
+ - List contents of the remote Dropbox folder
+ 
  info          
  - Print some info about your Dropbox account
 
@@ -47,10 +51,21 @@ To use a proxy server, simply set the "https_proxy" environment variable:
     export HTTP_PROXY_USER=XXXX
     export HTTP_PROXY_PASSWORD=YYYY
     export https_proxy=http://192.168.0.1:8080
-    
+
+
+CURL INSTALLATION:
+==================
+
+Debian & Ubuntu Linux: sudo apt-get install curl
+Build cURL from source: http://curl.haxx.se/download.html
+   
 
 CHANGELOG:
 ==========
+
+Version 0.9.6 - 12 Sep 2012:
+- Implemented list command
+- Minor changes
 
 Version 0.9.5 - 18 Jul 2012:
 - Added a check for the maximum file size allowed by the DropBox API

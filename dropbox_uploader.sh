@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9.5
+# Dropbox Uploader Script v0.9.6
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -39,7 +39,7 @@ API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
 BIN_DEPS="curl sed basename grep cut stat"
-VERSION="0.9.5"
+VERSION="0.9.6"
 
 umask 077
 
@@ -87,6 +87,7 @@ function usage() {
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
     echo -e "\t delete   [REMOTE_FILE]"
+    echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t info"
     echo -e "\t unlink"
     
@@ -99,7 +100,7 @@ function usage() {
 for i in $BIN_DEPS; do
     which $i > /dev/null
     if [ $? -ne 0 ]; then
-        echo -e "Error: Required file could not be found: $i"
+        echo -e "Error: Required program could not be found: $i"
         remove_temp_files
         exit 1
     fi
@@ -441,8 +442,9 @@ case "$COMMAND" in
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -eq 0 ]; then
-                  
-            IS_DIR=$(head -c1000 "$RESPONSE_FILE" | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
+            
+            #Double SED, a simple workaround to match only the first "is_dir" tag
+            IS_DIR=$(cat "$RESPONSE_FILE" | sed -n -e 's/^\(.*\)\[{.*/\1/p' | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
             
             #It's a directory
             if [ "$IS_DIR" == "true" ]; then
@@ -458,7 +460,7 @@ case "$COMMAND" in
                 #Extracing files and subfolders
                 echo "$DIR_CONTENT" | sed -n -e 's/.*"path":\s*"\([^"]*\)",.*"is_dir":\s*\([^"]*\),.*/\1\t\2/p' > $RESPONSE_FILE
                 
-                #Foreach line...
+                #For each line...
                 while read line; do
                 
                     FILE=$(echo "$line" | cut -f 1)
