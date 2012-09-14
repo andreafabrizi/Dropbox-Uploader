@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9.6
+# Dropbox Uploader Script v0.9.7
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -39,7 +39,7 @@ API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
 BIN_DEPS="curl sed basename grep cut stat"
-VERSION="0.9.6"
+VERSION="0.9.7"
 
 umask 077
 
@@ -444,7 +444,7 @@ case "$COMMAND" in
         if [ $? -eq 0 ]; then
             
             #Double SED, a simple workaround to match only the first "is_dir" tag
-            IS_DIR=$(cat "$RESPONSE_FILE" | sed -n -e 's/^\(.*\)\[{.*/\1/p' | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
+            IS_DIR=$(cat "$RESPONSE_FILE" | sed -n -e 's/^\(.*\)\"contents":.\[.*/\1/p' | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
             
             #It's a directory
             if [ "$IS_DIR" == "true" ]; then
