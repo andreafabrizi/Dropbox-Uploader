@@ -63,6 +63,9 @@ Build cURL from source: http://curl.haxx.se/download.html
 CHANGELOG:
 ==========
 
+Version 0.9.7 - 14 Sep 2012:
+- Fixed bug in listing empty directories
+
 Version 0.9.6 - 12 Sep 2012:
 - Implemented list command
 - Minor changes
