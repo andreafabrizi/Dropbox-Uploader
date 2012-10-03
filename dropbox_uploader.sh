@@ -46,7 +46,7 @@ APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
 CHUNK_FILE="/tmp/du_chunk_$RANDOM"
 BIN_DEPS="curl sed basename grep cut stat dd"
-VERSION="0.9.7"
+VERSION="0.9.8"
 
 umask 077
 
