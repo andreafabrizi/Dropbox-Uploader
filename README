@@ -63,6 +63,9 @@ Build cURL from source: http://curl.haxx.se/download.html
 CHANGELOG:
 ==========
 
+Version 0.9.8 - 03 Oct 2012:
+- Implemented chunked upload. Now there is no limit to file size!
+
 Version 0.9.7 - 14 Sep 2012:
 - Fixed bug in listing empty directories
 
