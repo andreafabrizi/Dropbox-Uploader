@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Dropbox Uploader Script v0.9.7
+# Dropbox Uploader Script v0.9.8
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -27,18 +27,25 @@ VERBOSE=1
 #Default configuration file
 CONFIG_FILE=~/.dropbox_uploader
 
+#Default chunk size in Mb for the upload process
+#It is recommended to increase this value only if you have enough free space on your /tmp partition
+#Lower values may increase the number of http requests
+CHUNK_SIZE=50
+
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
 API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
-API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
+API_CHUNKED_UPLOAD_URL="https://api-content.dropbox.com/1/chunked_upload"
+API_CHUNKED_UPLOAD_COMMIT_URL="https://api-content.dropbox.com/1/commit_chunked_upload/dropbox"
 API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files/dropbox"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_METADATA_URL="https://api.dropbox.com/1/metadata/dropbox"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
-BIN_DEPS="curl sed basename grep cut stat"
+CHUNK_FILE="/tmp/du_chunk_$RANDOM"
+BIN_DEPS="curl sed basename grep cut stat dd"
 VERSION="0.9.7"
 
 umask 077
@@ -66,7 +73,8 @@ function utime
 function remove_temp_files
 {
     if [ $DEBUG -eq 0 ]; then
-        rm -fr $RESPONSE_FILE
+        rm -fr "$RESPONSE_FILE"
+        rm -fr "$CHUNK_FILE"
     fi
 }
 
@@ -165,7 +173,7 @@ else
     if [ -n "$OAUTH_TOKEN" -a -n "$OAUTH_TOKEN_SECRET" ]; then
         echo -ne "OK\n"
     else
-        echo -ne " FAILED\n\n Verify your App key and secret...\n\n"
+        echo -ne " FAILED\n\n Please, check your App key and secret...\n\n"
         remove_temp_files
         exit 1
     fi
@@ -212,81 +220,82 @@ COMMAND=$1
 #CHECKING PARAMS VALUES
 case $COMMAND in
 
-upload)
+    upload)
 
-    FILE_SRC=$2
-    FILE_DST=$(urlencode "$3")
+        FILE_SRC=$2
+        FILE_DST=$(urlencode "$3")
 
-    #Checking FILE_SRC
-    if [ ! -f "$FILE_SRC" ]; then
-        echo -e "Please specify a valid source file!"
-        remove_temp_files
-        exit 1
-    fi
-    
-    #Checking FILE_DST
-    if [ -z "$FILE_DST" ]; then
-        FILE_DST=$(basename "$FILE_SRC")
-    fi    
-    
+        #Checking FILE_SRC
+        if [ ! -f "$FILE_SRC" ]; then
+            echo -e "Please specify a valid source file!"
+            remove_temp_files
+            exit 1
+        fi
+        
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            FILE_DST=$(basename "$FILE_SRC")
+        fi    
+        
     ;;
 
-download)
+    download)
 
-    FILE_SRC=$(urlencode "$2")
-    FILE_DST=$3    
+        FILE_SRC=$(urlencode "$2")
+        FILE_DST=$3    
 
-    #Checking FILE_SRC
-    if [ -z "$FILE_SRC" ]; then
-        echo -e "Please specify a valid source file!"
-        remove_temp_files
-        exit 1
-    fi
-    
-    #Checking FILE_DST
-    if [ -z "$FILE_DST" ]; then
-        FILE_DST=$(basename "$FILE_SRC")
-    fi
-    
-    ;;
-    
-info)
-    #Nothing to do...
-    ;;
-
-delete)
-
-    FILE_DST=$(urlencode "$2")    
-
-    #Checking FILE_DST
-    if [ -z "$FILE_DST" ]; then
-        echo -e "Please specify a valid destination file!"
-        remove_temp_files
-        exit 1
-    fi
-
-    ;;
-
-list)
-
-    DIR_DST=$(urlencode "$2")    
-
-    #Checking DIR_DST
-    if [ -z "$DIR_DST" ]; then
-        echo -e "Please specify a valid dropbox directory!"
-        remove_temp_files
-        exit 1
-    fi
-
-    ;;
-    
-unlink)
-    #Nothing to do...
+        #Checking FILE_SRC
+        if [ -z "$FILE_SRC" ]; then
+            echo -e "Please specify a valid source file!"
+            remove_temp_files
+            exit 1
+        fi
+        
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            FILE_DST=$(basename "$FILE_SRC")
+        fi
+        
     ;;
         
-*)
-    usage
+    info)
+        #Nothing to do...
     ;;
+
+    delete)
+
+        FILE_DST=$(urlencode "$2")    
+
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            echo -e "Please specify a valid destination file!"
+            remove_temp_files
+            exit 1
+        fi
+
+    ;;
+
+    list)
+
+        DIR_DST=$(urlencode "$2")    
+
+        #Checking DIR_DST
+        if [ -z "$DIR_DST" ]; then
+            echo -e "Please specify a valid dropbox directory!"
+            remove_temp_files
+            exit 1
+        fi
+
+    ;;
+        
+    unlink)
+        #Nothing to do...
+        ;;
+            
+    *)
+        usage
+    ;;
+
 esac
 
 ################
@@ -298,38 +307,73 @@ case "$COMMAND" in
 
     upload)
 
-        if [ $(stat --format="%s" "$FILE_SRC") -gt 150000000 ]; then
-            print " > FAILED\n"
-            print "   Due to a dropbox API limitation you can't upload files\n"
-            print "   bigger than 150mb.\n"
-            remove_temp_files
-            exit 1
-        fi
-
-        #Show the progress bar during the file upload
-        if [ $VERBOSE -eq 1 ]; then
-	        CURL_PARAMETERS="--progress-bar"
-        else
-	        CURL_PARAMETERS="-s --show-error"
-        fi
+        CURL_PARAMETERS="-s --show-error"
      
-        print " > Uploading $FILE_SRC to $FILE_DST... \n"  
-        time=$(utime)
-        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
-               
-        #Check
-        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-        if [ $? -eq 0 ]; then
-            print " > DONE\n"
-        else
-            print " > FAILED\n"
-            print "   If the problem persists, try to unlink this script from your\n"
-            print "   Dropbox account, then setup again ($0 unlink).\n"
-            remove_temp_files
-            exit 1
-        fi
+        print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""  
+
+        FILE_SIZE=$(stat --format="%s" "$FILE_SRC")
+        OFFSET=0
+        UPLOAD_ID=""
+
+        while (true); do      
+          
+            let OFFSET_MB=$OFFSET/1024/1024
+          
+            #Create the chunk
+            dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1M skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
+            
+            #Only for the first request these parameters are not included
+            if [ $OFFSET -ne 0 ]; then
+                CHUNK_PARAMS="upload_id=$UPLOAD_ID&offset=$OFFSET"
+            fi
+            
+            #Uploading the chunk...
+            time=$(utime)
+            curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+
+            #Check
+            grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+            if [ $? -ne 0 ]; then
+                print " > FAILED\n"
+                print "   An error occurred requesting /chunked_upload\n"
+                print "   If the problem persists, try to unlink this script from your\n"
+                print "   Dropbox account, then setup again ($0 unlink).\n"
+                remove_temp_files
+                exit 1
+            fi
+            
+            print "."
+                       
+            UPLOAD_ID=$(sed -n -e 's/.*"upload_id":\s*"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+            OFFSET=$(sed -n -e 's/.*"offset":\s*\([^}]*\).*/\1/p' "$RESPONSE_FILE")
+            
+            #Commit
+            if [ $OFFSET -eq $FILE_SIZE ]; then
+            
+                time=$(utime)
+                curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$FILE_DST"
+
+                #Check
+                grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+                if [ $? -ne 0 ]; then
+                    print " > FAILED\n"
+                    print "   An error occurred requesting /commit_chunked_upload\n"
+                    print "   If the problem persists, try to unlink this script from your\n"
+                    print "   Dropbox account, then setup again ($0 unlink).\n"
+                    remove_temp_files
+                    exit 1
+                fi
+            
+                print "."
+                
+                break
+            fi
+                        
+        done
+
+        print "\n > DONE\n"
         
-        ;;
+    ;;
 
 
     download)
@@ -341,7 +385,7 @@ case "$COMMAND" in
 	        CURL_PARAMETERS="-s --show-error"
         fi
      
-        print " > Downloading $FILE_SRC to $FILE_DST... \n"  
+        print " > Downloading \"$FILE_SRC\" to \"$FILE_DST\"... \n"  
         time=$(utime)
         curl $CURL_PARAMETERS -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
                
@@ -358,7 +402,7 @@ case "$COMMAND" in
             exit 1
         fi
          
-        ;;
+    ;;
 
 
     info)
@@ -398,7 +442,7 @@ case "$COMMAND" in
             exit 1
         fi
                          
-        ;;
+    ;;
 
 
     unlink)
@@ -415,7 +459,7 @@ case "$COMMAND" in
 
    delete)
      
-        print " > Deleting $FILE_DST... "  
+        print " > Deleting \"$FILE_DST\"... "  
         time=$(utime)
         CURL_PARAMETERS="-s --show-error"
         curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=dropbox&path=$FILE_DST" "$API_DELETE_URL"
@@ -429,12 +473,13 @@ case "$COMMAND" in
             remove_temp_files
             exit 1
         fi
-        ;;
+        
+    ;;
 
 
    list)
      
-        print " > Listing $DIR_DST... "  
+        print " > Listing \"$DIR_DST\"... "  
         time=$(utime)
         CURL_PARAMETERS="-s --show-error"
         curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
@@ -486,11 +531,11 @@ case "$COMMAND" in
             remove_temp_files
             exit 1
         fi
-        ;;
+    ;;
    
     *)
         usage
-        ;;
+    ;;
         
 esac
 
