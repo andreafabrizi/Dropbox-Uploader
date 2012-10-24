@@ -100,12 +100,12 @@ function urlencode
 #Return the file size in bytes
 function file_size
 {
-    if [ "$OSTYPE" == "FreeBSD" ]; then
-        stat -f "%z" "$1"
+    if [ "$OSTYPE" == "linux-gnu" ]; then
+        stat --format="%s" "$1"
         return
     else
-        #Linux or others OS
-        stat --format="%s" "$1"
+        #BSD or others OS
+        stat -f "%z" "$1"
         return
     fi
 }
