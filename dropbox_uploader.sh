@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Dropbox Uploader Script v0.9.8
+# Dropbox Uploader Script v0.9.9
 #
 # Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
@@ -27,6 +27,11 @@ VERBOSE=1
 #Default configuration file
 CONFIG_FILE=~/.dropbox_uploader
 
+#If you are experiencing problems establishing SSL connection with the DropBox
+#server, try to uncomment this option.
+#Note: This option explicitly allows curl to perform "insecure" SSL connections and transfers.
+#CURL_ACCEPT_CERTIFICATES="-k"
+
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
 #Lower values may increase the number of http requests
@@ -37,18 +42,25 @@ API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
 API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_CHUNKED_UPLOAD_URL="https://api-content.dropbox.com/1/chunked_upload"
-API_CHUNKED_UPLOAD_COMMIT_URL="https://api-content.dropbox.com/1/commit_chunked_upload/dropbox"
-API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files/dropbox"
+API_CHUNKED_UPLOAD_COMMIT_URL="https://api-content.dropbox.com/1/commit_chunked_upload"
+API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
+API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
-API_METADATA_URL="https://api.dropbox.com/1/metadata/dropbox"
+API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="/tmp/du_resp_$RANDOM"
 CHUNK_FILE="/tmp/du_chunk_$RANDOM"
 BIN_DEPS="curl sed basename grep cut stat dd"
-VERSION="0.9.8"
+VERSION="0.9.9"
 
 umask 077
+
+#Check the shell
+if [ -z "$BASH_VERSION" ]; then
+    echo -e "Error: this script requires BASH shell!"
+    exit 1
+fi 
 
 if [ $DEBUG -ne 0 ]; then
     set -x
@@ -85,6 +97,19 @@ function urlencode
     echo ${str// /%20}
 }
 
+#Return the file size in bytes
+function file_size
+{
+    if [ "$OSTYPE" == "FreeBSD" ]; then
+        stat -f "%z" "$1"
+        return
+    else
+        #Linux or others OS
+        stat --format="%s" "$1"
+        return
+    fi
+}
+
 #USAGE
 function usage() {
     echo -e "Dropbox Uploader v$VERSION"
@@ -118,10 +143,11 @@ done
 if [ -f "$CONFIG_FILE" ]; then
       
     #Loading data...
-    APPKEY=$(sed -n -e 's/APPKEY:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    APPSECRET=$(sed -n -e 's/APPSECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    OAUTH_ACCESS_TOKEN=$(sed -n -e 's/OAUTH_ACCESS_TOKEN:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
+    APPKEY=$(sed -n 's/APPKEY:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
+    APPSECRET=$(sed -n 's/APPSECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
+    ACCESS_LEVEL=$(sed -n 's/ACCESS_LEVEL:\([A-Z]*\)/\1/p' "$CONFIG_FILE")
+    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
+    OAUTH_ACCESS_TOKEN=$(sed -n 's/OAUTH_ACCESS_TOKEN:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
     
     #Checking the loaded data
     if [ -z "$APPKEY" -o -z "$APPSECRET" -o -z "$OAUTH_ACCESS_TOKEN_SECRET" -o -z "$OAUTH_ACCESS_TOKEN" ]; then
@@ -129,6 +155,11 @@ if [ -f "$CONFIG_FILE" ]; then
         echo -ne "Is recommended to run $0 unlink\n"
         remove_temp_files
         exit 1
+    fi
+    
+    #Back compatibility with previous versions
+    if [ -z "$ACCESS_LEVEL" ]; then
+        ACCESS_LEVEL="dropbox"
     fi
 
 #NEW SETUP...
@@ -140,11 +171,11 @@ else
     echo -ne " form with the following data:\n\n"
     echo -ne "  App name: MyUploader$RANDOM$RANDOM\n"
     echo -ne "  Description: What do you want...\n"
-    echo -ne "  Access level: Full Dropbox\n\n"
+    echo -ne "  Access level: App folder or Full Dropbox\n\n"
     echo -ne " Now, click on the \"Create\" button.\n\n"
     
     echo -ne " When your new App is successfully created, please insert the\n"
-    echo -ne " App Key and App Secret:\n\n"
+    echo -ne " App Key, App Secret and the Access Type:\n\n"
 
     #Getting the app key and secret from the user
     while (true); do
@@ -155,7 +186,18 @@ else
         echo -n " # App secret: "
         read APPSECRET
 
-        echo -ne "\n > App key is $APPKEY and App secret is $APPSECRET, it's ok? [y/n]"
+        echo -n " # Access level you have chosen, App folder or Full Dropbox [a/f]: "
+        read ACCESS_LEVEL
+        
+        if [ "$ACCESS_LEVEL" == "a" ]; then
+            ACCESS_LEVEL="sandbox"
+            ACCESS_MSG="App folder"
+        else
+            ACCESS_LEVEL="dropbox"
+            ACCESS_MSG="Full Dropbox"
+        fi
+        
+        echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG, it's ok? [y/n]"
         read answer
         if [ "$answer" == "y" ]; then
             break;
@@ -166,9 +208,9 @@ else
     #TOKEN REQUESTS
     echo -ne "\n > Token request... "
     time=$(utime)
-    curl -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL"
-    OAUTH_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
-    OAUTH_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
+    curl $CURL_ACCEPT_CERTIFICATES -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL"
+    OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
+    OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
 
     if [ -n "$OAUTH_TOKEN" -a -n "$OAUTH_TOKEN_SECRET" ]; then
         echo -ne "OK\n"
@@ -189,10 +231,10 @@ else
         #API_ACCESS_TOKEN_URL
         echo -ne " > Access Token request... "
         time=$(utime)
-        curl -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL"
-        OAUTH_ACCESS_TOKEN_SECRET=$(sed -n -e 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_TOKEN=$(sed -n -e 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_UID=$(sed -n -e 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
+        curl $CURL_ACCEPT_CERTIFICATES -s --show-error -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL"
+        OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
+        OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
+        OAUTH_ACCESS_UID=$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
         
         if [ -n "$OAUTH_ACCESS_TOKEN" -a -n "$OAUTH_ACCESS_TOKEN_SECRET" -a -n "$OAUTH_ACCESS_UID" ]; then
             echo -ne "OK\n"
@@ -200,8 +242,10 @@ else
             #Saving data
             echo "APPKEY:$APPKEY" > "$CONFIG_FILE"
             echo "APPSECRET:$APPSECRET" >> "$CONFIG_FILE"
+            echo "ACCESS_LEVEL:$ACCESS_LEVEL" >> "$CONFIG_FILE"
             echo "OAUTH_ACCESS_TOKEN:$OAUTH_ACCESS_TOKEN" >> "$CONFIG_FILE"
             echo "OAUTH_ACCESS_TOKEN_SECRET:$OAUTH_ACCESS_TOKEN_SECRET" >> "$CONFIG_FILE"
+            
             
             echo -ne "\n Setup completed!\n"
             break
@@ -235,7 +279,14 @@ case $COMMAND in
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
             FILE_DST=$(basename "$FILE_SRC")
-        fi    
+        fi
+        
+        #Checking file size
+        FILE_SIZE=$(file_size "$FILE_SRC")
+        if [ $FILE_SIZE -gt 157286400 ]; then
+            #If the file is greater than 150Mb, the chunked_upload API will be used
+            COMMAND="ckupload"
+        fi
         
     ;;
 
@@ -281,9 +332,7 @@ case $COMMAND in
 
         #Checking DIR_DST
         if [ -z "$DIR_DST" ]; then
-            echo -e "Please specify a valid dropbox directory!"
-            remove_temp_files
-            exit 1
+            DIR_DST="/"
         fi
 
     ;;
@@ -307,11 +356,35 @@ case "$COMMAND" in
 
     upload)
 
-        CURL_PARAMETERS="-s --show-error"
+        #Show the progress bar during the file upload
+        if [ $VERBOSE -eq 1 ]; then
+	        CURL_PARAMETERS="--progress-bar"
+        else
+	        CURL_PARAMETERS="-s --show-error"
+        fi
+     
+        print " > Uploading $FILE_SRC to $FILE_DST... \n"  
+        time=$(utime)
+        curl $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+               
+        #Check
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+        if [ $? -eq 0 ]; then
+            print " > DONE\n"
+        else
+            print " > FAILED\n"
+            print "   An error occurred requesting /upload\n"
+            remove_temp_files
+            exit 1
+        fi
+        
+    ;;
+        
+    ckupload)
      
         print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""  
 
-        FILE_SIZE=$(stat --format="%s" "$FILE_SRC")
+        FILE_SIZE=$(file_size "$FILE_SRC")
         OFFSET=0
         UPLOAD_ID=""
 
@@ -329,37 +402,33 @@ case "$COMMAND" in
             
             #Uploading the chunk...
             time=$(utime)
-            curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+            curl $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
 
             #Check
             grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
             if [ $? -ne 0 ]; then
                 print " > FAILED\n"
                 print "   An error occurred requesting /chunked_upload\n"
-                print "   If the problem persists, try to unlink this script from your\n"
-                print "   Dropbox account, then setup again ($0 unlink).\n"
                 remove_temp_files
                 exit 1
             fi
             
             print "."
                        
-            UPLOAD_ID=$(sed -n -e 's/.*"upload_id":\s*"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-            OFFSET=$(sed -n -e 's/.*"offset":\s*\([^}]*\).*/\1/p' "$RESPONSE_FILE")
+            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
             
             #Commit
             if [ $OFFSET -eq $FILE_SIZE ]; then
             
                 time=$(utime)
-                curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$FILE_DST"
+                curl $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST"
 
                 #Check
                 grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
                 if [ $? -ne 0 ]; then
                     print " > FAILED\n"
                     print "   An error occurred requesting /commit_chunked_upload\n"
-                    print "   If the problem persists, try to unlink this script from your\n"
-                    print "   Dropbox account, then setup again ($0 unlink).\n"
                     remove_temp_files
                     exit 1
                 fi
@@ -387,7 +456,7 @@ case "$COMMAND" in
      
         print " > Downloading \"$FILE_SRC\" to \"$FILE_DST\"... \n"  
         time=$(utime)
-        curl $CURL_PARAMETERS -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+        curl $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
                
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
@@ -410,28 +479,27 @@ case "$COMMAND" in
         print "Dropbox Uploader v$VERSION\n\n"
         print " > Getting info... \n"  
         time=$(utime)
-        CURL_PARAMETERS="-s --show-error"
-        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL"
-
+        curl $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL"
+        
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -eq 0 ]; then
         
-            echo -ne "\nName:\t"
-            sed -n -e 's/.*"display_name":\s*"*\([^"]*\)",.*/\1/p' "$RESPONSE_FILE"
-
-            echo -ne "\nUID:\t"
-            sed -n -e 's/.*"uid":\s*"*\([^"]*\)"*,.*/\1/p' "$RESPONSE_FILE"
-
-            echo -ne "\nEmail:\t"
-            sed -n -e 's/.*"email":\s*"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE"
+            name=$(sed -n 's/.*"display_name": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "\nName:\t$name"
             
-            echo -ne "\nQuota:\t"
-            sed -n -e 's/.*"quota":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
-
-            echo -ne "\nUsed:\t"
-            sed -n -e 's/.*"normal":\s*\([0-9]*\).*/\1/p' "$RESPONSE_FILE"
-                    
+            uid=$(sed -n 's/.*"uid": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "UID:\t$uid"
+            
+            email=$(sed -n 's/.*"email": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "Email:\t$email"
+            
+            quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "Quota:\t$quota"
+            
+            used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "Used:\t$used"
+            
             echo ""
             
         else
@@ -461,8 +529,7 @@ case "$COMMAND" in
      
         print " > Deleting \"$FILE_DST\"... "  
         time=$(utime)
-        CURL_PARAMETERS="-s --show-error"
-        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=dropbox&path=$FILE_DST" "$API_DELETE_URL"
+        curl $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$FILE_DST" "$API_DELETE_URL"
 
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
@@ -481,36 +548,34 @@ case "$COMMAND" in
      
         print " > Listing \"$DIR_DST\"... "  
         time=$(utime)
-        CURL_PARAMETERS="-s --show-error"
-        curl $CURL_PARAMETERS -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+        curl $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
        
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -eq 0 ]; then
             
-            #Double SED, a simple workaround to match only the first "is_dir" tag
-            IS_DIR=$(cat "$RESPONSE_FILE" | sed -n -e 's/^\(.*\)\"contents":.\[.*/\1/p' | sed -n -e 's/^.*"is_dir":\s*\([^,]*\),.*/\1/p')
-            
+            IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
+                       
             #It's a directory
-            if [ "$IS_DIR" == "true" ]; then
+            if [ ! -z "$IS_DIR" ]; then
             
                 print "DONE\n"
             
                 #Extracting directory content [...]
-                DIR_CONTENT=$(sed -n -e 's/[^[]*\[\([^]]*\).*/\1/p' "$RESPONSE_FILE")
-                
-                #Replace "}, {" with "}\n{"
-                DIR_CONTENT=$(echo "$DIR_CONTENT" | sed 's/},\s*{/\}\r\n\{/g')
+                #and replacing "}, {" with "}\n{"
+                #I don't like this piece of code... but seems to be the only way to do this with SED writing a portable code...
+                DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+{/g')
                 
                 #Extracing files and subfolders
-                echo "$DIR_CONTENT" | sed -n -e 's/.*"path":\s*"\([^"]*\)",.*"is_dir":\s*\([^"]*\),.*/\1\t\2/p' > $RESPONSE_FILE
+                echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $RESPONSE_FILE
                 
                 #For each line...
                 while read line; do
                 
-                    FILE=$(echo "$line" | cut -f 1)
+                    FILE=$(echo "$line" | cut -f 1 -d ':')
                     FILE=$(basename "$FILE")
-                    TYPE=$(echo "$line" | cut -f 2)
+                    TYPE=$(echo "$line" | cut -f 2 -d ':')
                     
                     if [ "$TYPE" == "false" ]; then
                         echo " [F] $FILE"
