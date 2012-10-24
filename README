@@ -12,7 +12,7 @@ USAGE:
 
 Usage: ./dropbox_uploader.sh COMMAND [PARAMETERS]...
 
-[%%]: Required param
+[%%]: Required param 
 <%%>: Optional param
 
 Commands:
@@ -48,20 +48,47 @@ HOW TO USE A PROXY:
 
 To use a proxy server, simply set the "https_proxy" environment variable:
 
+### Linux:
+
     export HTTP_PROXY_USER=XXXX
     export HTTP_PROXY_PASSWORD=YYYY
     export https_proxy=http://192.168.0.1:8080
 
+### BSD: 
 
-CURL INSTALLATION:
+    setenv HTTP_PROXY_USER XXXX
+    setenv HTTP_PROXY_PASSWORD YYYY
+    setenv https_proxy http://192.168.0.1:8080
+    
+BASH AND CURL INSTALLATION:
 ==================
 
-Debian & Ubuntu Linux: sudo apt-get install curl
-Build cURL from source: http://curl.haxx.se/download.html
+### Debian & Ubuntu Linux: 
+    
+    sudo apt-get install bash (Probably bash is already installed on your system)
+    sudo apt-get install curl
+
+### BSD: 
+
+    cd /usr/ports/shells/bash && make install clean
+    cd /usr/ports/ftp/curl && make install clean
+
+### Build cURL from source: 
+
+    Download the source tarball from http://curl.haxx.se/download.html
    
 
 CHANGELOG:
 ==========
+
+Version 0.9.9 - 24 Oct 2012:
+- Added the possibility to choose the access level (App folder o Full Dropbox) during the setup procedure
+- Added a check for the BASH shell version
+- Fixed problems in listing files/directories with special characters
+- Added the option CURL_ACCEPT_CERTIFICATES (see the script source)
+- Added back the standard upload function. Now only if the file is greater than 150Mb, the chunked_upload API will be used.
+- Fixed compatibility with bsd sed. Tested on FreeBSD, but probably it works on others bsd versions and osx. Let me know!
+- Minor changes
 
 Version 0.9.8 - 03 Oct 2012:
 - Implemented chunked upload. Now there is no limit to file size!
