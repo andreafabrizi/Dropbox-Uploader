@@ -43,7 +43,7 @@ API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_CHUNKED_UPLOAD_URL="https://api-content.dropbox.com/1/chunked_upload"
 API_CHUNKED_UPLOAD_COMMIT_URL="https://api-content.dropbox.com/1/commit_chunked_upload"
-API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put/dropbox"
+API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put"
 API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
@@ -120,7 +120,7 @@ function usage() {
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
     echo -e "\t delete   [REMOTE_FILE]"
-    echo -e "\t list     [REMOTE_DIR]"
+    echo -e "\t list     <REMOTE_DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
     
@@ -152,12 +152,12 @@ if [ -f "$CONFIG_FILE" ]; then
     #Checking the loaded data
     if [ -z "$APPKEY" -o -z "$APPSECRET" -o -z "$OAUTH_ACCESS_TOKEN_SECRET" -o -z "$OAUTH_ACCESS_TOKEN" ]; then
         echo -ne "Error loading data from $CONFIG_FILE...\n"
-        echo -ne "Is recommended to run $0 unlink\n"
+        echo -ne "It is recommended to run $0 unlink\n"
         remove_temp_files
         exit 1
     fi
     
-    #Back compatibility with previous versions
+    #Back compatibility with previous Dropbox Uploader versions
     if [ -z "$ACCESS_LEVEL" ]; then
         ACCESS_LEVEL="dropbox"
     fi
@@ -174,8 +174,8 @@ else
     echo -ne "  Access level: App folder or Full Dropbox\n\n"
     echo -ne " Now, click on the \"Create\" button.\n\n"
     
-    echo -ne " When your new App is successfully created, please insert the\n"
-    echo -ne " App Key, App Secret and the Access Type:\n\n"
+    echo -ne " When your new App is successfully created, please type the\n"
+    echo -ne " App Key, App Secret and the Access level:\n\n"
 
     #Getting the app key and secret from the user
     while (true); do
@@ -191,7 +191,7 @@ else
         
         if [ "$ACCESS_LEVEL" == "a" ]; then
             ACCESS_LEVEL="sandbox"
-            ACCESS_MSG="App folder"
+            ACCESS_MSG="App Folder"
         else
             ACCESS_LEVEL="dropbox"
             ACCESS_MSG="Full Dropbox"
@@ -246,7 +246,6 @@ else
             echo "OAUTH_ACCESS_TOKEN:$OAUTH_ACCESS_TOKEN" >> "$CONFIG_FILE"
             echo "OAUTH_ACCESS_TOKEN_SECRET:$OAUTH_ACCESS_TOKEN_SECRET" >> "$CONFIG_FILE"
             
-            
             echo -ne "\n Setup completed!\n"
             break
         else
@@ -283,7 +282,7 @@ case $COMMAND in
         
         #Checking file size
         FILE_SIZE=$(file_size "$FILE_SRC")
-        if [ $FILE_SIZE -gt 157286400 ]; then
+        if [ $FILE_SIZE -gt 157286000 ]; then
             #If the file is greater than 150Mb, the chunked_upload API will be used
             COMMAND="ckupload"
         fi
@@ -365,7 +364,7 @@ case "$COMMAND" in
      
         print " > Uploading $FILE_SRC to $FILE_DST... \n"  
         time=$(utime)
-        curl $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+        curl $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
                
         #Check
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
