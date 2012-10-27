@@ -100,7 +100,7 @@ function urlencode
 #Return the file size in bytes
 function file_size
 {
-    if [ "$OSTYPE" == "linux-gnu" ]; then
+    if [ "$OSTYPE" == "linux-gnu" -o "$OSTYPE" == "cygwin" ]; then
         stat --format="%s" "$1"
         return
     else
