@@ -6,6 +6,10 @@ Dropbox Uploader is a BASH script which can be used to upload, download, delete 
 
 It's written in BASH scripting language and only needs cURL (CLI).
 
+Why use this script?
+
+Portable: It's written in BASH scripting language and only needs cURL (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
+Secure:It's not required to provide your username/password to this script, because it uses the official Dropbox API for authentication process. 
 
 USAGE:
 ======
@@ -19,6 +23,12 @@ Commands:
 
  upload   [LOCAL_FILE]  <REMOTE_FILE> 
  - Upload local file to remote Dropbox folder
+   If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); in this case,
+   if VERBOSE is set to 1, a . (dot) is printed when every chunk is successfully uploaded. Instead, if an
+   error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum
+   of three times.
+   Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the 
+   default curl progression bar is displayed during the upload process.
 
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
@@ -26,7 +36,7 @@ Commands:
  delete   [REMOTE_FILE] 
  - Remove a remote file from Dropbox
 
- list     [REMOTE_DIRECTORY]
+ list     <REMOTE_DIRECTORY>
  - List contents of the remote Dropbox folder
  
  info          
@@ -41,6 +51,17 @@ Examples:
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)
+
+
+TESTED ENVIRONMENTS:
+====================
+GNU Linux
+FreeBSD 8.3
+MacOSX
+Windows/Cygwin
+Raspberry Pi
+
+If you have successfully tested this script on others systems or platforms please let me know!
 
 
 HOW TO USE A PROXY:
@@ -59,9 +80,10 @@ To use a proxy server, simply set the "https_proxy" environment variable:
     setenv HTTP_PROXY_USER XXXX
     setenv HTTP_PROXY_PASSWORD YYYY
     setenv https_proxy http://192.168.0.1:8080
-    
+
+   
 BASH AND CURL INSTALLATION:
-==================
+===========================
 
 ### Debian & Ubuntu Linux: 
     
@@ -73,13 +95,35 @@ BASH AND CURL INSTALLATION:
     cd /usr/ports/shells/bash && make install clean
     cd /usr/ports/ftp/curl && make install clean
 
+### Cygwin:
+
+    You need to install these packages: 
+    - curl
+    - ca-certificates
+
 ### Build cURL from source: 
 
     Download the source tarball from http://curl.haxx.se/download.html
    
 
+DROPBOX UPLOADER FIRST START:
+=============================
+
+ $chmod +x dropbox_uploader.sh
+ $./dropbox_uploader.sh
+
+
 CHANGELOG:
 ==========
+
+Version 0.10
+- Code clean
+- Improved urlencode function (thanks to Stefan Trauth - www.stefantrauth.de)
+- Added command remove as alias of delete
+- Fix for Raspberry PI
+- Now if an error occurs during a chunk uploading, the upload is retried for a maximum of three times
+- Minor changes
+- Tested on Cygwin and MaxOSX
 
 Version 0.9.9 - 24 Oct 2012:
 - Added the possibility to choose the access level (App folder o Full Dropbox) during the setup procedure
