@@ -30,7 +30,7 @@ CONFIG_FILE=~/.dropbox_uploader
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
 #Lower values may increase the number of http requests
-CHUNK_SIZE=50
+CHUNK_SIZE=4
 
 #Set to 1 to enable DEBUG mode
 DEBUG=0
@@ -167,8 +167,8 @@ for i in $BIN_DEPS; do
 done
 
 #Simple file upload
-#$2 = Local source file
-#$3 = Remote destination file
+#$1 = Local source file
+#$2 = Remote destination file
 function db_upload
 {
     local FILE_SRC=$1
@@ -198,8 +198,8 @@ function db_upload
 }
 
 #Chunked file upload
-#$2 = Local source file
-#$3 = Remote destination file  
+#$1 = Local source file
+#$2 = Remote destination file  
 function db_ckupload
 {
     local FILE_SRC=$1
@@ -277,8 +277,8 @@ function db_ckupload
 }
 
 #Simple file download
-#$2 = Remote source file
-#$3 = Local destination file  
+#$1 = Remote source file
+#$2 = Local destination file  
 function db_download
 {
     local FILE_SRC=$(urlencode "$1")
