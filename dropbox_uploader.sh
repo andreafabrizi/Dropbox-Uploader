@@ -156,7 +156,7 @@ if [ -z "$CURL_BIN" ]; then
     CURL_BIN="curl"   
 fi
 
-#CHECK DEPENDENCIES
+#DEPENDENCIES CHECK
 for i in $BIN_DEPS; do
     which $i > /dev/null
     if [ $? -ne 0 ]; then
@@ -212,7 +212,8 @@ function db_ckupload
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
 
-    while (true); do      
+    #Uploading chunks...
+    while ([ $OFFSET -ne $FILE_SIZE ]); do      
       
         let OFFSET_MB=$OFFSET/1024/1024
       
@@ -251,28 +252,37 @@ function db_ckupload
         UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
         OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
         
-        #Commit
-        if [ $OFFSET -eq $FILE_SIZE ]; then
-        
-            time=$(utime)
-            $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST"
+    done
+            
+    #Commit the upload
+    while (true); do
+    
+        time=$(utime)
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST"
 
-            #Check
-            grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-            if [ $? -ne 0 ]; then
+        #Check
+        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+        if [ $? -ne 0 ]; then
+            print "*"
+            
+            #On error, the commit is retried for max 3 times
+            if [ $UPLOAD_ERROR -gt 2 ]; then
                 print " > FAILED\n"
                 print "   An error occurred requesting /commit_chunked_upload\n"
                 remove_temp_files
                 exit 1
             fi
-        
-            print "."
             
-            break
+            let UPLOAD_ERROR=$UPLOAD_ERROR+1
+            continue
         fi
-                    
-    done
 
+        print "."
+        UPLOAD_ERROR=0
+        break
+        
+    done
+    
     print "\n > DONE\n"
 }
 
