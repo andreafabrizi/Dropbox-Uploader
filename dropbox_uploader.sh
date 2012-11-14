@@ -60,7 +60,7 @@ APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 BIN_DEPS="sed basename date grep cut stat dd"
-VERSION="0.11"
+VERSION="0.11.2"
 
 umask 077
 
@@ -96,21 +96,6 @@ function remove_temp_files
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
     fi
-}
-
-#Urlencode
-function urlencode 
-{
-    local data
-
-    data=$($CURL_BIN -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "")
-    
-    if [ $? != 3 ]; then
-        echo "Urlencode: Unexpected error"
-        exit 1
-    fi
-    
-    echo "${data##/?}"
 }
 
 #Return the file size in bytes
@@ -172,7 +157,7 @@ done
 function db_upload
 {
     local FILE_SRC=$1
-    local FILE_DST=$(urlencode "$2")
+    local FILE_DST=$2
     
     #Show the progress bar during the file upload
     if [ $VERBOSE -eq 1 ]; then
@@ -203,7 +188,7 @@ function db_upload
 function db_ckupload
 {
     local FILE_SRC=$1
-    local FILE_DST=$(urlencode "$2")
+    local FILE_DST=$2
     
     print " > Uploading \"$FILE_SRC\" to \"$2\""  
 
@@ -233,6 +218,7 @@ function db_ckupload
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -ne 0 ]; then
             print "*"
+            let UPLOAD_ERROR=$UPLOAD_ERROR+1
             
             #On error, the upload is retried for max 3 times
             if [ $UPLOAD_ERROR -gt 2 ]; then
@@ -242,18 +228,17 @@ function db_ckupload
                 exit 1
             fi
             
-            let UPLOAD_ERROR=$UPLOAD_ERROR+1
-            continue
+        else
+            print "."
+            UPLOAD_ERROR=0
+            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
         fi
         
-        print "."
-        
-        UPLOAD_ERROR=0  
-        UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-        OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
-        
     done
-            
+    
+    UPLOAD_ERROR=0
+      
     #Commit the upload
     while (true); do
     
@@ -264,6 +249,7 @@ function db_ckupload
         grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
         if [ $? -ne 0 ]; then
             print "*"
+            let UPLOAD_ERROR=$UPLOAD_ERROR+1
             
             #On error, the commit is retried for max 3 times
             if [ $UPLOAD_ERROR -gt 2 ]; then
@@ -273,17 +259,36 @@ function db_ckupload
                 exit 1
             fi
             
-            let UPLOAD_ERROR=$UPLOAD_ERROR+1
-            continue
+        else
+            print "."
+            UPLOAD_ERROR=0
+            break
         fi
-
-        print "."
-        UPLOAD_ERROR=0
-        break
         
     done
     
     print "\n > DONE\n"
+}
+
+#Returns the free space on DropBox in bytes
+function db_free_quota()
+{
+    time=$(utime)
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL"
+    
+    #Check
+    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+    if [ $? -eq 0 ]; then
+           
+        quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        let free_quota=$quota-$used
+        echo $free_quota
+        
+    else
+        #On error, a big free quota is returned, so if this function fails the upload will not be blocked...
+        echo 1000000000000
+    fi
 }
 
 #Simple file download
@@ -291,7 +296,7 @@ function db_ckupload
 #$2 = Local destination file  
 function db_download
 {
-    local FILE_SRC=$(urlencode "$1")
+    local FILE_SRC=$1
     local FILE_DST=$2
     
     #Show the progress bar during the file download
@@ -342,11 +347,16 @@ function db_account_info
         echo -e "Email:\t$email"
         
         quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
-        echo -e "Quota:\t$quota bytes"
+        let quota_mb=$quota/1024/1024
+        echo -e "Quota:\t$quota_mb Mb"
         
         used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
-        echo -e "Used:\t$used bytes"
-        
+        let used_mb=$used/1024/1024
+        echo -e "Used:\t$used_mb Mb"
+
+        let free_mb=($quota-$used)/1024/1024
+        echo -e "Free:\t$free_mb Mb"
+                
         echo ""
         
     else
@@ -374,7 +384,7 @@ function db_unlink
 #$1 = Remote file to delete
 function db_delete
 {
-    local FILE_DST=$(urlencode "$1")
+    local FILE_DST=$1
        
     print " > Deleting \"$1\"... "  
     time=$(utime)
@@ -395,7 +405,7 @@ function db_delete
 #$1 = Remote directory
 function db_list
 {
-    local DIR_DST=$(urlencode "$1")
+    local DIR_DST=$1
         
     print " > Listing \"$1\"... "  
     time=$(utime)
@@ -588,7 +598,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [ ! -f "$FILE_SRC" ]; then
-            echo -e "Please specify a valid source file!"
+            echo -e "Error: Please specify a valid source file!"
             remove_temp_files
             exit 1
         fi
@@ -600,6 +610,17 @@ case $COMMAND in
         
         #Checking file size
         FILE_SIZE=$(file_size "$FILE_SRC")
+        
+        #Checking the free quota
+        FREE_QUOTA=$(db_free_quota)
+        if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
+            let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
+            echo -e "Error: You have no enough space on your DropBox!"
+            echo -e "Free quota: $FREE_MB_QUOTA Mb"
+            remove_temp_files
+            exit 1
+        fi
+        
         if [ $FILE_SIZE -gt 157286000 ]; then
             #If the file is greater than 150Mb, the chunked_upload API will be used
             db_ckupload "$FILE_SRC" "$FILE_DST"
@@ -616,7 +637,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [ -z "$FILE_SRC" ]; then
-            echo -e "Please specify a valid source file!"
+            echo -e "Error: Please specify a valid source file!"
             remove_temp_files
             exit 1
         fi
@@ -642,7 +663,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            echo -e "Please specify a valid destination file!"
+            echo -e "Error: Please specify a valid destination file!"
             remove_temp_files
             exit 1
         fi
