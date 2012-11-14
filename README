@@ -4,7 +4,7 @@ Web:    http://www.andreafabrizi.it
 
 Dropbox Uploader is a BASH script which can be used to upload, download, delete or list files from Dropbox, an online file sharing, synchronization and backup service. 
 
-It's written in BASH scripting language and only needs cURL (CLI).
+It's written in BASH scripting language and only needs cURL (at least version 7.18.2).
 
 Why use this script?
 
@@ -115,6 +115,13 @@ DROPBOX UPLOADER FIRST START:
 
 CHANGELOG:
 ==========
+
+Version 0.11.2 - 14 Nov 2012:
+- Added a check for the free quota before uploading a file
+- Now the quota informations are displayed in Mb
+- Removed urlencode function for incompatibility with older curl versions
+- Fixed problem uploading files that contains @ character
+- Minor changes
 
 Version 0.11.1 - 12 Nov 2012:
 - As suggested by the DropBox API documentation, the default chunk for chunked uploads is now 4Mb
