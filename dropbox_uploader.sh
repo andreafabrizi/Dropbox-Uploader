@@ -414,6 +414,9 @@ function db_list
     #Check
     grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
     if [ $? -eq 0 ]; then
+        RESPONSE_FILE2="$TMP_DIR/du_resp_$RANDOM"
+        /usr/bin/printf "`cat "$RESPONSE_FILE"`" > $RESPONSE_FILE2
+        mv $RESPONSE_FILE2 $RESPONSE_FILE
         
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
                    
