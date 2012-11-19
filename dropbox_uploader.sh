@@ -59,7 +59,7 @@ API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep cut stat dd"
+BIN_DEPS="sed basename date grep cut stat dd /usr/bin/printf od tr"
 VERSION="0.11.2"
 
 umask 077
@@ -308,7 +308,8 @@ function db_download
  
     print " > Downloading \"$1\" to \"$FILE_DST\"... \n"  
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+    FILE_SRC_URL=`echo -n $FILE_SRC| od -t x1 -A n | tr " " "%" | tr -d "\n"`
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC_URL?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
            
     #Check
     grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
@@ -414,6 +415,9 @@ function db_list
     #Check
     grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
     if [ $? -eq 0 ]; then
+        RESPONSE_FILE2="$TMP_DIR/du_resp_$RANDOM"
+        /usr/bin/printf "`cat "$RESPONSE_FILE"`" > $RESPONSE_FILE2
+        mv $RESPONSE_FILE2 $RESPONSE_FILE
         
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
                    
