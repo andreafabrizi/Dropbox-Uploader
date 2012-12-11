@@ -59,7 +59,8 @@ API_INFO_URL="https://api.dropbox.com/1/account/info"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep cut stat dd"
+STDIN_FILE="$TMP_DIR/du_stdin_$RANDOM"
+BIN_DEPS="sed basename date grep cut stat dd cat"
 VERSION="0.11.2"
 
 umask 077
@@ -95,6 +96,7 @@ function remove_temp_files
     if [ $DEBUG -eq 0 ]; then
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
+        rm -fr "$STDIN_FILE"
     fi
 }
 
@@ -595,6 +597,12 @@ case $COMMAND in
 
         FILE_SRC=$2
         FILE_DST=$3
+	
+        #Read STDIN into STDIN_FILE if necessary
+        if [ "$FILE_SRC" == "-" ]; then
+            cat < /dev/stdin > $STDIN_FILE
+            FILE_SRC="$STDIN_FILE"
+        fi
 
         #Checking FILE_SRC
         if [ ! -f "$FILE_SRC" ]; then
@@ -605,7 +613,12 @@ case $COMMAND in
         
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            FILE_DST=/$(basename "$FILE_SRC")
+            if [ "$FILE_SRC" == "$STDIN_FILE" ]; then
+                echo -e "Error: Please specify a valid destination file if uploading from STDIN"
+                exit 1
+            else
+                FILE_DST=/$(basename "$FILE_SRC")
+            fi
         fi
         
         #Checking file size
