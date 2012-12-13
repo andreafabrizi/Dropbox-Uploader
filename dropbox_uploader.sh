@@ -121,7 +121,11 @@ function file_size
 function usage() {
     echo -e "Dropbox Uploader v$VERSION"
     echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
-    echo -e "Usage: $0 COMMAND [PARAMETERS]..."
+    echo -e "Usage: $0 [OPTIONS] COMMAND [PARAMETERS]..."
+    echo -e "\nOptions:"
+
+    echo -e "\t -c [CONFIG_FILE_LOCATION]"
+
     echo -e "\nCommands:"
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
@@ -462,6 +466,18 @@ function db_list
 ################
 #### SETUP  ####
 ################
+
+#Check if the config file was set in options
+OPTIND=1
+while getopts "c:" OPTION
+do
+  case $OPTION in
+    c)
+      CONFIG_FILE=$OPTARG
+      ;;
+  esac
+done
+shift $(($OPTIND - 1))
 
 #CHECKING FOR AUTH FILE
 if [ -f "$CONFIG_FILE" ]; then
