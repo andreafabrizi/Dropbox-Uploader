@@ -116,6 +116,10 @@ DROPBOX UPLOADER FIRST START:
 CHANGELOG:
 ==========
 
+Version 0.11.3 - 22 Dec 2012:
+- Improved list command (thanks to Robert González)
+- Fixed problem with unicode characters
+
 Version 0.11.2 - 14 Nov 2012:
 - Added a check for the free quota before uploading a file
 - Now the quota informations are displayed in Mb
