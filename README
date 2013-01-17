@@ -33,8 +33,11 @@ Commands:
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
 
- delete   [REMOTE_FILE] 
+ delete   [REMOTE_FILE/REMOTE_DIRECTORY] 
  - Remove a remote file from Dropbox
+
+ mkdir    [REMOTE_DIRECTORY]
+ - Create a remote directory on DropBox
 
  list     <REMOTE_DIRECTORY>
  - List contents of the remote Dropbox folder
@@ -50,6 +53,7 @@ Examples:
     ./dropbox_uploader.sh upload /etc/passwd
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
+    ./dropbox_uploader.sh mkdir /myDir/
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)
 
 
@@ -60,6 +64,7 @@ FreeBSD 8.3
 MacOSX
 Windows/Cygwin
 Raspberry Pi
+QNAP
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
@@ -115,6 +120,11 @@ DROPBOX UPLOADER FIRST START:
 
 CHANGELOG:
 ==========
+
+Version 0.11.4 - 17 Gen 2013
+- Fix for QNAP compatibility (thanks to Fritz Ferstl)
+- Implemented mkdir command (thanks to Joel Maslak)
+- Fix for Solaris compatibility
 
 Version 0.11.3 - 22 Dec 2012:
 - Improved list command (thanks to Robert González)
