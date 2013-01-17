@@ -2,7 +2,7 @@
 #
 # Dropbox Uploader
 #
-# Copyright (C) 2010-2012 Andrea Fabrizi <andrea.fabrizi@gmail.com>
+# Copyright (C) 2010-2013 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,11 +56,12 @@ API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
+API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd"
-VERSION="0.11.3"
+BIN_DEPS="sed basename date grep stat dd printf"
+VERSION="0.11.4"
 
 umask 077
 
@@ -98,18 +99,25 @@ function remove_temp_files
     fi
 }
 
-#Return the file size in bytes
+#Returns the file size in bytes
 # generic GNU Linux: linux-gnu
 # windows cygwin:    cygwin
 # raspberry pi:      linux-gnueabihf
 # macosx:            darwin10.0
 # freebsd:           FreeBSD
+# qnap:              linux-gnueabi
 function file_size
 {
-    #Generic Linux
-    if [ "${OSTYPE:0:5}" == "linux" -o "$OSTYPE" == "cygwin" ]; then
+    #Qnap
+    if [ "$OSTYPE" == "linux-gnueabi" ]; then
+        stat -c "%s" "$1"
+        return
+
+    #Generic Unix
+    elif [ "${OSTYPE:0:5}" == "linux" -o "$OSTYPE" == "cygwin" -o "${OSTYPE:0:7}" == "solaris" ]; then
         stat --format="%s" "$1"
         return
+        
     #BSD or others OS
     else
         stat -f "%z" "$1"
@@ -126,7 +134,8 @@ function usage() {
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
-    echo -e "\t delete   [REMOTE_FILE]"
+    echo -e "\t delete   [REMOTE_FILE/REMOTE_DIR]"
+    echo -e "\t mkdir    [REMOTE_DIR]"
     echo -e "\t list     <REMOTE_DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
@@ -401,6 +410,27 @@ function db_delete
     fi       
 }
 
+#Create a new directory
+#$1 = Remote directory to create
+function db_mkdir
+{
+    local MKDIR_DST=$1
+
+    print " > Creating Directory \"$1\"... "
+    time=$(utime)
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$MKDIR_DST" "$API_MKDIR_URL"
+
+    #Check
+    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+    if [ $? -eq 0 ]; then
+        print "DONE\n"
+    else
+        print "FAILED\n"
+        remove_temp_files
+        exit 1
+    fi
+}
+
 #List remote directory
 #$1 = Remote directory
 function db_list
@@ -669,6 +699,21 @@ case $COMMAND in
         fi
 
         db_delete "$FILE_DST"
+
+    ;;
+
+    mkdir)
+
+        MKDIR_DST=$2
+
+        #Checking MKDIR_DST
+        if [ -z "$MKDIR_DST" ]; then
+            echo -e "Error: Please specify a valid destination directory!"
+            remove_temp_files
+            exit 1
+        fi
+
+        db_mkdir "$MKDIR_DST"
 
     ;;
 
