@@ -108,6 +108,10 @@ function remove_temp_files
 # qnap:              linux-gnueabi
 function file_size
 {
+    if [ -d "$1" ]; then
+	du -bs "$1" | awk '{print $NR}'
+	return
+    fi
     #Qnap
     if [ "$OSTYPE" == "linux-gnueabi" ]; then
         stat -c "%s" "$1"
@@ -708,18 +712,18 @@ case $COMMAND in
             exit 1
         fi
 
-        #Checking file size
-        #FILE_SIZE=$(file_size "$DIR_SRC")
-
-        #Checking the free quota
-        #FREE_QUOTA=$(db_free_quota)
-        #if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
-        #    let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
-        #    echo -e "Error: You have no enough space on your DropBox!"
-        #    echo -e "Free quota: $FREE_MB_QUOTA Mb"
-        #    remove_temp_files
-        #    exit 1
-        #fi
+        #Checking size
+        FILE_SIZE=$(file_size "$DIR_SRC")
+        
+	#Checking the free quota
+        FREE_QUOTA=$(db_free_quota)
+        if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
+            let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
+            echo -e "Error: You have no enough space on your DropBox!"
+            echo -e "Free quota: $FREE_MB_QUOTA Mb"
+            remove_temp_files
+            exit 1
+        fi
 
 
 	db_uploadFolder "$DIR_SRC" "$DIR_DST"
