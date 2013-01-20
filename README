@@ -30,6 +30,9 @@ Commands:
    Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the 
    default curl progression bar is displayed during the upload process.
 
+ uploadR  [LOCAL_DIRECTORY] [REMOTE_DIRECTORY]
+ - Works like upload but uploads recursivly a whoe folder with all its files and subfolders.
+
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
 
