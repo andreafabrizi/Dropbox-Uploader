@@ -164,7 +164,7 @@ done
 #Recursive file upload
 #$1 = Local source directory
 #$2 = Remote desintation directory
-function uploadFolder
+function db_uploadFolder
 {
         local localFolder="$1"
         local remoteFolder="$2"
@@ -173,6 +173,9 @@ function uploadFolder
                 if [ -f "$file" ]
                 then
                         fileName=$(basename "$file")
+		        #Checking file size
+		        FILE_SIZE=$(file_size "$file")
+
 			if [ $FILE_SIZE -gt 157286000 ]; then
 		            #If the file is greater than 150Mb, the chunked_upload API will be used
 		            db_ckupload "$file" "$remoteFolder/$fileName"
@@ -184,7 +187,7 @@ function uploadFolder
                         then
                                 folderName=$(basename "$file")
                                 db_mkdir "$remoteFolder/$folderName"
-                                uploadFolder "$file" "$remoteFolder/$folderName"
+                                db_uploadFolder "$file" "$remoteFolder/$folderName"
                         else
                                 echo "Ignoring $file"
                         fi
@@ -699,7 +702,7 @@ case $COMMAND in
         DIR_DST=$3
 
         #Checking DIR_SRC
-        if [ ! -f "$DIR_SRC" ]; then
+        if [ ! -d "$DIR_SRC" ]; then
             echo -e "Error: Please specify a valid source directory!"
             remove_temp_files
             exit 1
@@ -719,13 +722,7 @@ case $COMMAND in
         #fi
 
 
-
-        if [ $FILE_SIZE -gt 157286000 ]; then
-            #If the file is greater than 150Mb, the chunked_upload API will be used
-            db_ckupload "$FILE_SRC" "$FILE_DST"
-        else
-            db_upload "$FILE_SRC" "$FILE_DST"
-        fi
+	db_uploadFolder "$DIR_SRC" "$DIR_DST"
 
     ;;
 
