@@ -57,6 +57,7 @@ API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
+API_SHARES_URL="https://api.dropbox.com/1/shares"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
@@ -139,6 +140,7 @@ function usage() {
     echo -e "\t list     <REMOTE_DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
+    echo -e "\t share [REMOTE_FILE]"
     
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -488,6 +490,27 @@ function db_list
         exit 1
     fi
 }
+#Share remote file
+#$1 = Remote file
+function db_share
+{
+    local FILE_DST=$1
+        
+    time=$(utime)
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false"
+   
+    #Check
+    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+    if [ $? -eq 0 ]; then
+
+        echo $(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+        
+    else    
+        print "FAILED\n"
+        remove_temp_files
+        exit 1
+    fi
+}
 
 ################
 #### SETUP  ####
@@ -678,6 +701,21 @@ case $COMMAND in
         fi
         
         db_download "$FILE_SRC" "$FILE_DST"
+        
+    ;;
+
+    share)
+
+        FILE_DST=$2
+        
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            echo -e "Error: Please specify a valid dest file!"
+            remove_temp_files
+            exit 1
+        fi
+        
+        db_share "$FILE_DST"
         
     ;;
         

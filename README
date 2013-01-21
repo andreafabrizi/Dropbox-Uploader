@@ -48,6 +48,9 @@ Commands:
  unlink
  - Unlink this script from your Dropbox account
 
+ share [REMOTE_FILE]
+ - Get a public share link for the specified file
+
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload /etc/passwd
@@ -55,6 +58,7 @@ Examples:
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)
+    ./dropbox_uploader.sh share "My File.txt"
 
 
 TESTED ENVIRONMENTS:
