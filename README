@@ -23,12 +23,8 @@ Commands:
 
  upload   [LOCAL_FILE]  <REMOTE_FILE> 
  - Upload local file to remote Dropbox folder
-   If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); in this case,
-   if VERBOSE is set to 1, a . (dot) is printed when every chunk is successfully uploaded. Instead, if an
-   error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum
-   of three times.
-   Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the 
-   default curl progression bar is displayed during the upload process.
+   If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); in this case, if VERBOSE is set to 1, a . (dot) is printed when every chunk is successfully uploaded. Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum of three times.
+   Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the default curl progression bar is displayed during the upload process.
 
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
@@ -41,15 +37,15 @@ Commands:
 
  list     <REMOTE_DIRECTORY>
  - List contents of the remote Dropbox folder
+
+ share [REMOTE_FILE]
+ - Get a public share link for the specified file
  
  info          
  - Print some info about your Dropbox account
 
  unlink
  - Unlink this script from your Dropbox account
-
- share [REMOTE_FILE]
- - Get a public share link for the specified file
 
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
@@ -124,6 +120,9 @@ DROPBOX UPLOADER FIRST START:
 
 CHANGELOG:
 ==========
+
+Version 0.11.5 - 22 Gen 2013
+- Added the ability to get a share link for a specified file (thanks to camspiers)
 
 Version 0.11.4 - 17 Gen 2013
 - Fix for QNAP compatibility (thanks to Fritz Ferstl)
