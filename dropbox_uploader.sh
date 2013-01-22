@@ -138,9 +138,9 @@ function usage() {
     echo -e "\t delete   [REMOTE_FILE/REMOTE_DIR]"
     echo -e "\t mkdir    [REMOTE_DIR]"
     echo -e "\t list     <REMOTE_DIR>"
+    echo -e "\t share    [REMOTE_FILE]"
     echo -e "\t info"
     echo -e "\t unlink"
-    echo -e "\t share [REMOTE_FILE]"
     
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -490,6 +490,7 @@ function db_list
         exit 1
     fi
 }
+
 #Share remote file
 #$1 = Remote file
 function db_share
@@ -502,9 +503,7 @@ function db_share
     #Check
     grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
     if [ $? -eq 0 ]; then
-
         echo $(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
-        
     else    
         print "FAILED\n"
         remove_temp_files
