@@ -23,8 +23,8 @@ Commands:
 
  upload   [LOCAL_FILE]  <REMOTE_FILE> 
  - Upload local file to remote Dropbox folder
-   If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); in this case, if VERBOSE is set to 1, a . (dot) is printed when every chunk is successfully uploaded. Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum of three times.
-   Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the default curl progression bar is displayed during the upload process.
+   If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); in this case, if VERBOSE is set to 1, a . (dot) is printed for every chunk successfully uploaded. Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum of three times.
+   Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the default curl progress bar is displayed during the upload process.
 
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
