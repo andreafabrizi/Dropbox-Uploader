@@ -109,6 +109,10 @@ function remove_temp_files
 # qnap:              linux-gnueabi
 function file_size
 {
+    if [ -d "$1" ]; then
+	du -bs "$1" | awk '{print $NR}'
+	return
+    fi
     #Qnap
     if [ "$OSTYPE" == "linux-gnueabi" ]; then
         stat -c "%s" "$1"
@@ -134,6 +138,7 @@ function usage() {
     echo -e "\nCommands:"
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
+    echo -e "\t uploadR [LOCAL_FILE] <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
     echo -e "\t delete   [REMOTE_FILE/REMOTE_DIR]"
     echo -e "\t mkdir    [REMOTE_DIR]"
@@ -161,6 +166,42 @@ for i in $BIN_DEPS; do
         exit 1
     fi
 done
+
+#Recursive file upload
+#$1 = Local source directory
+#$2 = Remote desintation directory
+function db_uploadFolder
+{
+        local localFolder="$1"
+        local remoteFolder="$2"
+
+        for file in "$localFolder"/*; do
+                if [ -f "$file" ]
+                then
+                        fileName=$(basename "$file")
+		        #Checking file size
+		        FILE_SIZE=$(file_size "$file")
+
+			if [ $FILE_SIZE -gt 157286000 ]; then
+		            #If the file is greater than 150Mb, the chunked_upload API will be used
+		            db_ckupload "$file" "$remoteFolder/$fileName"
+		        else
+		            db_upload "$file" "$remoteFolder/$fileName"
+		        fi
+                else
+                        if [ -d "$file" ]
+                        then
+                                folderName=$(basename "$file")
+                                db_mkdir "$remoteFolder/$folderName"
+                                db_uploadFolder "$file" "$remoteFolder/$folderName"
+                        else
+                                echo "Ignoring $file"
+                        fi
+                fi
+        done
+
+}
+
 
 #Simple file upload
 #$1 = Local source file
@@ -680,6 +721,35 @@ case $COMMAND in
             db_upload "$FILE_SRC" "$FILE_DST"
         fi
         
+    ;;
+
+    uploadR)
+        DIR_SRC=$2
+        DIR_DST=$3
+
+        #Checking DIR_SRC
+        if [ ! -d "$DIR_SRC" ]; then
+            echo -e "Error: Please specify a valid source directory!"
+            remove_temp_files
+            exit 1
+        fi
+
+        #Checking size
+        FILE_SIZE=$(file_size "$DIR_SRC")
+        
+	#Checking the free quota
+        FREE_QUOTA=$(db_free_quota)
+        if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
+            let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
+            echo -e "Error: You have no enough space on your DropBox!"
+            echo -e "Free quota: $FREE_MB_QUOTA Mb"
+            remove_temp_files
+            exit 1
+        fi
+
+
+	db_uploadFolder "$DIR_SRC" "$DIR_DST"
+
     ;;
 
     download)

@@ -26,6 +26,9 @@ Commands:
    If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); in this case, if VERBOSE is set to 1, a . (dot) is printed for every chunk successfully uploaded. Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload is retried for a maximum of three times.
    Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set to 1 the default curl progress bar is displayed during the upload process.
 
+ uploadR  [LOCAL_DIRECTORY] [REMOTE_DIRECTORY]
+ - Works like upload but uploads recursivly a whoe folder with all its files and subfolders.
+
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
 
