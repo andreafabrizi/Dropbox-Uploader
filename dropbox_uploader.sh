@@ -515,8 +515,18 @@ function db_share
 #### SETUP  ####
 ################
 
+#CHECK FOR ENV VAR
+if [ "$DROPBOX_UPLOADER" ]; then
+    read -a PREFS <<<$DROPBOX_UPLOADER
+    APPKEY=${PREFS[0]}
+    APPSECRET=${PREFS[1]}
+    ACCESS_LEVEL=${PREFS[2]}
+    OAUTH_ACCESS_TOKEN=${PREFS[3]}
+    OAUTH_ACCESS_TOKEN_SECRET=${PREFS[4]}
+
+
 #CHECKING FOR AUTH FILE
-if [ -f "$CONFIG_FILE" ]; then
+elif [ -f "$CONFIG_FILE" ]; then
       
     #Loading data...
     APPKEY=$(sed -n 's/APPKEY:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
