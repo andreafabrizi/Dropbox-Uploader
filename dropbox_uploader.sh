@@ -77,6 +77,24 @@ if [ $DEBUG -ne 0 ]; then
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
 
+# look for optional config file parameter
+while getopts ":f:" opt; do
+    case $opt in
+    f)
+      CONFIG_FILE=$OPTARG
+      shift $((OPTIND-1))
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
 #Print verbose information depends on $VERBOSE variable
 function print
 {
