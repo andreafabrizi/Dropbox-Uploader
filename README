@@ -47,6 +47,11 @@ Commands:
  unlink
  - Unlink this script from your Dropbox account
 
+
+Optional parameters:
+ -f [FILENAME]
+    Load the configuration file from a specific file
+
 Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload /etc/passwd
@@ -120,6 +125,9 @@ DROPBOX UPLOADER FIRST START:
 
 CHANGELOG:
 ==========
+
+Version 0.11.6 - 15 Mar 2013
+- Add optional command-line parameter ('-f') to read dropbox configuration from a specific file (thanks to pjv)
 
 Version 0.11.5 - 22 Gen 2013
 - Added the ability to get a share link for a specified file (thanks to camspiers)
