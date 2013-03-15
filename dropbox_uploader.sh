@@ -62,7 +62,7 @@ APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd printf"
-VERSION="0.11.5"
+VERSION="0.11.6"
 
 umask 077
 
@@ -77,21 +77,25 @@ if [ $DEBUG -ne 0 ]; then
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
 
-# look for optional config file parameter
+#Look for optional config file parameter
 while getopts ":f:" opt; do
     case $opt in
+
     f)
       CONFIG_FILE=$OPTARG
       shift $((OPTIND-1))
-      ;;
+    ;;
+
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
-      ;;
+    ;;
+
     :)
       echo "Option -$OPTARG requires an argument." >&2
       exit 1
-      ;;
+    ;;
+
   esac
 done
 
@@ -354,7 +358,7 @@ function db_download
          
 }
 
-#Pints account info
+#Prints account info
 function db_account_info
 {    
     print "Dropbox Uploader v$VERSION\n\n"
