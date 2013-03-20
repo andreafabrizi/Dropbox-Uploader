@@ -29,6 +29,9 @@ Commands:
  download [REMOTE_FILE] <LOCAL_FILE>  
  - Download file from Dropbox to local folder
 
+ downloaddir [REMOTE_DIRECTORY] [LOCAL_DIRECTORY]  
+ - Download directory from Dropbox to local folder recursively
+
  delete   [REMOTE_FILE/REMOTE_DIRECTORY] 
  - Remove a remote file from Dropbox
 
@@ -56,6 +59,7 @@ Examples:
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload /etc/passwd
     ./dropbox_uploader.sh download /backup.zip
+    ./dropbox_uploader.sh downloaddir /myDir/ /myLocalDir/
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)

@@ -62,7 +62,7 @@ APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd printf"
-VERSION="0.11.6"
+VERSION="0.11.8"
 
 umask 077
 
@@ -157,6 +157,7 @@ function usage() {
     
     echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
     echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
+    echo -e "\t downloaddir [REMOTE_DIR] [LOCAL_DIR]"
     echo -e "\t delete   [REMOTE_FILE/REMOTE_DIR]"
     echo -e "\t mkdir    [REMOTE_DIR]"
     echo -e "\t list     <REMOTE_DIR>"
@@ -356,6 +357,51 @@ function db_download
         exit 1
     fi
          
+}
+
+#Download remote directory/file recursively
+#$1 = Remote directory
+#$2 = Local destination 
+
+function db_downloaddir
+{
+    dirs_array=($1)
+    files_array=()
+    i=0
+    while [ $i -lt ${#dirs_array[@]} ]
+    do
+        dir=${dirs_array[$i]}
+        db_list $dir > /dev/null
+        if [ $? -eq 0 ]; then
+            while read -r line; do
+
+                local FILE=${line%:*}
+                FILE=${FILE##*/}
+                local TYPE=${line#*:}
+
+                if [ "$TYPE" == "false" ]; then
+                    files_array+=("$dir$FILE")
+                else
+                    dirs_array+=("$dir$FILE/")
+                fi
+            done < $RESPONSE_FILE
+        else
+            print "FAILED\n"
+            remove_temp_files
+            exit 1
+        fi
+    let i++
+    done
+
+    for file in "${files_array[@]}"
+    do
+        file_dst="$2$file"
+        dir_dst=${file_dst%/*}
+        if [ ! -d "$dir_dst" ]; then
+            mkdir -p "$dir_dst"
+        fi
+        db_download "$file" "$file_dst"
+    done
 }
 
 #Prints account info
@@ -723,6 +769,29 @@ case $COMMAND in
         
         db_download "$FILE_SRC" "$FILE_DST"
         
+    ;;
+
+    downloaddir)
+
+        FILE_SRC=$2
+        FILE_DST=$3
+
+        #Checking FILE_SRC
+        if [ -z "$FILE_SRC" ]; then
+            echo -e "Error: Please specify a valid source directory!"
+            remove_temp_files
+            exit 1
+        fi
+
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            echo -e "Error: Please specify a valid dest directory!"
+            remove_temp_files
+            exit 1
+        fi
+
+        db_downloaddir "$FILE_SRC" "$FILE_DST"
+
     ;;
 
     share)
