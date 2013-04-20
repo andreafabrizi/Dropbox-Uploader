@@ -99,6 +99,25 @@ while getopts ":f:" opt; do
   esac
 done
 
+#Encode special chars for curl
+#Shamelessly borrowed from http://stackoverflow.com/questions/296536/urlencode-from-a-bash-script
+rawurlencode() {
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"    # You can either set a return variable (FASTER) 
+  REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
+}
+
 #Print verbose information depends on $VERBOSE variable
 function print
 {
@@ -329,7 +348,7 @@ function db_free_quota()
 #$2 = Local destination file  
 function db_download
 {
-    local FILE_SRC=$1
+    local FILE_SRC=$(rawurlencode "$1")
     local FILE_DST=$2
     
     #Show the progress bar during the file download
