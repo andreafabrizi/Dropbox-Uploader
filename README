@@ -1,6 +1,7 @@
-Author: Andrea Fabrizi
-Email:  andrea.fabrizi@gmail.com
-Web:    http://www.andreafabrizi.it
+Author:  Andrea Fabrizi
+Email:   andrea.fabrizi@gmail.com
+Web:     http://www.andreafabrizi.it
+Twitter: @andreaf83
 
 Dropbox Uploader is a BASH script which can be used to upload, download, delete or list files from Dropbox, an online file sharing, synchronization and backup service. 
 
@@ -70,6 +71,7 @@ MacOSX
 Windows/Cygwin
 Raspberry Pi
 QNAP
+iOS
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
@@ -125,6 +127,10 @@ DROPBOX UPLOADER FIRST START:
 
 CHANGELOG:
 ==========
+
+Version 0.11.7 - 23 Apr 2013
+- Fixed issue with special chars
+- Fix for iOS
 
 Version 0.11.6 - 15 Mar 2013
 - Add optional command-line parameter ('-f') to read dropbox configuration from a specific file (thanks to pjv)

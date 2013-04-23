@@ -62,7 +62,7 @@ APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd printf"
-VERSION="0.11.6"
+VERSION="0.11.7"
 
 umask 077
 
@@ -129,6 +129,7 @@ function remove_temp_files
 # macosx:            darwin10.0
 # freebsd:           FreeBSD
 # qnap:              linux-gnueabi
+# iOS:               darwin9
 function file_size
 {
     #Qnap
@@ -137,7 +138,7 @@ function file_size
         return
 
     #Generic Unix
-    elif [ "${OSTYPE:0:5}" == "linux" -o "$OSTYPE" == "cygwin" -o "${OSTYPE:0:7}" == "solaris" ]; then
+    elif [ "${OSTYPE:0:5}" == "linux" -o "$OSTYPE" == "cygwin" -o "${OSTYPE:0:7}" == "solaris" -o "${OSTYPE}" == "darwin9" ]; then
         stat --format="%s" "$1"
         return
         
@@ -183,6 +184,21 @@ for i in $BIN_DEPS; do
         exit 1
     fi
 done
+
+#Urlencode
+function urlencode 
+{
+    local data
+
+    data=$($CURL_BIN -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "")
+    
+    if [ $? != 3 ]; then
+        echo "Urlencode: Unexpected error"
+        exit 1
+    fi
+    
+    echo "${data##/?}"
+}
 
 #Simple file upload
 #$1 = Local source file
@@ -697,9 +713,9 @@ case $COMMAND in
         
         if [ $FILE_SIZE -gt 157286000 ]; then
             #If the file is greater than 150Mb, the chunked_upload API will be used
-            db_ckupload "$FILE_SRC" "$FILE_DST"
+            db_ckupload "$FILE_SRC" $(urlencode "$FILE_DST")
         else
-            db_upload "$FILE_SRC" "$FILE_DST"
+            db_upload "$FILE_SRC" $(urlencode "$FILE_DST")
         fi
         
     ;;
@@ -721,7 +737,7 @@ case $COMMAND in
             FILE_DST=$(basename "$FILE_SRC")
         fi
         
-        db_download "$FILE_SRC" "$FILE_DST"
+        db_download $(urlencode "$FILE_SRC") "$FILE_DST"
         
     ;;
 
@@ -736,7 +752,7 @@ case $COMMAND in
             exit 1
         fi
         
-        db_share "$FILE_DST"
+        db_share $(urlencode "$FILE_DST")
         
     ;;
         
@@ -757,7 +773,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_delete "$FILE_DST"
+        db_delete $(urlencode "$FILE_DST")
 
     ;;
 
@@ -772,7 +788,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_mkdir "$MKDIR_DST"
+        db_mkdir $(urlencode "$MKDIR_DST")
 
     ;;
 
