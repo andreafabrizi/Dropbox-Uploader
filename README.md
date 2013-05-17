@@ -127,7 +127,6 @@ You need to install these packages:
    
 
 ## Getting started
-=============================
 
 The first time you use Dropbox Uploader, you have to run these commands:
 
