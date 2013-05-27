@@ -582,8 +582,8 @@ else
     echo -ne "\n If you haven't already done, click \"Create an App\" and fill in the\n"
     echo -ne " form with the following data:\n\n"
     echo -ne "  App name: MyUploader$RANDOM$RANDOM\n"
-    echo -ne "  Description: What do you want...\n"
-    echo -ne "  Access level: App folder or Full Dropbox\n\n"
+    echo -ne "  App type: Core\n"
+    echo -ne "  Permission type: App folder or Full Dropbox\n\n"
     echo -ne " Now, click on the \"Create\" button.\n\n"
     
     echo -ne " When your new App is successfully created, please type the\n"
