@@ -186,18 +186,22 @@ for i in $BIN_DEPS; do
 done
 
 #Urlencode
-function urlencode 
+function urlencode
 {
-    local data
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
 
-    data=$($CURL_BIN -s -o /dev/null -w %{url_effective} --get --data-urlencode "$1" "")
-    
-    if [ $? != 3 ]; then
-        echo "Urlencode: Unexpected error"
-        exit 1
-    fi
-    
-    echo "${data##/?}"
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+
+  echo "$encoded"
 }
 
 #Simple file upload
@@ -205,8 +209,8 @@ function urlencode
 #$2 = Remote destination file
 function db_upload
 {
-    local FILE_SRC=$1
-    local FILE_DST=$2
+    local FILE_SRC="$1"
+    local FILE_DST=$(urlencode "$2")
     
     #Show the progress bar during the file upload
     if [ $VERBOSE -eq 1 ]; then
@@ -236,8 +240,8 @@ function db_upload
 #$2 = Remote destination file  
 function db_ckupload
 {
-    local FILE_SRC=$1
-    local FILE_DST=$2
+    local FILE_SRC="$1"
+    local FILE_DST=$(urlencode "$2")
     
     print " > Uploading \"$FILE_SRC\" to \"$2\""  
 
@@ -345,7 +349,7 @@ function db_free_quota()
 #$2 = Local destination file  
 function db_download
 {
-    local FILE_SRC=$1
+    local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
     
     #Show the progress bar during the file download
@@ -433,7 +437,7 @@ function db_unlink
 #$1 = Remote file to delete
 function db_delete
 {
-    local FILE_DST=$1
+    local FILE_DST=$(urlencode "$1")
        
     print " > Deleting \"$1\"... "  
     time=$(utime)
@@ -454,7 +458,7 @@ function db_delete
 #$1 = Remote directory to create
 function db_mkdir
 {
-    local MKDIR_DST=$1
+    local MKDIR_DST=$(urlencode "$1")
 
     print " > Creating Directory \"$1\"... "
     time=$(utime)
@@ -533,7 +537,7 @@ function db_list
 #$1 = Remote file
 function db_share
 {
-    local FILE_DST=$1
+    local FILE_DST=$(urlencode "$1")
         
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false"
@@ -711,9 +715,9 @@ case $COMMAND in
         
         if [ $FILE_SIZE -gt 157286000 ]; then
             #If the file is greater than 150Mb, the chunked_upload API will be used
-            db_ckupload "$FILE_SRC" $(urlencode "$FILE_DST")
+            db_ckupload "$FILE_SRC" "$FILE_DST"
         else
-            db_upload "$FILE_SRC" $(urlencode "$FILE_DST")
+            db_upload "$FILE_SRC" "$FILE_DST"
         fi
         
     ;;
@@ -735,7 +739,7 @@ case $COMMAND in
             FILE_DST=$(basename "$FILE_SRC")
         fi
         
-        db_download $(urlencode "$FILE_SRC") "$FILE_DST"
+        db_download "$FILE_SRC" "$FILE_DST"
         
     ;;
 
@@ -750,7 +754,7 @@ case $COMMAND in
             exit 1
         fi
         
-        db_share $(urlencode "$FILE_DST")
+        db_share "$FILE_DST"
         
     ;;
         
@@ -771,7 +775,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_delete $(urlencode "$FILE_DST")
+        db_delete "$FILE_DST"
 
     ;;
 
@@ -786,7 +790,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_mkdir $(urlencode "$MKDIR_DST")
+        db_mkdir "$MKDIR_DST"
 
     ;;
 
