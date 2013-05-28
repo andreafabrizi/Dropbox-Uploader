@@ -556,12 +556,10 @@ function db_share
 #CHECKING FOR AUTH FILE
 if [ -f "$CONFIG_FILE" ]; then
       
-    #Loading data...
-    APPKEY=$(sed -n 's/APPKEY:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    APPSECRET=$(sed -n 's/APPSECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    ACCESS_LEVEL=$(sed -n 's/ACCESS_LEVEL:\([A-Z]*\)/\1/p' "$CONFIG_FILE")
-    OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/OAUTH_ACCESS_TOKEN_SECRET:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
-    OAUTH_ACCESS_TOKEN=$(sed -n 's/OAUTH_ACCESS_TOKEN:\([a-z A-Z 0-9]*\)/\1/p' "$CONFIG_FILE")
+    #Loading data... and change old format config if necesary.
+    source "$CONFIG_FILE" 2>/dev/null || {
+        sed -i 's/:/=/' "$CONFIG_FILE" && source "$CONFIG_FILE" 2>/dev/null
+    }
     
     #Checking the loaded data
     if [ -z "$APPKEY" -o -z "$APPSECRET" -o -z "$OAUTH_ACCESS_TOKEN_SECRET" -o -z "$OAUTH_ACCESS_TOKEN" ]; then
@@ -584,8 +582,8 @@ else
     echo -ne "\n If you haven't already done, click \"Create an App\" and fill in the\n"
     echo -ne " form with the following data:\n\n"
     echo -ne "  App name: MyUploader$RANDOM$RANDOM\n"
-    echo -ne "  Description: What do you want...\n"
-    echo -ne "  Access level: App folder or Full Dropbox\n\n"
+    echo -ne "  App type: Core\n"
+    echo -ne "  Permission type: App folder or Full Dropbox\n\n"
     echo -ne " Now, click on the \"Create\" button.\n\n"
     
     echo -ne " When your new App is successfully created, please type the\n"
@@ -653,12 +651,12 @@ else
         if [ -n "$OAUTH_ACCESS_TOKEN" -a -n "$OAUTH_ACCESS_TOKEN_SECRET" -a -n "$OAUTH_ACCESS_UID" ]; then
             echo -ne "OK\n"
             
-            #Saving data
-            echo "APPKEY:$APPKEY" > "$CONFIG_FILE"
-            echo "APPSECRET:$APPSECRET" >> "$CONFIG_FILE"
-            echo "ACCESS_LEVEL:$ACCESS_LEVEL" >> "$CONFIG_FILE"
-            echo "OAUTH_ACCESS_TOKEN:$OAUTH_ACCESS_TOKEN" >> "$CONFIG_FILE"
-            echo "OAUTH_ACCESS_TOKEN_SECRET:$OAUTH_ACCESS_TOKEN_SECRET" >> "$CONFIG_FILE"
+            #Saving data in new format, compatible with source command.
+            echo "APPKEY=$APPKEY" > "$CONFIG_FILE"
+            echo "APPSECRET=$APPSECRET" >> "$CONFIG_FILE"
+            echo "ACCESS_LEVEL=$ACCESS_LEVEL" >> "$CONFIG_FILE"
+            echo "OAUTH_ACCESS_TOKEN=$OAUTH_ACCESS_TOKEN" >> "$CONFIG_FILE"
+            echo "OAUTH_ACCESS_TOKEN_SECRET=$OAUTH_ACCESS_TOKEN_SECRET" >> "$CONFIG_FILE"
             
             echo -ne "\n Setup completed!\n"
             break
