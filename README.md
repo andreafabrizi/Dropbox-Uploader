@@ -10,6 +10,8 @@ It's written in BASH scripting language and only needs **cURL**.
 * **Portable:** It's written in BASH scripting language and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
 * **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API for authentication process. 
 
+Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project.
+
 ## Usage
 
 The syntax is quite simple:
