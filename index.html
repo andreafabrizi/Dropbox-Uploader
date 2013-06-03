@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Dropbox-uploader : Dropbox Uploader is a BASH script which can be used to upload, download, list or delete files from Dropbox, an online file sharing, synchronization and backup service." />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Dropbox-uploader</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/andreafabrizi/Dropbox-Uploader">View on GitHub</a>
+
+          <h1 id="project_title">Dropbox-uploader</h1>
+          <h2 id="project_tagline">Dropbox Uploader is a BASH script which can be used to upload, download, list or delete files from Dropbox, an online file sharing, synchronization and backup service.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/andreafabrizi/Dropbox-Uploader/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/andreafabrizi/Dropbox-Uploader/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="dropbox-uploader" class="anchor" href="#dropbox-uploader"><span class="octicon octicon-link"></span></a>Dropbox Uploader</h1>
+
+<p>Dropbox Uploader is a <strong>BASH</strong> script which can be used to upload, download, delete 
+or list files from <strong>Dropbox</strong>, an online file sharing, synchronization and backup service. </p>
+
+<p>It's written in BASH scripting language and only needs <strong>cURL</strong>.</p>
+
+<p><strong>Why use this script?</strong></p>
+
+<ul>
+<li>
+<strong>Portable:</strong> It's written in BASH scripting language and only needs <em>cURL</em> (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).</li>
+<li>
+<strong>Secure:</strong> It's not required to provide your username/password to this script, because it uses the official Dropbox API for authentication process. </li>
+</ul><h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>The syntax is quite simple:</p>
+
+<pre><code>./dropbox_uploader.sh COMMAND [PARAMETERS]...
+
+[%%]: Required param 
+&lt;%%&gt;: Optional param
+</code></pre>
+
+<p><strong>Available commands:</strong></p>
+
+<ul>
+<li><p><strong>upload</strong> [LOCAL_FILE]  &lt;REMOTE_FILE&gt;<br>
+Upload a local file to remote Dropbox folder
+If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); 
+in this case, if VERBOSE is set to 1, a . (dot) is printed for every chunk successfully uploaded. 
+Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload 
+is retried for a maximum of three times.
+Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set 
+to 1 the default curl progress bar is displayed during the upload process.</p></li>
+<li><p><strong>download</strong> [REMOTE_FILE] &lt;LOCAL_FILE&gt;<br>
+Download file from Dropbox to local folder</p></li>
+<li><p><strong>delete</strong> [REMOTE_FILE/REMOTE_DIRECTORY]<br>
+Remove a remote file from Dropbox</p></li>
+<li><p><strong>mkdir</strong> [REMOTE_DIRECTORY]<br>
+Create a remote directory on DropBox</p></li>
+<li><p><strong>list</strong> &lt;REMOTE_DIRECTORY&gt;<br>
+List contents of the remote Dropbox folder</p></li>
+<li><p><strong>share</strong> [REMOTE_FILE]<br>
+Get a public share link for the specified file</p></li>
+<li><p><strong>info</strong><br>
+Print some info about your Dropbox account</p></li>
+<li><p><strong>unlink</strong><br>
+Unlink this script from your Dropbox account</p></li>
+</ul><p><strong>Optional parameters:</strong>  </p>
+
+<ul>
+<li>
+<strong>-f [FILENAME]</strong><br>
+Load the configuration file from a specific file</li>
+</ul><p><strong>Examples:</strong></p>
+
+<div class="highlight"><pre>    ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
+    ./dropbox_uploader.sh upload /etc/passwd
+    ./dropbox_uploader.sh download /backup.zip
+    ./dropbox_uploader.sh delete /backup.zip
+    ./dropbox_uploader.sh mkdir /myDir/
+    ./dropbox_uploader.sh upload <span class="s2">"My File.txt"</span> <span class="s2">"My File 2.txt"</span>   <span class="o">(</span>File name with spaces...<span class="o">)</span>
+    ./dropbox_uploader.sh share <span class="s2">"My File.txt"</span>
+</pre></div>
+
+<h2>
+<a name="tested-environments" class="anchor" href="#tested-environments"><span class="octicon octicon-link"></span></a>Tested Environments</h2>
+
+<ul>
+<li>GNU Linux</li>
+<li>FreeBSD 8.3</li>
+<li>MacOSX</li>
+<li>Windows/Cygwin</li>
+<li>Raspberry Pi</li>
+<li>QNAP</li>
+<li>iOS</li>
+<li>OpenWRT</li>
+</ul><p>If you have successfully tested this script on others systems or platforms please let me know!</p>
+
+<h2>
+<a name="how-to-setup-a-proxy" class="anchor" href="#how-to-setup-a-proxy"><span class="octicon octicon-link"></span></a>How to setup a proxy</h2>
+
+<p>To use a proxy server, just set the <strong>https_proxy</strong> environment variable:</p>
+
+<p><strong>Linux:</strong></p>
+
+<div class="highlight"><pre>    <span class="nb">export </span><span class="nv">HTTP_PROXY_USER</span><span class="o">=</span>XXXX
+    <span class="nb">export </span><span class="nv">HTTP_PROXY_PASSWORD</span><span class="o">=</span>YYYY
+    <span class="nb">export </span><span class="nv">https_proxy</span><span class="o">=</span>http://192.168.0.1:8080
+</pre></div>
+
+<p><strong>BSD:</strong></p>
+
+<div class="highlight"><pre>    setenv HTTP_PROXY_USER XXXX
+    setenv HTTP_PROXY_PASSWORD YYYY
+    setenv https_proxy http://192.168.0.1:8080
+</pre></div>
+
+<h2>
+<a name="bash-and-curl-installation" class="anchor" href="#bash-and-curl-installation"><span class="octicon octicon-link"></span></a>BASH and Curl installation</h2>
+
+<p><strong>Debian &amp; Ubuntu Linux:</strong></p>
+
+<div class="highlight"><pre>    sudo apt-get install bash <span class="o">(</span>Probably BASH is already installed on your system<span class="o">)</span>
+    sudo apt-get install curl
+</pre></div>
+
+<p><strong>BSD:</strong></p>
+
+<div class="highlight"><pre>    <span class="nb">cd</span> /usr/ports/shells/bash <span class="o">&amp;&amp;</span> make install clean
+    <span class="nb">cd</span> /usr/ports/ftp/curl <span class="o">&amp;&amp;</span> make install clean
+</pre></div>
+
+<p><strong>Cygwin:</strong> 
+You need to install these packages:  </p>
+
+<ul>
+<li>curl</li>
+<li>ca-certificates</li>
+</ul><p><strong>Build cURL from source:</strong></p>
+
+<ul>
+<li>Download the source tarball from <a href="http://curl.haxx.se/download.html">http://curl.haxx.se/download.html</a>
+</li>
+<li>Follow the INSTALL instructions</li>
+</ul><h2>
+<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
+
+<p>The first time you use Dropbox Uploader, you have to run these commands:</p>
+
+<div class="highlight"><pre> <span class="nv">$chmod</span> +x dropbox_uploader.sh
+ <span class="nv">$.</span>/dropbox_uploader.sh
+</pre></div>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Dropbox-uploader maintained by <a href="https://github.com/andreafabrizi">andreafabrizi</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
