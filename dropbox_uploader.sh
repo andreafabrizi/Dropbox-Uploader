@@ -133,8 +133,8 @@ function remove_temp_files
 # iOS:               darwin9
 function file_size
 {
-    #Qnap
-    if [ "$OSTYPE" == "linux-gnueabi" ]; then
+    #Some embedded linux devices
+    if [ "$OSTYPE" == "linux-gnueabi" -o "$OSTYPE" == "linux-gnu" ]; then
         stat -c "%s" "$1"
         return
 
