@@ -479,7 +479,6 @@ function db_move
     fi
 }
 
-
 #Create a new directory
 #$1 = Remote directory to create
 function db_mkdir
@@ -811,8 +810,8 @@ case $COMMAND in
         FILE_DEST=$3
 
         #Checking FILE_SRC
-        if [ -z "$FILE_SRC" ]; then
-            echo -e "Error: Please specify a valid source file!"
+        if [ -z "$FILE_SRC" -o -z "$FILE_DEST" ]; then
+            echo -e "Error: Please specify a valid source and destination file!"
             remove_temp_files
             exit 1
         fi
