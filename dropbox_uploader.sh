@@ -356,6 +356,37 @@ function db_chunked_upload_file
     print "\n > DONE\n"
 }
 
+#Directory upload
+#$1 = Local source dir
+#$2 = Remote destination dir
+function db_upload_dir
+{
+    local DIR_SRC="$1"
+    local DIR_DST="$2"
+
+    #Creatig remote directory
+    db_mkdir "$DIR_DST"
+
+    for file in "$DIR_SRC/"*; do
+
+        #It's a file
+        if [ -f "$file" ]; then
+            basefile=$(basename "$file")
+            db_upload_file "$file" "$DIR_DST/$basefile"
+        
+        #It's a directory
+        elif [ -d "$file" ]; then
+            basedir=$(basename "$file")
+            db_upload_dir "$file" "$DIR_DST/$basedir"
+
+        #Unsupported object...
+        else
+            print "Skipping not regular file '$file'"
+        fi
+
+    done
+}
+
 #Returns the free space on DropBox in bytes
 function db_free_quota
 {
@@ -744,19 +775,21 @@ case $COMMAND in
         FILE_SRC=$2
         FILE_DST=$3
 
-        #Checking FILE_SRC
-        if [ ! -f "$FILE_SRC" ]; then
-            echo -e "Error: Please specify a valid source file!"
-            remove_temp_files
-            exit 1
-        fi
-
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
             FILE_DST=/$(basename "$FILE_SRC")
         fi
 
-        db_upload_file "$FILE_SRC" "$FILE_DST"
+        #Checking FILE_SRC
+        if [ -f "$FILE_SRC" ]; then
+            db_upload_file "$FILE_SRC" "$FILE_DST"
+        elif [ -d "$FILE_SRC" ]; then
+            db_upload_dir "$FILE_SRC" "$FILE_DST"
+        else
+            echo -e "Error: Please specify a valid source file or directory!"
+            remove_temp_files
+            exit 1
+        fi
 
     ;;
 
