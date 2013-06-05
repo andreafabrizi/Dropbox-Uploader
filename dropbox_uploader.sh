@@ -151,7 +151,8 @@ function file_size
 }
 
 #USAGE
-function usage() {
+function usage 
+{
     echo -e "Dropbox Uploader v$VERSION"
     echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
@@ -206,10 +207,40 @@ function urlencode
     echo "$encoded"
 }
 
+#Wrapper for file upload
+#Based on the file size, it will call db_simple_upload_file or db_chunked_upload_file
+#$1 = Local source file
+#$2 = Remote destination file
+function db_upload_file
+{
+    local FILE_SRC="$1"
+    local FILE_DST="$2"
+
+    #Checking file size
+    FILE_SIZE=$(file_size "$FILE_SRC")
+
+    #Checking the free quota
+    FREE_QUOTA=$(db_free_quota)
+    if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
+        let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
+        echo -e "Error: You have no enough space on your DropBox!"
+        echo -e "Free quota: $FREE_MB_QUOTA Mb"
+        remove_temp_files
+        exit 1
+    fi
+
+    if [ $FILE_SIZE -gt 157286000 ]; then
+        #If the file is greater than 150Mb, the chunked_upload API will be used
+        db_chunked_upload_file "$FILE_SRC" "$FILE_DST"
+    else
+        db_simple_upload_file "$FILE_SRC" "$FILE_DST"
+    fi
+}
+
 #Simple file upload
 #$1 = Local source file
 #$2 = Remote destination file
-function db_upload
+function db_simple_upload_file
 {
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
@@ -240,7 +271,7 @@ function db_upload
 #Chunked file upload
 #$1 = Local source file
 #$2 = Remote destination file
-function db_ckupload
+function db_chunked_upload_file
 {
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
@@ -326,7 +357,7 @@ function db_ckupload
 }
 
 #Returns the free space on DropBox in bytes
-function db_free_quota()
+function db_free_quota
 {
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL"
@@ -725,25 +756,7 @@ case $COMMAND in
             FILE_DST=/$(basename "$FILE_SRC")
         fi
 
-        #Checking file size
-        FILE_SIZE=$(file_size "$FILE_SRC")
-
-        #Checking the free quota
-        FREE_QUOTA=$(db_free_quota)
-        if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
-            let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
-            echo -e "Error: You have no enough space on your DropBox!"
-            echo -e "Free quota: $FREE_MB_QUOTA Mb"
-            remove_temp_files
-            exit 1
-        fi
-
-        if [ $FILE_SIZE -gt 157286000 ]; then
-            #If the file is greater than 150Mb, the chunked_upload API will be used
-            db_ckupload "$FILE_SRC" "$FILE_DST"
-        else
-            db_upload "$FILE_SRC" "$FILE_DST"
-        fi
+        db_upload_file "$FILE_SRC" "$FILE_DST"
 
     ;;
 
