@@ -62,8 +62,8 @@ API_SHARES_URL="https://api.dropbox.com/1/shares"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd printf"
-VERSION="0.11.7"
+BIN_DEPS="sed basename date grep stat dd printf mkdir"
+VERSION="0.11.8"
 
 umask 077
 
@@ -158,10 +158,10 @@ function usage
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
     echo -e "\nCommands:"
 
-    echo -e "\t upload   [LOCAL_FILE]  <REMOTE_FILE>"
-    echo -e "\t download [REMOTE_FILE] <LOCAL_FILE>"
-    echo -e "\t delete   [REMOTE_FILE/REMOTE_DIR]"
-    echo -e "\t move     [REMOTE_FILE] [NEW_REMOTE_FILE]"
+    echo -e "\t upload   [LOCAL_FILE/DIR]  <REMOTE_FILE/DIR>"
+    echo -e "\t download [REMOTE_FILE/DIR] <LOCAL_FILE/DIR>"
+    echo -e "\t delete   [REMOTE_FILE/DIR]"
+    echo -e "\t move     [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]"
     echo -e "\t mkdir    [REMOTE_DIR]"
     echo -e "\t list     <REMOTE_DIR>"
     echo -e "\t share    [REMOTE_FILE]"
@@ -418,10 +418,95 @@ function db_free_quota
     fi
 }
 
+#Generic download wrapper
+#$1 = Remote source file/dir
+#$2 = Local destination file/dir
+function db_download
+{
+    local SRC="$1"
+    local DST=$2
+
+    #Checking if it's a file or a directory
+    time=$(utime)
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+
+    #Check
+    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
+    if [ $? -eq 0 ]; then
+
+        local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
+
+        #It's a directory
+        if [ ! -z "$IS_DIR" ]; then
+
+            #If the DST folder is not specified, I assume that is the current directory
+            if [ -z "$DST" ]; then
+                DST="."
+            fi
+
+            #Checking if the destination directory exists
+            if [ ! -d "$DST" ]; then
+                echo -e "Error: Please specify a valid destination directory!"
+                remove_temp_files
+                exit 1
+            fi
+
+            local basedir=$(basename "$SRC")
+            print " > Creating local directory \"$DST/$basedir\""
+            mkdir -p "$DST/$basedir"
+
+            #Check
+            if [ $? -eq 0 ]; then
+                print "\n > DONE\n"
+            else
+                print "FAILED\n"
+                remove_temp_files
+                exit 1
+            fi  
+
+            #Extracting directory content [...]
+            #and replacing "}, {" with "}\n{"
+            #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
+            local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+{/g')
+
+            #Extracing files and subfolders
+            TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
+            echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
+
+            #For each line...
+            while read -r line; do
+
+                local FILE=${line%:*}
+                FILE=${FILE##*/}
+                local TYPE=${line#*:}
+
+                if [ "$TYPE" == "false" ]; then
+                    db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
+                else
+                    db_download "$SRC/$FILE" "$DST/$basedir/"                    
+                fi
+                print "\n"
+            done < $TMP_DIR_CONTENT_FILE
+
+            rm -fr $TMP_DIR_CONTENT_FILE
+
+        #It's a file
+        else
+            db_download_file "$SRC" "$DST"
+        fi
+
+    else
+        print "FAILED\n"
+        remove_temp_files
+        exit 1
+    fi
+}
+
 #Simple file download
 #$1 = Remote source file
 #$2 = Local destination file
-function db_download
+function db_download_file
 {
     local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
@@ -814,9 +899,9 @@ case $COMMAND in
         fi
 
         #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
-            FILE_DST=$(basename "$FILE_SRC")
-        fi
+        #if [ -z "$FILE_DST" ]; then
+        #    FILE_DST=$(basename "$FILE_SRC")
+        #fi
 
         db_download "$FILE_SRC" "$FILE_DST"
 
