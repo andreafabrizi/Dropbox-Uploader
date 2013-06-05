@@ -207,8 +207,30 @@ function urlencode
     echo "$encoded"
 }
 
-#Wrapper for file upload
-#Based on the file size, it will call db_simple_upload_file or db_chunked_upload_file
+#Generic upload wrapper around db_upload_file and db_upload_dir functions
+#$1 = Local source file/dir
+#$2 = Remote destination file/dir
+function db_upload
+{
+    local SRC="$1"
+    local DST="$2"
+
+    #It's a file
+    if [ -f "$SRC" ]; then
+        db_upload_file "$SRC" "$DST"
+    
+    #It's a directory
+    elif [ -d "$SRC" ]; then
+        db_upload_dir "$SRC" "$DST"
+
+    #Unsupported object...
+    else
+        print " > Skipping not regular file '$SRC'"
+    fi
+}
+
+#Generic upload wrapper around db_chunked_upload_file and db_simple_upload_file
+#The final upload function will be choosen based on the file size
 #$1 = Local source file
 #$2 = Remote destination file
 function db_upload_file
@@ -369,20 +391,8 @@ function db_upload_dir
 
     for file in "$DIR_SRC/"*; do
 
-        #It's a file
-        if [ -f "$file" ]; then
-            basefile=$(basename "$file")
-            db_upload_file "$file" "$DIR_DST/$basefile"
-        
-        #It's a directory
-        elif [ -d "$file" ]; then
-            basedir=$(basename "$file")
-            db_upload_dir "$file" "$DIR_DST/$basedir"
-
-        #Unsupported object...
-        else
-            print "Skipping not regular file '$file'"
-        fi
+        basefile=$(basename "$file")
+        db_upload "$file" "$DIR_DST/$basefile"
 
     done
 }
@@ -775,21 +785,19 @@ case $COMMAND in
         FILE_SRC=$2
         FILE_DST=$3
 
+        #Checking FILE_SRC
+        if [ ! -f "$FILE_SRC" -a ! -d "$FILE_SRC" ]; then
+            echo -e "Error: Please specify a valid source file or directory!"
+            remove_temp_files
+            exit 1
+        fi
+
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
             FILE_DST=/$(basename "$FILE_SRC")
         fi
 
-        #Checking FILE_SRC
-        if [ -f "$FILE_SRC" ]; then
-            db_upload_file "$FILE_SRC" "$FILE_DST"
-        elif [ -d "$FILE_SRC" ]; then
-            db_upload_dir "$FILE_SRC" "$FILE_DST"
-        else
-            echo -e "Error: Please specify a valid source file or directory!"
-            remove_temp_files
-            exit 1
-        fi
+        db_upload "$FILE_SRC" "$FILE_DST"
 
     ;;
 
