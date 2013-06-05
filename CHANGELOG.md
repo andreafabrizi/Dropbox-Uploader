@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Version 0.11.8 - 05 June 2013
+* Add move/rename function
+* Improved the configuration file management (thanks to Robert G.)
+* Updated strings to reflect the new Dropbox "Create App" page
+* Add support for download directories
+* Add support for upload directories
+
 ## Version 0.11.7 - 23 Apr 2013
 * Fixed issue with special chars
 * Fix for iOS
