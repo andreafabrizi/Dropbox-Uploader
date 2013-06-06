@@ -119,7 +119,7 @@ To use a proxy server, just set the **https_proxy** environment variable:
     cd /usr/ports/ftp/curl && make install clean
 ```
 
-**Cygwin:** 
+**Cygwin:**  
 You need to install these packages:  
 * curl
 * ca-certificates
