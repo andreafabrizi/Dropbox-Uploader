@@ -1,16 +1,15 @@
 # Dropbox Uploader
 
-Dropbox Uploader is a **BASH** script which can be used to upload, download, delete 
-or list files from **Dropbox**, an online file sharing, synchronization and backup service. 
+Dropbox Uploader is a **BASH** script which can be used to upload, download, delete, list files (and more!) from **Dropbox**, an online file sharing, synchronization and backup service. 
 
 It's written in BASH scripting language and only needs **cURL**.
 
 **Why use this script?**
 
-* **Portable:** It's written in BASH scripting language and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
-* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API for authentication process. 
+* **Portable:** It's written in BASH scripting and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
+* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API for the authentication process. 
 
-Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project.
+Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
 ## Usage
 
@@ -25,35 +24,38 @@ The syntax is quite simple:
 
 **Available commands:**
 
-* **upload** [LOCAL_FILE]  &lt;REMOTE_FILE&gt;  
-Upload a local file to remote Dropbox folder
+* **upload** [LOCAL_FILE/DIR] &lt;REMOTE_FILE/DIR&gt;  
+Upload a local file or directory to a remote Dropbox folder.  
 If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); 
 in this case, if VERBOSE is set to 1, a . (dot) is printed for every chunk successfully uploaded. 
-Instead, if an error occurs during the chunk uploading, an * (star) is printed and the upload 
-is retried for a maximum of three times.
+Instead, if an error occurs during the chunk uploading, a * (star) is printed and the upload 
+is retried for a maximum of three times.  
 Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set 
 to 1 the default curl progress bar is displayed during the upload process.
 
-* **download** [REMOTE_FILE] &lt;LOCAL_FILE&gt;  
-Download file from Dropbox to local folder
+* **download** [REMOTE_FILE/DIR] &lt;LOCAL_FILE/DIR&gt;  
+Download file or directory from Dropbox to a local folder
 
-* **delete** [REMOTE_FILE/REMOTE_DIRECTORY]  
-Remove a remote file from Dropbox
+* **delete** [REMOTE_FILE/DIR]  
+Remove a remote file or directory from Dropbox
 
-* **mkdir** [REMOTE_DIRECTORY]  
+* **move** [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]  
+Move o rename a remote file or directory
+
+* **mkdir** [REMOTE_DIR]  
 Create a remote directory on DropBox
 
-* **list** &lt;REMOTE_DIRECTORY&gt;  
-List contents of the remote Dropbox folder
+* **list** &lt;REMOTE_DIR&gt;  
+List the contents of the remote Dropbox folder
 
 * **share** [REMOTE_FILE]  
-Get a public share link for the specified file
+Get a public share link for the specified file or directory
  
 * **info**  
 Print some info about your Dropbox account
 
 * **unlink**  
-Unlink this script from your Dropbox account
+Unlink the script from your Dropbox account
 
 
 **Optional parameters:**  
