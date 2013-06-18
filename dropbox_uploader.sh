@@ -647,9 +647,10 @@ function db_mkdir
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$MKDIR_DST" "$API_MKDIR_URL"
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null; then
         print "DONE\n"
+    elif grep "HTTP/1.1 403 Forbidden" "$RESPONSE_FILE" > /dev/null; then
+        print "ALREADY EXISTS\n"
     else
         print "FAILED\n"
         remove_temp_files
