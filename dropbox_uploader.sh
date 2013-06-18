@@ -168,6 +168,9 @@ function usage
     echo -e "\t info"
     echo -e "\t unlink"
 
+    echo -e "\nOptional parameters:"
+    echo -e "\t-f [FILENAME] Load the configuration file from a specific file"
+
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
     exit 1
