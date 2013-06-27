@@ -893,9 +893,9 @@ case $COMMAND in
         fi
 
         #Checking FILE_DST
-        #if [ -z "$FILE_DST" ]; then
-        #    FILE_DST=$(basename "$FILE_SRC")
-        #fi
+        if [ -z "$FILE_DST" ]; then
+            FILE_DST=$(basename "$FILE_SRC")
+        fi
 
         db_download "$FILE_SRC" "$FILE_DST"
 
