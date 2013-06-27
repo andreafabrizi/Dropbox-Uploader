@@ -62,6 +62,16 @@ Unlink the script from your Dropbox account
 * **-f [FILENAME]**  
 Load the configuration file from a specific file
 
+* **-d**  
+Enable DEBUG mode
+
+* **-q**  
+Quiet mode. Don't show progress meter or messages
+
+* **-k**  
+Doesn't check for SSL certificates (insecure)
+
+
 **Examples:**
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
