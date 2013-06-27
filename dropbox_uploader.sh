@@ -69,7 +69,7 @@ umask 077
 
 #Check the shell
 if [ -z "$BASH_VERSION" ]; then
-    echo -e "Error: this script requires BASH shell!"
+    echo -e "Error: this script requires the BASH shell!"
     exit 1
 fi
 
@@ -449,12 +449,13 @@ function db_download
 
             #Checking if the destination directory exists
             if [ ! -d "$DST" ]; then
-                echo -e "Error: Please specify a valid destination directory!"
+                echo -e "Error: No such file or directory: $DST"
                 remove_temp_files
                 exit 1
             fi
 
             local basedir=$(basename "$SRC")
+            print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
             print " > Creating local directory \"$DST/$basedir\""
             mkdir -p "$DST/$basedir"
 
@@ -500,7 +501,7 @@ function db_download
         fi
 
     else
-        print "FAILED\n"
+        print "Error: No such file or directory: $SRC\n"
         remove_temp_files
         exit 1
     fi
@@ -622,11 +623,11 @@ function db_delete
 function db_move
 {
     local FILE_SRC=$(urlencode "$1")
-    local FILE_DEST=$(urlencode "$2")
+    local FILE_DST=$(urlencode "$2")
 
     print " > Moving \"$1\" to \"$2\" ... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$FILE_SRC&to_path=$FILE_DEST" "$API_MOVE_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$FILE_SRC&to_path=$FILE_DST" "$API_MOVE_URL" 2> /dev/null
 
     #Check
     grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
@@ -643,11 +644,11 @@ function db_move
 #$1 = Remote directory to create
 function db_mkdir
 {
-    local MKDIR_DST=$(urlencode "$1")
+    local DIR_DST=$(urlencode "$1")
 
     print " > Creating Directory \"$1\"... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$MKDIR_DST" "$API_MKDIR_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$DIR_DST" "$API_MKDIR_URL" 2> /dev/null
 
     #Check
     if grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null; then
@@ -876,7 +877,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [ ! -f "$FILE_SRC" -a ! -d "$FILE_SRC" ]; then
-            echo -e "Error: Please specify a valid source file or directory!"
+            echo -e "Error: No such file or directory: $FILE_SRC"
             remove_temp_files
             exit 1
         fi
@@ -897,7 +898,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [ -z "$FILE_SRC" ]; then
-            echo -e "Error: Please specify a valid source file!"
+            echo -e "Error: Please specify the file to download"
             remove_temp_files
             exit 1
         fi
@@ -917,7 +918,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            echo -e "Error: Please specify a valid dest file!"
+            echo -e "Error: Please specify the file to share"
             remove_temp_files
             exit 1
         fi
@@ -938,7 +939,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            echo -e "Error: Please specify a valid destination file!"
+            echo -e "Error: Please specify the file to remove"
             remove_temp_files
             exit 1
         fi
@@ -950,31 +951,38 @@ case $COMMAND in
     move|rename)
 
         FILE_SRC=$2
-        FILE_DEST=$3
+        FILE_DST=$3
 
         #Checking FILE_SRC
-        if [ -z "$FILE_SRC" -o -z "$FILE_DEST" ]; then
-            echo -e "Error: Please specify a valid source and destination file!"
+        if [ -z "$FILE_SRC" ]; then
+            echo -e "Error: Please specify the source file"
             remove_temp_files
             exit 1
         fi
 
-        db_move "$FILE_SRC" "$FILE_DEST"
+        #Checking FILE_DST
+        if [ -z "$FILE_DST" ]; then
+            echo -e "Error: Please specify the destination file"
+            remove_temp_files
+            exit 1
+        fi
+
+        db_move "$FILE_SRC" "$FILE_DST"
 
     ;;
 
     mkdir)
 
-        MKDIR_DST=$2
+        DIR_DST=$2
 
-        #Checking MKDIR_DST
-        if [ -z "$MKDIR_DST" ]; then
-            echo -e "Error: Please specify a valid destination directory!"
+        #Checking DIR_DST
+        if [ -z "$DIR_DST" ]; then
+            echo -e "Error: Please specify the destination directory"
             remove_temp_files
             exit 1
         fi
 
-        db_mkdir "$MKDIR_DST"
+        db_mkdir "$DIR_DST"
 
     ;;
 
