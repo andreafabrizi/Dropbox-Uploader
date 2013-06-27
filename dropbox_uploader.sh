@@ -481,8 +481,13 @@ function db_download
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
+    #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
+    #So we must check if the file exists or if it has been deleted
+    local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+
     #Check
-    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+    grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"
+    if [ $? -eq 0 -a "$IS_DELETED" != "true" ]; then
 
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
 
