@@ -282,8 +282,7 @@ function db_simple_upload_file
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print " > DONE\n"
     else
         print " > FAILED\n"
@@ -326,8 +325,7 @@ function db_chunked_upload_file
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
 
         #Check
-        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-        if [ $? -ne 0 ]; then
+        if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
@@ -357,8 +355,7 @@ function db_chunked_upload_file
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST" 2> /dev/null
 
         #Check
-        grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-        if [ $? -ne 0 ]; then
+        if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
@@ -407,8 +404,7 @@ function db_free_quota
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
         quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
         used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
@@ -434,8 +430,7 @@ function db_download
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
 
@@ -527,8 +522,7 @@ function db_download_file
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print " > DONE\n"
     else
         print " > FAILED\n"
@@ -550,8 +544,7 @@ function db_account_info
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
         name=$(sed -n 's/.*"display_name": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
         echo -e "\nName:\t$name"
@@ -607,8 +600,7 @@ function db_delete
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$FILE_DST" "$API_DELETE_URL" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
         print "FAILED\n"
@@ -630,8 +622,7 @@ function db_move
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$FILE_SRC&to_path=$FILE_DST" "$API_MOVE_URL" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
         print "FAILED\n"
@@ -651,9 +642,9 @@ function db_mkdir
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$DIR_DST" "$API_MKDIR_URL" 2> /dev/null
 
     #Check
-    if grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
-    elif grep "HTTP/1.1 403 Forbidden" "$RESPONSE_FILE" > /dev/null; then
+    elif grep -q "HTTP/1.1 403 Forbidden" "$RESPONSE_FILE"; then
         print "ALREADY EXISTS\n"
     else
         print "FAILED\n"
@@ -673,8 +664,7 @@ function db_list
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
 
@@ -730,8 +720,7 @@ function db_share
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false" 2> /dev/null
 
     #Check
-    grep "HTTP/1.1 200 OK" "$RESPONSE_FILE" > /dev/null
-    if [ $? -eq 0 ]; then
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         echo $(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
     else
         print "FAILED\n"
