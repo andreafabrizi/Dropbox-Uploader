@@ -212,7 +212,6 @@ function check_curl_status
             exit 1
         ;;
     esac
-    
 }
 
 if [ -z "$CURL_BIN" ]; then
@@ -529,13 +528,19 @@ function db_download
                 else
                     db_download "$SRC/$FILE" "$DST/$basedir/"                    
                 fi
-                print "\n"
+
             done < $TMP_DIR_CONTENT_FILE
 
             rm -fr $TMP_DIR_CONTENT_FILE
 
         #It's a file
         else
+
+            #Checking DST
+            if [ -z "$DST" ]; then
+                DST=$(basename "$SRC")
+            fi
+
             db_download_file "$SRC" "$DST"
         fi
 
@@ -575,7 +580,6 @@ function db_download_file
         remove_temp_files
         exit 1
     fi
-
 }
 
 #Prints account info
@@ -617,7 +621,6 @@ function db_account_info
         remove_temp_files
         exit 1
     fi
-
 }
 
 #Account unlink
@@ -939,11 +942,6 @@ case $COMMAND in
             echo -e "Error: Please specify the file to download"
             remove_temp_files
             exit 1
-        fi
-
-        #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
-            FILE_DST=$(basename "$FILE_SRC")
         fi
 
         db_download "$FILE_SRC" "$FILE_DST"
