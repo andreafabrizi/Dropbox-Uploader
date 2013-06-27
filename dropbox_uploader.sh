@@ -35,8 +35,8 @@ CHUNK_SIZE=4
 #Set to 1 to enable DEBUG mode
 DEBUG=0
 
-#Set to 1 to enable VERBOSE mode
-VERBOSE=1
+#Set to 1 to enable QUIET mode
+QUIET=0
 
 #Curl location
 #If not set, curl will be searched into the $PATH
@@ -100,10 +100,10 @@ while getopts ":f:" opt; do
   esac
 done
 
-#Print verbose information depends on $VERBOSE variable
+#Print the message based on $QUIET variable
 function print
 {
-    if [ $VERBOSE -eq 1 ]; then
+    if [ $QUIET -eq 0 ]; then
 	    echo -ne "$1";
     fi
 }
@@ -309,7 +309,7 @@ function db_simple_upload_file
     local FILE_DST=$(urlencode "$2")
 
     #Show the progress bar during the file upload
-    if [ $VERBOSE -eq 1 ]; then
+    if [ $QUIET -eq 0 ]; then
         CURL_PARAMETERS="--progress-bar"
     else
         CURL_PARAMETERS="-s --show-error"
@@ -560,7 +560,7 @@ function db_download_file
     local FILE_DST=$2
 
     #Show the progress bar during the file download
-    if [ $VERBOSE -eq 1 ]; then
+    if [ $QUIET -eq 0 ]; then
         local CURL_PARAMETERS="--progress-bar"
     else
         local CURL_PARAMETERS="-s --show-error"
