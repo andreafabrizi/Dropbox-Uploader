@@ -151,7 +151,7 @@ function file_size
 }
 
 #Usage
-function usage 
+function usage
 {
     echo -e "Dropbox Uploader v$VERSION"
     echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
@@ -185,12 +185,12 @@ function check_curl_status
 
         #OK
         0)
-            return 
+            return
         ;;
 
         #Proxy error
         5)
-            echo ""      
+            echo ""
             echo "Error: Couldn't resolve proxy. The given proxy host could not be resolved."
 
             remove_temp_files
@@ -199,7 +199,7 @@ function check_curl_status
 
         #Missing CA certificates
         60|58)
-            echo ""      
+            echo ""
             echo "Error: cURL is not able to performs peer SSL certificate verification."
             echo "Please, install the default ca-certificates bundle."
             echo "To do this in a Debian/Ubuntu based system, try:"
@@ -259,7 +259,7 @@ function db_upload
     #It's a file
     if [ -f "$SRC" ]; then
         db_upload_file "$SRC" "$DST"
-    
+
     #It's a directory
     elif [ -d "$SRC" ]; then
         db_upload_dir "$SRC" "$DST"
@@ -504,7 +504,7 @@ function db_download
                 print "FAILED\n"
                 remove_temp_files
                 exit 1
-            fi  
+            fi
 
             #Extracting directory content [...]
             #and replacing "}, {" with "}\n{"
@@ -526,7 +526,7 @@ function db_download
                 if [ "$TYPE" == "false" ]; then
                     db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
                 else
-                    db_download "$SRC/$FILE" "$DST/$basedir/"                    
+                    db_download "$SRC/$FILE" "$DST/$basedir/"
                 fi
 
             done < $TMP_DIR_CONTENT_FILE
@@ -771,6 +771,7 @@ function db_share
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print " > Share link: "
         echo $(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
     else
         print "FAILED\n"
@@ -851,7 +852,7 @@ else
     echo -ne "\n > Token request... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL" 2> /dev/null
-    check_curl_status    
+    check_curl_status
     OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
     OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
 
@@ -875,7 +876,7 @@ else
         echo -ne " > Access Token request... "
         time=$(utime)
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL" 2> /dev/null
-        check_curl_status        
+        check_curl_status
         OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_UID=$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
