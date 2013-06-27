@@ -22,28 +22,19 @@
 #Default configuration file
 CONFIG_FILE=~/.dropbox_uploader
 
-#If you are experiencing problems establishing SSL connection with the DropBox
-#server, try to uncomment this option.
-#Note: This option explicitly allows curl to perform "insecure" SSL connections and transfers.
-#CURL_ACCEPT_CERTIFICATES="-k"
-
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
 #Lower values may increase the number of http requests
 CHUNK_SIZE=4
 
-#Set to 1 to enable DEBUG mode
-DEBUG=0
-
-#Set to 1 to enable QUIET mode
-QUIET=0
-
 #Curl location
 #If not set, curl will be searched into the $PATH
 #CURL_BIN="/usr/bin/curl"
 
-#Temporary folder
+#Default values
 TMP_DIR="/tmp"
+DEBUG=0
+QUIET=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -73,17 +64,27 @@ if [ -z "$BASH_VERSION" ]; then
     exit 1
 fi
 
-if [ $DEBUG -ne 0 ]; then
-    set -x
-    RESPONSE_FILE="$TMP_DIR/du_resp_debug"
-fi
-
 #Look for optional config file parameter
-while getopts ":f:" opt; do
+while getopts ":qkdf:" opt; do
     case $opt in
 
     f)
       CONFIG_FILE=$OPTARG
+      shift $((OPTIND-1))
+    ;;
+
+    d)
+      DEBUG=1
+      shift $((OPTIND-1))
+    ;;
+
+    q)
+      QUIET=1
+      shift $((OPTIND-1))
+    ;;
+
+    k)
+      CURL_ACCEPT_CERTIFICATES="-k"
       shift $((OPTIND-1))
     ;;
 
@@ -99,6 +100,11 @@ while getopts ":f:" opt; do
 
   esac
 done
+
+if [ $DEBUG -ne 0 ]; then
+    set -x
+    RESPONSE_FILE="$TMP_DIR/du_resp_debug"
+fi
 
 #Print the message based on $QUIET variable
 function print
@@ -170,6 +176,9 @@ function usage
 
     echo -e "\nOptional parameters:"
     echo -e "\t-f [FILENAME] Load the configuration file from a specific file"
+    echo -e "\t-d            Enable DEBUG mode"
+    echo -e "\t-q            Quiet mode. Don't show progress meter or messages"
+    echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -205,7 +214,7 @@ function check_curl_status
             echo "To do this in a Debian/Ubuntu based system, try:"
             echo "  sudo apt-get install ca-certificates"
             echo ""
-            echo "If the problem persists, try to uncomment the CURL_ACCEPT_CERTIFICATES varibale on this script."
+            echo "If the problem persists, try to use the -k option (insecure)."
             echo ""
 
             remove_temp_files
