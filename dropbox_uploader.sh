@@ -180,7 +180,6 @@ function usage
 function check_curl_status
 {
     CODE=$?
-    echo $CODE
 
     case $CODE in
 
@@ -317,17 +316,17 @@ function db_simple_upload_file
         CURL_PARAMETERS="-s --show-error"
     fi
 
-    print " > Uploading $FILE_SRC to $2... \n"
+    print " > Uploading $FILE_SRC to $2... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-        print " > DONE\n"
+        print "DONE\n"
     else
-        print " > FAILED\n"
-        print "   An error occurred requesting /upload\n"
+        print "FAILED\n"
+        print "An error occurred requesting /upload\n"
         remove_temp_files
         exit 1
     fi
@@ -373,8 +372,8 @@ function db_chunked_upload_file
 
             #On error, the upload is retried for max 3 times
             if [ $UPLOAD_ERROR -gt 2 ]; then
-                print " > FAILED\n"
-                print "   An error occurred requesting /chunked_upload\n"
+                print " FAILED\n"
+                print "An error occurred requesting /chunked_upload\n"
                 remove_temp_files
                 exit 1
             fi
@@ -404,8 +403,8 @@ function db_chunked_upload_file
 
             #On error, the commit is retried for max 3 times
             if [ $UPLOAD_ERROR -gt 2 ]; then
-                print " > FAILED\n"
-                print "   An error occurred requesting /commit_chunked_upload\n"
+                print " FAILED\n"
+                print "An error occurred requesting /commit_chunked_upload\n"
                 remove_temp_files
                 exit 1
             fi
@@ -467,7 +466,7 @@ function db_free_quota
 function db_download
 {
     local SRC="$1"
-    local DST=$2
+    local DST="$2"
 
     #Checking if it's a file or a directory
     time=$(utime)
@@ -496,12 +495,12 @@ function db_download
 
             local basedir=$(basename "$SRC")
             print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
-            print " > Creating local directory \"$DST/$basedir\""
+            print " > Creating local directory \"$DST/$basedir\"... "
             mkdir -p "$DST/$basedir"
 
             #Check
             if [ $? -eq 0 ]; then
-                print "\n > DONE\n"
+                print "DONE\n"
             else
                 print "FAILED\n"
                 remove_temp_files
@@ -562,18 +561,16 @@ function db_download_file
         local CURL_PARAMETERS="-s --show-error"
     fi
 
-    print " > Downloading \"$1\" to \"$FILE_DST\"... \n"
+    print " > Downloading \"$1\" to \"$FILE_DST\"... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-        print " > DONE\n"
+        print "DONE\n"
     else
-        print " > FAILED\n"
-        print "   If the problem persists, try to unlink this script from your\n"
-        print "   Dropbox account, then setup again ($0 unlink).\n"
+        print "FAILED\n"
         rm -fr "$FILE_DST"
         remove_temp_files
         exit 1
@@ -585,7 +582,7 @@ function db_download_file
 function db_account_info
 {
     print "Dropbox Uploader v$VERSION\n\n"
-    print " > Getting info... \n"
+    print " > Getting info... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
     check_curl_status
@@ -594,7 +591,7 @@ function db_account_info
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
         name=$(sed -n 's/.*"display_name": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
-        echo -e "\nName:\t$name"
+        echo -e "\n\nName:\t$name"
 
         uid=$(sed -n 's/.*"uid": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
         echo -e "UID:\t$uid"
@@ -616,9 +613,7 @@ function db_account_info
         echo ""
 
     else
-        print " > FAILED\n"
-        print "   If the problem persists, try to unlink this script from your\n"
-        print "   Dropbox account, then setup again ($0 unlink).\n"
+        print "FAILED\n"
         remove_temp_files
         exit 1
     fi
@@ -632,7 +627,7 @@ function db_unlink
     read answer
     if [ "$answer" == "y" ]; then
         rm -fr "$CONFIG_FILE"
-        echo -ne "Done!\n"
+        echo -ne "DONE\n"
     fi
 }
 
