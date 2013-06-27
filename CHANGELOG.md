@@ -1,5 +1,15 @@
 # CHANGELOG
 
+
+## Version 0.11.9 - 27 June 2013
+* Add missing -f option in usage
+* Add some /dev/null redirects
+* Improved error messages
+* Improved grep syntax
+* Add function to check the cURL exit code
+* Improved messages output
+* Add new command line options: -q -d -k
+
 ## Version 0.11.8 - 05 June 2013
 * Add move/rename function
 * Improved the configuration file management (thanks to Robert G.)
