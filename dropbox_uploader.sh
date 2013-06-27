@@ -150,7 +150,7 @@ function file_size
     fi
 }
 
-#USAGE
+#Usage
 function usage 
 {
     echo -e "Dropbox Uploader v$VERSION"
@@ -176,12 +176,52 @@ function usage
     exit 1
 }
 
+#Check the curl exit code
+function check_curl_status
+{
+    CODE=$?
+    echo $CODE
+
+    case $CODE in
+
+        #OK
+        0)
+            return 
+        ;;
+
+        #Proxy error
+        5)
+            echo ""      
+            echo "Error: Couldn't resolve proxy. The given proxy host could not be resolved."
+
+            remove_temp_files
+            exit 1
+        ;;
+
+        #Missing CA certificates
+        60|58)
+            echo ""      
+            echo "Error: cURL is not able to performs peer SSL certificate verification."
+            echo "Please, install the default ca-certificates bundle."
+            echo "To do this in a Debian/Ubuntu based system, try:"
+            echo "  sudo apt-get install ca-certificates"
+            echo ""
+            echo "If the problem persists, try to uncomment the CURL_ACCEPT_CERTIFICATES varibale on this script."
+            echo ""
+
+            remove_temp_files
+            exit 1
+        ;;
+    esac
+    
+}
+
 if [ -z "$CURL_BIN" ]; then
     BIN_DEPS="$BIN_DEPS curl"
     CURL_BIN="curl"
 fi
 
-#DEPENDENCIES CHECK
+#Dependencies check
 for i in $BIN_DEPS; do
     which $i > /dev/null
     if [ $? -ne 0 ]; then
@@ -280,6 +320,7 @@ function db_simple_upload_file
     print " > Uploading $FILE_SRC to $2... \n"
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -323,6 +364,7 @@ function db_chunked_upload_file
         #Uploading the chunk...
         time=$(utime)
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+        check_curl_status
 
         #Check
         if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -353,6 +395,7 @@ function db_chunked_upload_file
 
         time=$(utime)
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST" 2> /dev/null
+        check_curl_status
 
         #Check
         if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -402,6 +445,7 @@ function db_free_quota
 {
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -428,6 +472,7 @@ function db_download
     #Checking if it's a file or a directory
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -520,6 +565,7 @@ function db_download_file
     print " > Downloading \"$1\" to \"$FILE_DST\"... \n"
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -542,6 +588,7 @@ function db_account_info
     print " > Getting info... \n"
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -598,6 +645,7 @@ function db_delete
     print " > Deleting \"$1\"... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$FILE_DST" "$API_DELETE_URL" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -620,6 +668,7 @@ function db_move
     print " > Moving \"$1\" to \"$2\" ... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$FILE_SRC&to_path=$FILE_DST" "$API_MOVE_URL" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -640,6 +689,7 @@ function db_mkdir
     print " > Creating Directory \"$1\"... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$DIR_DST" "$API_MKDIR_URL" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -662,6 +712,7 @@ function db_list
     print " > Listing \"$1\"... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -718,6 +769,7 @@ function db_share
 
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false" 2> /dev/null
+    check_curl_status
 
     #Check
     if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
@@ -801,6 +853,7 @@ else
     echo -ne "\n > Token request... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL" 2> /dev/null
+    check_curl_status    
     OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
     OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
 
@@ -824,6 +877,7 @@ else
         echo -ne " > Access Token request... "
         time=$(utime)
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL" 2> /dev/null
+        check_curl_status        
         OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_UID=$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
