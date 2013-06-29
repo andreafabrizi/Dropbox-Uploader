@@ -582,6 +582,12 @@ function db_download_file
 
     print " > Downloading \"$1\" to \"$FILE_DST\"... "
     time=$(utime)
+
+    if [ -d "$FILE_DST" ] 
+    then
+      FILE_DST=$FILE_DST/$1
+    fi
+        
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
