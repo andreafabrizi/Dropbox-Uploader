@@ -540,7 +540,7 @@ function db_download
                 if [ "$TYPE" == "false" ]; then
                     db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
                 else
-                    db_download "$SRC/$FILE" "$DST/$basedir/"
+                    db_download "$SRC/$FILE" "$DST/$basedir"
                 fi
 
             done < $TMP_DIR_CONTENT_FILE
