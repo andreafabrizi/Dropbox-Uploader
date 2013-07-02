@@ -11,6 +11,27 @@ It's written in BASH scripting language and only needs **cURL**.
 
 Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
+## Getting started
+
+First, clone the repository using git (recommended):
+
+```bash
+git clone https://github.com/andreafabrizi/Dropbox-Uploader/
+```
+
+or download the script manually using this command:
+
+```bash
+curl "https://raw.github.com/andreafabrizi/Dropbox-Uploader/master/dropbox_uploader.sh" -o dropbox_uploader.sh
+```
+
+Then give the execution permission to the script and run it:
+
+```bash
+ $chmod +x dropbox_uploader.sh
+ $./dropbox_uploader.sh
+```
+
 ## Usage
 
 The syntax is quite simple:
@@ -138,16 +159,6 @@ You need to install these packages:
 **Build cURL from source:**
 * Download the source tarball from http://curl.haxx.se/download.html
 * Follow the INSTALL instructions
-   
-
-## Getting started
-
-The first time you use Dropbox Uploader, you have to run these commands:
-
-```bash
- $chmod +x dropbox_uploader.sh
- $./dropbox_uploader.sh
-```
 
 ## DropShell
 
