@@ -530,12 +530,11 @@ function db_download
 
         #Checking if the destination directory exists
         if [ ! -d "$DST" ]; then
-            echo -e "Error: No such file or directory: $DST"
-            remove_temp_files
-            exit 1
+            local basedir=""
+        else
+            local basedir=$(basename "$SRC")
         fi
 
-        local basedir=$(basename "$SRC")
         print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
         print " > Creating local directory \"$DST/$basedir\"... "
         mkdir -p "$DST/$basedir"
