@@ -257,6 +257,41 @@ function urlencode
     echo "$encoded"
 }
 
+#Check if it's a file or directory
+#Returns FILE/DIR/ERR
+function db_stat
+{
+    local FILE=$1
+
+    #Checking if it's a file or a directory
+    time=$(utime)
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$FILE?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    check_curl_status
+
+    #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
+    #So we must check if the file exists or if it has been deleted
+    local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+
+    #Exits...
+    grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"
+    if [ $? -eq 0 -a "$IS_DELETED" != "true" ]; then
+
+        local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
+
+        #It's a directory
+        if [ ! -z "$IS_DIR" ]; then
+            echo "DIR"
+        #It's a file
+        else
+            echo "FILE"
+        fi
+
+    #Doesn't exists
+    else
+        echo "ERR"
+    fi
+}
+
 #Generic upload wrapper around db_upload_file and db_upload_dir functions
 #$1 = Local source file/dir
 #$2 = Remote destination file/dir
@@ -264,6 +299,13 @@ function db_upload
 {
     local SRC="$1"
     local DST="$2"
+
+    #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
+    TYPE=$(db_stat "$DST")
+    if [ "$TYPE" == "DIR" ]; then
+        local filename=$(basename "$SRC")
+        DST="$DST/$filename"
+    fi
 
     #It's a file
     if [ -f "$SRC" ]; then
@@ -476,93 +518,80 @@ function db_download
     local SRC="$1"
     local DST="$2"
 
-    #Checking if it's a file or a directory
-    time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
-    check_curl_status
+    TYPE=$(db_stat "$SRC")
 
-    #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
-    #So we must check if the file exists or if it has been deleted
-    local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+    #It's a directory
+    if [ $TYPE == "DIR" ]; then
 
-    #Check
-    grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"
-    if [ $? -eq 0 -a "$IS_DELETED" != "true" ]; then
-
-        local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
-
-        #It's a directory
-        if [ ! -z "$IS_DIR" ]; then
-
-            #If the DST folder is not specified, I assume that is the current directory
-            if [ -z "$DST" ]; then
-                DST="."
-            fi
-
-            #Checking if the destination directory exists
-            if [ ! -d "$DST" ]; then
-                echo -e "Error: No such file or directory: $DST"
-                remove_temp_files
-                exit 1
-            fi
-
-            local basedir=$(basename "$SRC")
-            print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
-            print " > Creating local directory \"$DST/$basedir\"... "
-            mkdir -p "$DST/$basedir"
-
-            #Check
-            if [ $? -eq 0 ]; then
-                print "DONE\n"
-            else
-                print "FAILED\n"
-                remove_temp_files
-                exit 1
-            fi
-
-            #Extracting directory content [...]
-            #and replacing "}, {" with "}\n{"
-            #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
-            local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
-{/g')
-
-            #Extracing files and subfolders
-            TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
-            echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
-
-            #For each line...
-            while read -r line; do
-
-                local FILE=${line%:*}
-                FILE=${FILE##*/}
-                local TYPE=${line#*:}
-
-                if [ "$TYPE" == "false" ]; then
-                    db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
-                else
-                    db_download "$SRC/$FILE" "$DST/$basedir"
-                fi
-
-            done < $TMP_DIR_CONTENT_FILE
-
-            rm -fr $TMP_DIR_CONTENT_FILE
-
-        #It's a file
-        else
-
-            #Checking DST
-            if [ -z "$DST" ]; then
-                DST=$(basename "$SRC")
-            fi
-
-            #If the destination is a directory, the file will be download into
-            if [ -d "$DST" ]; then
-                DST="$DST/$SRC"
-            fi
-
-            db_download_file "$SRC" "$DST"
+        #If the DST folder is not specified, I assume that is the current directory
+        if [ -z "$DST" ]; then
+            DST="."
         fi
 
+        #Checking if the destination directory exists
+        if [ ! -d "$DST" ]; then
+            echo -e "Error: No such file or directory: $DST"
+            remove_temp_files
+            exit 1
+        fi
+
+        local basedir=$(basename "$SRC")
+        print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
+        print " > Creating local directory \"$DST/$basedir\"... "
+        mkdir -p "$DST/$basedir"
+
+        #Check
+        if [ $? -eq 0 ]; then
+            print "DONE\n"
+        else
+            print "FAILED\n"
+            remove_temp_files
+            exit 1
+        fi
+
+        #Extracting directory content [...]
+        #and replacing "}, {" with "}\n{"
+        #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
+        local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+{/g')
+
+        #Extracing files and subfolders
+        TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
+        echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
+
+        #For each line...
+        while read -r line; do
+
+            local FILE=${line%:*}
+            FILE=${FILE##*/}
+            local TYPE=${line#*:}
+
+            if [ "$TYPE" == "false" ]; then
+                db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
+            else
+                db_download "$SRC/$FILE" "$DST/$basedir"
+            fi
+
+        done < $TMP_DIR_CONTENT_FILE
+
+        rm -fr $TMP_DIR_CONTENT_FILE
+
+    #It's a file
+    elif [ $TYPE == "FILE" ]; then
+
+        #Checking DST
+        if [ -z "$DST" ]; then
+            DST=$(basename "$SRC")
+        fi
+
+        #If the destination is a directory, the file will be download into
+        if [ -d "$DST" ]; then
+            DST="$DST/$SRC"
+        fi
+
+        db_download_file "$SRC" "$DST"
+    
+    #Doesn't exists
     else
         print "Error: No such file or directory: $SRC\n"
         remove_temp_files
