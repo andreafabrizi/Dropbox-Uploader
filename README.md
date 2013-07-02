@@ -148,3 +148,25 @@ The first time you use Dropbox Uploader, you have to run these commands:
  $chmod +x dropbox_uploader.sh
  $./dropbox_uploader.sh
 ```
+
+## DropShell
+
+DropShell is an interactive DropBox shell, based on DropBox Uploader:
+
+```bash
+DropShell v0.1
+The Intractive DropBox SHELL
+Andrea Fabrizi - andrea.fabrizi@gmail.com
+
+Type help for the list of the available commands.
+
+andrea@DropBox:/$ ls
+ [D] Camera Uploads
+ [D] Public
+ [D] scripts
+ [D] ServerBackup
+andrea@DropBox:/$ cd ServerBackup
+andrea@DropBox:/ServerBackup$ ls
+ [F] backup.zip
+andrea@DropBox:/ServerBackup$ get backup.zip
+```
