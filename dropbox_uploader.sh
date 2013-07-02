@@ -555,6 +555,11 @@ function db_download
                 DST=$(basename "$SRC")
             fi
 
+            #If the destination is a directory, the file will be download into
+            if [ -d "$DST" ]; then
+                DST="$DST/$SRC"
+            fi
+
             db_download_file "$SRC" "$DST"
         fi
 
