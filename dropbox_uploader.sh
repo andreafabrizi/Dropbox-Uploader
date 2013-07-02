@@ -261,7 +261,7 @@ function urlencode
 #Returns FILE/DIR/ERR
 function db_stat
 {
-    local FILE=$1
+    local FILE=$(urlencode "$1")
 
     #Checking if it's a file or a directory
     time=$(utime)
@@ -707,8 +707,19 @@ function db_delete
 #$2 = New file name or location
 function db_move
 {
-    local FILE_SRC=$(urlencode "$1")
-    local FILE_DST=$(urlencode "$2")
+    local FILE_SRC="$1"
+    local FILE_DST="$2"
+
+    TYPE=$(db_stat "$FILE_DST")
+
+    #If the destination it's a directory, the source will be moved into it
+    if [ "$TYPE" == "DIR" ]; then
+        local filename=$(basename "$FILE_SRC")
+        FILE_DST="$FILE_DST/$filename"
+    fi
+
+    local FILE_SRC=$(urlencode "$FILE_SRC")
+    local FILE_DST=$(urlencode "$FILE_DST")
 
     print " > Moving \"$1\" to \"$2\" ... "
     time=$(utime)
