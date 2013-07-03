@@ -306,7 +306,9 @@ while (true); do
         ;;
 
         *)
-            echo -ne "Unknown command: $cmd\n"
+            if [ ! -z "$cmd" ]; then
+                echo -ne "Unknown command: $cmd\n"
+            fi
         ;;
     esac
 done
