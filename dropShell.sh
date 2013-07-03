@@ -23,7 +23,7 @@ DU="./dropbox_uploader.sh"
 
 SHELL_HISTORY=~/.dropshell_history
 DU_OPT="-q"
-BIN_DEPS="id readlink ls basename"
+BIN_DEPS="id readlink ls basename ls pwd cut"
 VERSION="0.1"
 
 umask 077
@@ -269,6 +269,12 @@ while (true); do
 
         ;;
 
+        free)
+
+            $DU $DU_OPT info | grep "Free:" | cut -f 2
+
+        ;;
+
         lls)
 
             ls -l
@@ -289,7 +295,7 @@ while (true); do
 
         help)
 
-            echo -e "Availabe commands: ls, cd, pwd, get, put, rm, mkdir, mv, lls, lpwd, lcd, help, exit\n"
+            echo -e "Availabe commands: ls, cd, pwd, get, put, rm, mkdir, mv, free, lls, lpwd, lcd, help, exit\n"
 
         ;;
 
