@@ -35,6 +35,7 @@ CHUNK_SIZE=4
 TMP_DIR="/tmp"
 DEBUG=0
 QUIET=0
+SHOW_PROGRESSBAR=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -65,7 +66,7 @@ if [ -z "$BASH_VERSION" ]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qkdf:" opt; do
+while getopts ":qpkdf:" opt; do
     case $opt in
 
     f)
@@ -83,6 +84,11 @@ while getopts ":qkdf:" opt; do
       shift $((OPTIND-1))
     ;;
 
+    p)
+      SHOW_PROGRESSBAR=1
+      shift $((OPTIND-1))
+    ;;
+    
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
       shift $((OPTIND-1))
@@ -177,7 +183,8 @@ function usage
     echo -e "\nOptional parameters:"
     echo -e "\t-f [FILENAME] Load the configuration file from a specific file"
     echo -e "\t-d            Enable DEBUG mode"
-    echo -e "\t-q            Quiet mode. Don't show progress meter or messages"
+    echo -e "\t-q            Quiet mode. Don't show messages"
+    echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
@@ -358,17 +365,18 @@ function db_simple_upload_file
 {
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
-
-    #Show the progress bar during the file upload
-    if [ $QUIET -eq 0 ]; then
+    
+    if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
         CURL_PARAMETERS="--progress-bar"
+        LINE_CR="\n"
     else
-        CURL_PARAMETERS="-s --show-error"
+        CURL_PARAMETERS="-s"
+        LINE_CR=""
     fi
 
-    print " > Uploading $FILE_SRC to $2... "
+    print " > Uploading \"$FILE_SRC\" to \"$2\"... $LINE_CR"
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
 
     #Check
@@ -390,7 +398,7 @@ function db_chunked_upload_file
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"$2\""
+    print " > Uploading \"$FILE_SRC\" to \"$2\" z"
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
@@ -465,7 +473,7 @@ function db_chunked_upload_file
 
     done
 
-    print "\n > DONE\n"
+    print " DONE\n"
 }
 
 #Directory upload
@@ -604,16 +612,17 @@ function db_download_file
     local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
 
-    #Show the progress bar during the file download
-    if [ $QUIET -eq 0 ]; then
-        local CURL_PARAMETERS="--progress-bar"
+    if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
+        CURL_PARAMETERS="--progress-bar"
+        LINE_CR="\n"
     else
-        local CURL_PARAMETERS="-s --show-error"
+        CURL_PARAMETERS="-s"
+        LINE_CR=""
     fi
 
-    print " > Downloading \"$1\" to \"$FILE_DST\"... "
+    print " > Downloading \"$1\" to \"$FILE_DST\"... $LINE_CR"
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
 
     #Check
