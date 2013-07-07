@@ -89,6 +89,9 @@ Enable DEBUG mode
 * **-q**  
 Quiet mode. Don't show progress meter or messages
 
+* **-p**  
+Show cURL progress meter
+
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
