@@ -417,6 +417,11 @@ function db_chunked_upload_file
 
         #Check
         if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+            print "."
+            UPLOAD_ERROR=0
+            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE") 
+        else
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
@@ -427,12 +432,6 @@ function db_chunked_upload_file
                 remove_temp_files
                 exit 1
             fi
-
-        else
-            print "."
-            UPLOAD_ERROR=0
-            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
         fi
 
     done
@@ -448,6 +447,10 @@ function db_chunked_upload_file
 
         #Check
         if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+            print "."
+            UPLOAD_ERROR=0
+            break
+        else
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
@@ -458,11 +461,6 @@ function db_chunked_upload_file
                 remove_temp_files
                 exit 1
             fi
-
-        else
-            print "."
-            UPLOAD_ERROR=0
-            break
         fi
 
     done
