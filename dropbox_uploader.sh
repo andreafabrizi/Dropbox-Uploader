@@ -71,27 +71,22 @@ while getopts ":qpkdf:" opt; do
 
     f)
       CONFIG_FILE=$OPTARG
-      shift $((OPTIND-1))
     ;;
 
     d)
       DEBUG=1
-      shift $((OPTIND-1))
     ;;
 
     q)
       QUIET=1
-      shift $((OPTIND-1))
     ;;
 
     p)
       SHOW_PROGRESSBAR=1
-      shift $((OPTIND-1))
     ;;
     
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
-      shift $((OPTIND-1))
     ;;
 
     \?)
@@ -972,15 +967,17 @@ fi
 #### START  ####
 ################
 
-COMMAND=$1
+COMMAND=${@:$OPTIND:1}
+ARG1=${@:$OPTIND+1:1}
+ARG2=${@:$OPTIND+2:1}
 
 #CHECKING PARAMS VALUES
 case $COMMAND in
 
     upload)
 
-        FILE_SRC=$2
-        FILE_DST=$3
+        FILE_SRC=$ARG1
+        FILE_DST=$ARG2
 
         #Checking FILE_SRC
         if [ ! -f "$FILE_SRC" -a ! -d "$FILE_SRC" ]; then
@@ -1000,8 +997,8 @@ case $COMMAND in
 
     download)
 
-        FILE_SRC=$2
-        FILE_DST=$3
+        FILE_SRC=$ARG1
+        FILE_DST=$ARG2
 
         #Checking FILE_SRC
         if [ -z "$FILE_SRC" ]; then
@@ -1016,7 +1013,7 @@ case $COMMAND in
 
     share)
 
-        FILE_DST=$2
+        FILE_DST=$ARG1
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
@@ -1037,7 +1034,7 @@ case $COMMAND in
 
     delete|remove)
 
-        FILE_DST=$2
+        FILE_DST=$ARG1
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
@@ -1052,8 +1049,8 @@ case $COMMAND in
 
     move|rename)
 
-        FILE_SRC=$2
-        FILE_DST=$3
+        FILE_SRC=$ARG1
+        FILE_DST=$ARG2
 
         #Checking FILE_SRC
         if [ -z "$FILE_SRC" ]; then
@@ -1075,7 +1072,7 @@ case $COMMAND in
 
     mkdir)
 
-        DIR_DST=$2
+        DIR_DST=$ARG1
 
         #Checking DIR_DST
         if [ -z "$DIR_DST" ]; then
@@ -1090,7 +1087,7 @@ case $COMMAND in
 
     list)
 
-        DIR_DST=$2
+        DIR_DST=$ARG1
 
         #Checking DIR_DST
         if [ -z "$DIR_DST" ]; then
@@ -1109,6 +1106,7 @@ case $COMMAND in
 
     *)
 
+        print "Error: Unknown command: $COMMAND\n\n"
         usage
 
     ;;
