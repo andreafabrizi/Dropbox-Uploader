@@ -231,14 +231,16 @@ if [ -z "$CURL_BIN" ]; then
 fi
 
 #Dependencies check
-for i in $BIN_DEPS; do
-    which $i > /dev/null
-    if [ $? -ne 0 ]; then
-        echo -e "Error: Required program could not be found: $i"
-        remove_temp_files
-        exit 1
-    fi
-done
+which $BIN_DEPS > /dev/null
+if [ $? -ne 0 ]; then
+    for i in $BIN_DEPS; do
+        which $i > /dev/null ||
+            NOT_FOUND="$i $NOT_FOUND"
+    done
+    echo -e "Error: Required program could not be found: $NOT_FOUND"
+    remove_temp_files
+    exit 1
+fi
 
 #Urlencode
 function urlencode
