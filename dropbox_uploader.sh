@@ -36,6 +36,7 @@ TMP_DIR="/tmp"
 DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
+OVERWRITE=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -66,7 +67,7 @@ if [ -z "$BASH_VERSION" ]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpkdf:" opt; do
+while getopts ":oqpkdf:" opt; do
     case $opt in
 
     f)
@@ -87,6 +88,10 @@ while getopts ":qpkdf:" opt; do
     
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
+    ;;
+
+    o)
+      OVERWRITE=1
     ;;
 
     \?)
@@ -181,6 +186,7 @@ function usage
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-o            Force overwrite files. Available only with 'download' command."
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -569,7 +575,11 @@ function db_download
             local TYPE=${line#*:}
 
             if [ "$TYPE" == "false" ]; then
-                db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
+                if [[ ! -f "${DST}/${basedir}/$FILE" || $OVERWRITE == 1 ]]; then
+	            db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
+                else
+                    print " > Not download \"$DST/$basedir/$FILE\" file exists in path... DONE\n"
+                fi
             else
                 db_download "$SRC/$FILE" "$DST/$basedir"
             fi
@@ -590,9 +600,11 @@ function db_download
         if [ -d "$DST" ]; then
             DST="$DST/$SRC"
         fi
-
-        db_download_file "$SRC" "$DST"
-    
+        if [[ ! -f $DST || $OVERWRITE == 1 ]]; then
+            db_download_file "$SRC" "$DST"
+        else
+             print " > Not download \"$DST/$basedir/$FILE\" file exists in path... DONE\n"
+        fi
     #Doesn't exists
     else
         print "Error: No such file or directory: $SRC\n"
