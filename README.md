@@ -55,7 +55,8 @@ Only if the file is smaller than 150Mb, the standard upload API is used, and if 
 to 1 the default curl progress bar is displayed during the upload process.
 
 * **download** [REMOTE_FILE/DIR] &lt;LOCAL_FILE/DIR&gt;  
-Download file or directory from Dropbox to a local folder
+Download file or directory from Dropbox to a local folder.
+By default don't download a file if this already exist. You can change this behavior with -o parameter.
 
 * **delete** [REMOTE_FILE/DIR]  
 Remove a remote file or directory from Dropbox
@@ -95,6 +96,8 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-o**
+Force overwrite files. Available only with 'download' command.
 
 **Examples:**
 ```bash
