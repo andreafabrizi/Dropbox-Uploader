@@ -575,11 +575,7 @@ function db_download
             local TYPE=${line#*:}
 
             if [ "$TYPE" == "false" ]; then
-                if [[ ! -f "${DST}/${basedir}/$FILE" || $OVERWRITE == 1 ]]; then
-	            db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
-                else
-                    print " > Not download \"$DST/$basedir/$FILE\" file exists in path... DONE\n"
-                fi
+                db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
             else
                 db_download "$SRC/$FILE" "$DST/$basedir"
             fi
@@ -600,11 +596,9 @@ function db_download
         if [ -d "$DST" ]; then
             DST="$DST/$SRC"
         fi
-        if [[ ! -f $DST || $OVERWRITE == 1 ]]; then
-            db_download_file "$SRC" "$DST"
-        else
-             print " > Not download \"$DST/$basedir/$FILE\" file exists in path... DONE\n"
-        fi
+
+        db_download_file "$SRC" "$DST"
+
     #Doesn't exists
     else
         print "Error: No such file or directory: $SRC\n"
@@ -620,6 +614,11 @@ function db_download_file
 {
     local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
+
+    if [[ -f $FILE_DST && $OVERWRITE == 0 ]]; then
+        print " > Not download \"$FILE_DST\" file exists in path... DONE\n"
+        return
+    fi
 
     if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
         CURL_PARAMETERS="--progress-bar"
