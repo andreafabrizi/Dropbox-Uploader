@@ -371,7 +371,7 @@ function db_simple_upload_file
         LINE_CR=""
     fi
 
-    print " > Uploading \"$FILE_SRC\" to \"$2\"... $LINE_CR"
+    print " > Uploading \"$FILE_SRC\" to \"${2/\/\///}\"... $LINE_CR"
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
@@ -395,7 +395,7 @@ function db_chunked_upload_file
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"$2\" z"
+    print " > Uploading \"$FILE_SRC\" to \"${2/\/\///}\" z"
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
@@ -538,7 +538,7 @@ function db_download
             local basedir=$(basename "$SRC")
         fi
 
-        print " > Downloading \"$1\" to \"$DST/$basedir\"... \n"
+        print " > Downloading \"${1/\/\///}\" to \"$DST/$basedir\"... \n"
         print " > Creating local directory \"$DST/$basedir\"... "
         mkdir -p "$DST/$basedir"
 
@@ -746,7 +746,7 @@ function db_mkdir
 {
     local DIR_DST=$(urlencode "$1")
 
-    print " > Creating Directory \"$1\"... "
+    print " > Creating Directory \"${1/\/\///}\"... "
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$DIR_DST" "$API_MKDIR_URL" 2> /dev/null
     check_curl_status
