@@ -990,7 +990,11 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            FILE_DST=/$(basename "$FILE_SRC")
+            if [ -f "$FILE_DST" ]; then
+                FILE_DST=/$(basename "$FILE_SRC")
+            else
+                FILE_DST=/
+            fi
         fi
 
         db_upload "$FILE_SRC" "$FILE_DST"
