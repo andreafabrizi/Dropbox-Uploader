@@ -58,6 +58,8 @@ BIN_DEPS="sed basename date grep stat dd printf mkdir"
 VERSION="0.11.9"
 
 umask 077
+shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
+shopt -s dotglob  #Bash includes filenames beginning with a ‘.’ in the results of filename expansion
 
 #Check the shell
 if [ -z "$BASH_VERSION" ]; then
@@ -485,10 +487,7 @@ function db_upload_dir
     db_mkdir "$DIR_DST"
 
     for file in "$DIR_SRC/"*; do
-
-        basefile=$(basename "$file")
-        db_upload "$file" "$DIR_DST/$basefile"
-
+        db_upload "$file" "$DIR_DST"
     done
 }
 
@@ -990,7 +989,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [ -z "$FILE_DST" ]; then
-            if [ -f "$FILE_DST" ]; then
+            if [ -f "$FILE_SRC" ]; then
                 FILE_DST=/$(basename "$FILE_SRC")
             else
                 FILE_DST=/
