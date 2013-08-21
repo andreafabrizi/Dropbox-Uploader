@@ -39,6 +39,7 @@ done
 
 #Check DropBox Uploader
 if [ ! -f "$DU" ]; then
+if [ ! -e "$DU" ]; then
     echo "DropBox Uploader not found: $DU"
     echo "Please change the 'DU' variable according to the DropBox Uploader location."
     exit 1
