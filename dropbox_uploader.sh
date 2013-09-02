@@ -58,14 +58,15 @@ BIN_DEPS="sed basename date grep stat dd printf mkdir"
 VERSION="0.11.9"
 
 umask 077
-shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
-shopt -s dotglob  #Bash includes filenames beginning with a ‘.’ in the results of filename expansion
 
 #Check the shell
 if [ -z "$BASH_VERSION" ]; then
     echo -e "Error: this script requires the BASH shell!"
     exit 1
 fi
+
+shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
+shopt -s dotglob  #Bash includes filenames beginning with a ‘.’ in the results of filename expansion
 
 #Look for optional config file parameter
 while getopts ":qpkdf:" opt; do
@@ -224,6 +225,23 @@ function check_curl_status
             remove_temp_files
             exit 1
         ;;
+
+        6)
+            echo ""
+            echo "Error: Couldn't resolve host."
+
+            remove_temp_files
+            exit 1
+        ;;
+
+        7)
+            echo ""
+            echo "Error: Couldn't connect to host."
+
+            remove_temp_files
+            exit 1
+        ;;
+
     esac
 }
 
@@ -355,6 +373,7 @@ function db_upload_file
     else
         db_simple_upload_file "$FILE_SRC" "$FILE_DST"
     fi
+
 }
 
 #Simple file upload
@@ -873,7 +892,7 @@ else
     echo -ne " Please open this URL from your Browser, and access using your account:\n\n -> $APP_CREATE_URL\n"
     echo -ne "\n If you haven't already done, click \"Create an App\" and fill in the\n"
     echo -ne " form with the following data:\n\n"
-    echo -ne "  App name: MyUploader$RANDOM$RANDOM\n"
+    echo -ne "  App name: MyUploader$RANDOM$RANDOM$RANDOM\n"
     echo -ne "  App type: Core\n"
     echo -ne "  Permission type: App folder or Full Dropbox\n\n"
     echo -ne " Now, click on the \"Create\" button.\n\n"
