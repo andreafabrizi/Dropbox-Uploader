@@ -19,7 +19,16 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-DU="./dropbox_uploader.sh"
+#Looking for dropbox uploader
+if [ -f "./dropbox_uploader.sh" ]; then
+    DU="./dropbox_uploader.sh"
+else
+    DU=$(which dropbox_uploader.sh)
+    if [ $? -ne 0 ]; then
+        echo "Dropbox Uploader not found!"
+        exit 1
+    fi
+fi
 
 #For MaxOSX install readlink using Homebrew: http://brew.sh/
 #brew install readlink
