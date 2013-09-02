@@ -19,11 +19,29 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-DU="./dropbox_uploader.sh"
+# this will find `dropbox_uploader.sh` anywhere in $PATH
+DU=`command which dropbox_uploader.sh 2>/dev/null`
+
+# Mac OS X's `readlink` does not support the '-m' flag (at least as of
+# 10.8.4). The GNU readlink does. It would most likely be installed as
+# `greadlink` if it was installed via the Homebrew system.
+
+OS=`uname`
+
+case "$OS" in
+	Darwin)
+				READLINK=greadlink
+	;;
+
+	*)
+				READLINK=readlink
+	;;
+
+esac
 
 SHELL_HISTORY=~/.dropshell_history
 DU_OPT="-q"
-BIN_DEPS="id readlink ls basename ls pwd cut"
+BIN_DEPS="id ${READLINK} basename ls pwd cut"
 VERSION="0.1"
 
 umask 077
@@ -38,12 +56,12 @@ for i in $BIN_DEPS; do
 done
 
 #Check DropBox Uploader
-if [ ! -f "$DU" ]; then
+if [ ! -e "$DU" ]; then
     echo "DropBox Uploader not found: $DU"
     echo "Please change the 'DU' variable according to the DropBox Uploader location."
     exit 1
 else
-    DU=$(readlink -m "$DU")
+    DU=$(${READLINK} -m "$DU")
 fi
 
 #Returns the current user
@@ -54,7 +72,7 @@ function get_current_user
 
 function normalize_path
 {
-    readlink -m "$1"
+    ${READLINK} -m "$1"
 }
 
 ################
@@ -90,7 +108,7 @@ while (true); do
     case $cmd in
 
         ls)
-            
+
             #Listing current dir
             if [ -z "$arg1" ]; then
                 $DU $DU_OPT list "$CWD"
@@ -125,7 +143,7 @@ while (true); do
 
             CWD=$(normalize_path "$CWD/$arg1/")
             $DU $DU_OPT list "$CWD" > /dev/null
-    
+
             #Checking for errors
             if [ $? -ne 0 ]; then
                 echo -e "cd: $arg1: No such file or directory"
@@ -167,7 +185,7 @@ while (true); do
         put)
 
             if [ ! -z "$arg1" ]; then
-        
+
                 #Relative or absolute path?
                 if [ "${arg2:0:1}" == "/" ]; then
                     $DU $DU_OPT upload "$arg1" $(normalize_path "$arg2")
