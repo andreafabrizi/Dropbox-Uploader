@@ -261,6 +261,16 @@ function sh_free
     $DU $DU_OPT info | grep "Free:" | cut -f 2
 }
 
+function sh_cat
+{
+    local arg1=$1
+
+    tmp_cat="/tmp/sh_cat"
+    sh_get "$arg1" "$tmp_cat"
+    cat "$tmp_cat"
+    rm -fr "$tmp_cat"
+}
+
 while (true); do
 
     #Reading command from shell
@@ -310,6 +320,10 @@ while (true); do
             sh_mv "$arg1" "$arg2"
         ;;
 
+        cat)
+            sh_cat "$arg1"
+        ;;
+
         free)
             sh_free
         ;;
@@ -327,7 +341,7 @@ while (true); do
         ;;
 
         help)
-            echo -e "Availabe commands: ls, cd, pwd, get, put, rm, mkdir, mv, free, lls, lpwd, lcd, help, exit\n"
+            echo -e "Availabe commands: ls, cd, pwd, get, put, cat, rm, mkdir, mv, free, lls, lpwd, lcd, help, exit\n"
         ;;
 
         quit|exit)
