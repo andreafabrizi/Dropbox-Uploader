@@ -341,7 +341,7 @@ function db_upload
 
     #Unsupported object...
     else
-        print " > Skipping not regular file '$SRC'"
+        print " > Skipping not regular file \"$SRC\"\n"
     fi
 }
 
@@ -353,6 +353,20 @@ function db_upload_file
 {
     local FILE_SRC="$1"
     local FILE_DST="$2"
+
+    #Checking not allowed file names
+    basefile_dst=$(basename "$FILE_DST")
+    basefile_dst=${basefile_dst,,}
+    if [ "$basefile_dst" == "thumbs.db" -o \
+         "$basefile_dst" == "desktop.ini" -o \
+         "$basefile_dst" == ".ds_store" -o \
+         "$basefile_dst" == "icon\r" -o \
+         "$basefile_dst" == ".dropbox" -o \
+         "$basefile_dst" == ".dropbox.attr" \
+       ]; then
+        print " > Skipping not allowed file name \"${FILE_DST/\/\///}\"\n"
+        return
+    fi
 
     #Checking file size
     FILE_SIZE=$(file_size "$FILE_SRC")
@@ -392,7 +406,7 @@ function db_simple_upload_file
         LINE_CR=""
     fi
 
-    print " > Uploading \"$FILE_SRC\" to \"${2/\/\///}\"... $LINE_CR"
+    print " > Uploading \"${1/\/\///}\" to \"${2/\/\///}\"... $LINE_CR"
     time=$(utime)
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
@@ -416,7 +430,7 @@ function db_chunked_upload_file
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"${2/\/\///}\" z"
+    print " > Uploading \"${2/\/\///}\" to \"${2/\/\///}\" z"
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
