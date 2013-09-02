@@ -74,6 +74,8 @@ CWD="/"
 
 function sh_ls
 {
+    local arg1=$1
+
     #Listing current dir
     if [ -z "$arg1" ]; then
         $DU $DU_OPT list "$CWD"
@@ -97,6 +99,8 @@ function sh_ls
 
 function sh_cd
 {
+    local arg1=$1
+
     OLD_CWD=$CWD
 
     if [ -z "$arg1" ]; then
@@ -117,6 +121,9 @@ function sh_cd
 
 function sh_get
 {
+    local arg1=$1
+    local arg2=$2
+
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
@@ -140,6 +147,9 @@ function sh_get
 
 function sh_put
 {
+    local arg1=$1
+    local arg2=$2
+
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
@@ -163,6 +173,8 @@ function sh_put
 
 function sh_rm
 {
+    local arg1=$1
+
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
@@ -186,6 +198,8 @@ function sh_rm
 
 function sh_mkdir
 {
+    local arg1=$1
+
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
@@ -209,6 +223,9 @@ function sh_mkdir
 
 function sh_mv
 {
+    local arg1=$1
+    local arg2=$2
+
     if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
 
         #SRC relative or absolute path?
