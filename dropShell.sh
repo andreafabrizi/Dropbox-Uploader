@@ -72,6 +72,178 @@ username=$(get_current_user)
 #Initial Working Directory
 CWD="/"
 
+function sh_ls
+{
+    #Listing current dir
+    if [ -z "$arg1" ]; then
+        $DU $DU_OPT list "$CWD"
+
+    #Listing $arg1
+    else
+
+        #Relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            $DU $DU_OPT list $(normalize_path "$arg1")
+        else
+            $DU $DU_OPT list $(normalize_path "$CWD/$arg1")
+        fi
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "ls: cannot access '$arg1': No such file or directory"
+        fi
+    fi
+}
+
+function sh_cd
+{
+    OLD_CWD=$CWD
+
+    if [ -z "$arg1" ]; then
+        CWD="/"
+    else
+        arg1=${input:3} #All the arguments
+    fi
+
+    CWD=$(normalize_path "$CWD/$arg1/")
+    $DU $DU_OPT list "$CWD" > /dev/null
+
+    #Checking for errors
+    if [ $? -ne 0 ]; then
+        echo -e "cd: $arg1: No such file or directory"
+        CWD=$OLD_CWD
+    fi
+}
+
+function sh_get
+{
+    if [ ! -z "$arg1" ]; then
+
+        #Relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            $DU $DU_OPT download $(normalize_path "$arg1") "$arg2"
+        else
+            $DU $DU_OPT download $(normalize_path "$CWD/$arg1") "$arg2"
+        fi
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "get: Download error"
+        fi
+
+    #args error
+    else
+        echo -e "get: missing operand"
+        echo -e "syntax: get FILE/DIR [LOCAL_FILE/DIR]"
+    fi
+}
+
+function sh_put
+{
+    if [ ! -z "$arg1" ]; then
+
+        #Relative or absolute path?
+        if [ "${arg2:0:1}" == "/" ]; then
+            $DU $DU_OPT upload "$arg1" $(normalize_path "$arg2")
+        else
+            $DU $DU_OPT upload "$arg1" $(normalize_path "$CWD/$arg2")
+        fi
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "put: Upload error"
+        fi
+
+    #args error
+    else
+        echo -e "put: missing operand"
+        echo -e "syntax: put FILE/DIR [REMOTE_FILE/DIR]"
+    fi
+}
+
+function sh_rm
+{
+    if [ ! -z "$arg1" ]; then
+
+        #Relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            $DU $DU_OPT remove $(normalize_path "$arg1")
+        else
+            $DU $DU_OPT remove $(normalize_path "$CWD/$arg1")
+        fi
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "rm: cannot remove '$arg1'"
+        fi
+
+    #args error
+    else
+        echo -e "rm: missing operand"
+        echo -e "syntax: rm FILE/DIR"
+    fi
+}
+
+function sh_mkdir
+{
+    if [ ! -z "$arg1" ]; then
+
+        #Relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            $DU $DU_OPT mkdir $(normalize_path "$arg1")
+        else
+            $DU $DU_OPT mkdir $(normalize_path "$CWD/$arg1")
+        fi
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "mkdir: cannot create directory '$arg1'"
+        fi
+
+    #args error
+    else
+        echo -e "mkdir: missing operand"
+        echo -e "syntax: mkdir DIR_NAME"
+    fi
+}
+
+function sh_mv
+{
+    if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
+
+        #SRC relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            SRC="$arg1"
+        else
+            SRC="$CWD/$arg1"
+        fi
+
+        #DST relative or absolute path?
+        if [ ${arg2:0:1} == "/" ]; then
+            DST="$arg2"
+        else
+            DST="$CWD/$arg2"
+        fi
+
+        $DU $DU_OPT move $(normalize_path "$SRC") $(normalize_path "$DST")
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "mv: cannot move '$arg1' to '$arg2'"
+        fi
+
+    #args error
+    else
+        echo -e "mv: missing operand"
+        echo -e "syntax: mv FILE/DIR DEST_FILE/DIR"
+    fi
+}
+
+function sh_free
+{
+    $DU $DU_OPT info | grep "Free:" | cut -f 2
+}
+
 while (true); do
 
     #Reading command from shell
@@ -90,219 +262,59 @@ while (true); do
     case $cmd in
 
         ls)
-            
-            #Listing current dir
-            if [ -z "$arg1" ]; then
-                $DU $DU_OPT list "$CWD"
-
-            #Listing $arg1
-            else
-
-                #Relative or absolute path?
-                if [ ${arg1:0:1} == "/" ]; then
-                    $DU $DU_OPT list $(normalize_path "$arg1")
-                else
-                    $DU $DU_OPT list $(normalize_path "$CWD/$arg1")
-                fi
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "ls: cannot access '$arg1': No such file or directory"
-                fi
-            fi
-
+            sh_ls "$arg1" "$arg2"
         ;;
 
         cd)
-
-            OLD_CWD=$CWD
-
-            if [ -z "$arg1" ]; then
-                CWD="/"
-            else
-                arg1=${input:3} #All the arguments
-            fi
-
-            CWD=$(normalize_path "$CWD/$arg1/")
-            $DU $DU_OPT list "$CWD" > /dev/null
-    
-            #Checking for errors
-            if [ $? -ne 0 ]; then
-                echo -e "cd: $arg1: No such file or directory"
-                CWD=$OLD_CWD
-            fi
-
+            sh_cd "$arg1"
         ;;
 
         pwd)
-
             echo $CWD
-
         ;;
 
         get)
-
-            if [ ! -z "$arg1" ]; then
-
-                #Relative or absolute path?
-                if [ ${arg1:0:1} == "/" ]; then
-                    $DU $DU_OPT download $(normalize_path "$arg1") "$arg2"
-                else
-                    $DU $DU_OPT download $(normalize_path "$CWD/$arg1") "$arg2"
-                fi
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "get: Download error"
-                fi
-
-            #args error
-            else
-                echo -e "get: missing operand"
-                echo -e "syntax: get FILE/DIR [LOCAL_FILE/DIR]"
-            fi
-
+            sh_get "$arg1" "$arg2"
         ;;
 
         put)
-
-            if [ ! -z "$arg1" ]; then
-        
-                #Relative or absolute path?
-                if [ "${arg2:0:1}" == "/" ]; then
-                    $DU $DU_OPT upload "$arg1" $(normalize_path "$arg2")
-                else
-                    $DU $DU_OPT upload "$arg1" $(normalize_path "$CWD/$arg2")
-                fi
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "put: Upload error"
-                fi
-
-            #args error
-            else
-                echo -e "put: missing operand"
-                echo -e "syntax: put FILE/DIR [REMOTE_FILE/DIR]"
-            fi
-
+            sh_put "$arg1" "$arg2"
         ;;
 
         rm)
-
-            if [ ! -z "$arg1" ]; then
-
-                #Relative or absolute path?
-                if [ ${arg1:0:1} == "/" ]; then
-                    $DU $DU_OPT remove $(normalize_path "$arg1")
-                else
-                    $DU $DU_OPT remove $(normalize_path "$CWD/$arg1")
-                fi
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "rm: cannot remove '$arg1'"
-                fi
-
-            #args error
-            else
-                echo -e "rm: missing operand"
-                echo -e "syntax: rm FILE/DIR"
-            fi
-
+            sh_rm "$arg1"
         ;;
 
         mkdir)
-
-            if [ ! -z "$arg1" ]; then
-
-                #Relative or absolute path?
-                if [ ${arg1:0:1} == "/" ]; then
-                    $DU $DU_OPT mkdir $(normalize_path "$arg1")
-                else
-                    $DU $DU_OPT mkdir $(normalize_path "$CWD/$arg1")
-                fi
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "mkdir: cannot create directory '$arg1'"
-                fi
-
-            #args error
-            else
-                echo -e "mkdir: missing operand"
-                echo -e "syntax: mkdir DIR_NAME"
-            fi
-
+            sh_mkdir "$arg1"
         ;;
 
         mv)
-
-            if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
-
-                #SRC relative or absolute path?
-                if [ ${arg1:0:1} == "/" ]; then
-                    SRC="$arg1"
-                else
-                    SRC="$CWD/$arg1"
-                fi
-
-                #DST relative or absolute path?
-                if [ ${arg2:0:1} == "/" ]; then
-                    DST="$arg2"
-                else
-                    DST="$CWD/$arg2"
-                fi
-
-                $DU $DU_OPT move $(normalize_path "$SRC") $(normalize_path "$DST")
-
-                #Checking for errors
-                if [ $? -ne 0 ]; then
-                    echo -e "mv: cannot move '$arg1' to '$arg2'"
-                fi
-
-            #args error
-            else
-                echo -e "mv: missing operand"
-                echo -e "syntax: mv FILE/DIR DEST_FILE/DIR"
-            fi
-
+            sh_mv "$arg1" "$arg2"
         ;;
 
         free)
-
-            $DU $DU_OPT info | grep "Free:" | cut -f 2
-
+            sh_free
         ;;
 
         lls)
-
             ls -l
-
         ;;
 
         lpwd)
-
             pwd
-
         ;;
 
         lcd)
-
             cd "$arg1"
-
         ;;
 
         help)
-
             echo -e "Availabe commands: ls, cd, pwd, get, put, rm, mkdir, mv, free, lls, lpwd, lcd, help, exit\n"
-
         ;;
 
         quit|exit)
-
             exit 0
-
         ;;
 
         *)
