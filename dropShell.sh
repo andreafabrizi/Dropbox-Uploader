@@ -21,9 +21,17 @@
 
 DU="./dropbox_uploader.sh"
 
+#For MaxOSX install readlink using Homebrew: http://brew.sh/
+#brew install readlink
+if [ "${OSTYPE}" == "darwin9" ]; then
+    READLINK="greadlink"
+else
+    READLINK="readlink"
+fi
+
 SHELL_HISTORY=~/.dropshell_history
 DU_OPT="-q"
-BIN_DEPS="id readlink ls basename ls pwd cut"
+BIN_DEPS="id $READLINK ls basename ls pwd cut"
 VERSION="0.1"
 
 umask 077
@@ -43,7 +51,7 @@ if [ ! -f "$DU" ]; then
     echo "Please change the 'DU' variable according to the DropBox Uploader location."
     exit 1
 else
-    DU=$(readlink -m "$DU")
+    DU=$($READLINK -m "$DU")
 fi
 
 #Returns the current user
@@ -54,7 +62,7 @@ function get_current_user
 
 function normalize_path
 {
-    readlink -m "$1"
+    $READLINK -m "$1"
 }
 
 ################
