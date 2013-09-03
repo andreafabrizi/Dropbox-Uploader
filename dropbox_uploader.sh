@@ -36,6 +36,7 @@ TMP_DIR="/tmp"
 DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
+OVERWRITE=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -69,7 +70,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a ‘.’ in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpkdf:" opt; do
+while getopts ":oqpkdf:" opt; do
     case $opt in
 
     f)
@@ -90,6 +91,10 @@ while getopts ":qpkdf:" opt; do
     
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
+    ;;
+
+    o)
+      OVERWRITE=1
     ;;
 
     \?)
@@ -184,6 +189,7 @@ function usage
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-o            Force overwrite files. Available only with 'download' command."
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -624,7 +630,7 @@ function db_download
         fi
 
         db_download_file "$SRC" "$DST"
-    
+
     #Doesn't exists
     else
         print "Error: No such file or directory: $SRC\n"
@@ -640,6 +646,11 @@ function db_download_file
 {
     local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
+
+    if [[ -f $FILE_DST && $OVERWRITE == 0 ]]; then
+        print " > Not download \"$FILE_DST\" file exists in path... DONE\n"
+        return
+    fi
 
     if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
         CURL_PARAMETERS="--progress-bar"
