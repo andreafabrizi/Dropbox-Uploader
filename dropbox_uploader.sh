@@ -354,19 +354,22 @@ function db_upload_file
     local FILE_SRC="$1"
     local FILE_DST="$2"
 
+    shopt -s nocasematch
+
     #Checking not allowed file names
     basefile_dst=$(basename "$FILE_DST")
-    basefile_dst=${basefile_dst,,}
-    if [ "$basefile_dst" == "thumbs.db" -o \
-         "$basefile_dst" == "desktop.ini" -o \
-         "$basefile_dst" == ".ds_store" -o \
-         "$basefile_dst" == "icon\r" -o \
-         "$basefile_dst" == ".dropbox" -o \
+    if [[ "$basefile_dst" == "thumbs.db" || \
+         "$basefile_dst" == "desktop.ini" || \
+         "$basefile_dst" == ".ds_store" || \
+         "$basefile_dst" == "icon\r" || \
+         "$basefile_dst" == ".dropbox" || \
          "$basefile_dst" == ".dropbox.attr" \
-       ]; then
+       ]]; then
         print " > Skipping not allowed file name \"${FILE_DST/\/\///}\"\n"
         return
     fi
+
+    shopt -u nocasematch
 
     #Checking file size
     FILE_SIZE=$(file_size "$FILE_SRC")
