@@ -105,7 +105,7 @@ while getopts ":qpkdf:" opt; do
   esac
 done
 
-if [ $DEBUG -ne 0 ]; then
+if [[ $DEBUG != 0 ]]; then
     set -x
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
@@ -113,7 +113,7 @@ fi
 #Print the message based on $QUIET variable
 function print
 {
-    if [ $QUIET -eq 0 ]; then
+    if [[ $QUIET != 0 ]]; then
 	    echo -ne "$1";
     fi
 }
@@ -127,7 +127,7 @@ function utime
 #Remove temporary files
 function remove_temp_files
 {
-    if [ $DEBUG -eq 0 ]; then
+    if [[ $DEBUG != 0 ]]; then
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
     fi
@@ -144,12 +144,12 @@ function remove_temp_files
 function file_size
 {
     #Some embedded linux devices
-    if [ "$OSTYPE" == "linux-gnueabi" -o "$OSTYPE" == "linux-gnu" ]; then
+    if [[ $OSTYPE == "linux-gnueabi" || $OSTYPE == "linux-gnu" ]]; then
         stat -c "%s" "$1"
         return
 
     #Generic Unix
-    elif [ "${OSTYPE:0:5}" == "linux" -o "$OSTYPE" == "cygwin" -o "${OSTYPE:0:7}" == "solaris" -o "${OSTYPE}" == "darwin9" ]; then
+    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" || ${OSTYPE} == "darwin9" ]]; then
         stat --format="%s" "$1"
         return
 
@@ -245,14 +245,14 @@ function check_curl_status
     esac
 }
 
-if [ -z "$CURL_BIN" ]; then
+if [[ $CURL_BIN == "" ]]; then
     BIN_DEPS="$BIN_DEPS curl"
     CURL_BIN="curl"
 fi
 
 #Dependencies check
 which $BIN_DEPS > /dev/null
-if [ $? -ne 0 ]; then
+if [[ $? != 0 ]]; then
     for i in $BIN_DEPS; do
         which $i > /dev/null ||
             NOT_FOUND="$i $NOT_FOUND"
@@ -273,7 +273,7 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * )               printf -v o '%%%02x' "'$c"
+            * ) printf -v o '%%%02x' "'$c"
         esac
         encoded+="${o}"
     done
@@ -298,12 +298,12 @@ function db_stat
 
     #Exits...
     grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"
-    if [ $? -eq 0 -a "$IS_DELETED" != "true" ]; then
+    if [[ $? == 0 && $IS_DELETED != "true" ]]; then
 
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
 
         #It's a directory
-        if [ ! -z "$IS_DIR" ]; then
+        if [[ $IS_DIR != "" ]]; then
             echo "DIR"
         #It's a file
         else
@@ -326,17 +326,17 @@ function db_upload
 
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
     TYPE=$(db_stat "$DST")
-    if [ "$TYPE" == "DIR" ]; then
+    if [[ $TYPE == "DIR" ]]; then
         local filename=$(basename "$SRC")
         DST="$DST/$filename"
     fi
 
     #It's a file
-    if [ -f "$SRC" ]; then
+    if [[ -f $SRC ]]; then
         db_upload_file "$SRC" "$DST"
 
     #It's a directory
-    elif [ -d "$SRC" ]; then
+    elif [[ -d $SRC ]]; then
         db_upload_dir "$SRC" "$DST"
 
     #Unsupported object...
@@ -358,12 +358,12 @@ function db_upload_file
 
     #Checking not allowed file names
     basefile_dst=$(basename "$FILE_DST")
-    if [[ "$basefile_dst" == "thumbs.db" || \
-         "$basefile_dst" == "desktop.ini" || \
-         "$basefile_dst" == ".ds_store" || \
-         "$basefile_dst" == "icon\r" || \
-         "$basefile_dst" == ".dropbox" || \
-         "$basefile_dst" == ".dropbox.attr" \
+    if [[ $basefile_dst == "thumbs.db" || \
+         $basefile_dst == "desktop.ini" || \
+         $basefile_dst == ".ds_store" || \
+         $basefile_dst == "icon\r" || \
+         $basefile_dst == ".dropbox" || \
+         $basefile_dst == ".dropbox.attr" \
        ]]; then
         print " > Skipping not allowed file name \"${FILE_DST/\/\///}\"\n"
         return
@@ -376,7 +376,7 @@ function db_upload_file
 
     #Checking the free quota
     FREE_QUOTA=$(db_free_quota)
-    if [ $FILE_SIZE -gt $FREE_QUOTA ]; then
+    if (( $FILE_SIZE > $FREE_QUOTA )); then
         let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
         echo -e "Error: You have no enough space on your DropBox!"
         echo -e "Free quota: $FREE_MB_QUOTA Mb"
@@ -384,7 +384,7 @@ function db_upload_file
         exit 1
     fi
 
-    if [ $FILE_SIZE -gt 157286000 ]; then
+    if (( $FILE_SIZE > 157286000 )); then
         #If the file is greater than 150Mb, the chunked_upload API will be used
         db_chunked_upload_file "$FILE_SRC" "$FILE_DST"
     else
@@ -401,7 +401,7 @@ function db_simple_upload_file
     local FILE_SRC="$1"
     local FILE_DST=$(urlencode "$2")
     
-    if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
+    if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
         LINE_CR="\n"
     else
@@ -441,7 +441,7 @@ function db_chunked_upload_file
     local UPLOAD_ERROR=0
 
     #Uploading chunks...
-    while ([ $OFFSET -ne $FILE_SIZE ]); do
+    while ([[ $OFFSET != $FILE_SIZE ]]); do
 
         let OFFSET_MB=$OFFSET/1024/1024
 
@@ -449,7 +449,7 @@ function db_chunked_upload_file
         dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1048576 skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
 
         #Only for the first request these parameters are not included
-        if [ $OFFSET -ne 0 ]; then
+        if [[ $OFFSET != 0 ]]; then
             CHUNK_PARAMS="upload_id=$UPLOAD_ID&offset=$OFFSET"
         fi
 
@@ -469,7 +469,7 @@ function db_chunked_upload_file
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the upload is retried for max 3 times
-            if [ $UPLOAD_ERROR -gt 2 ]; then
+            if (( $UPLOAD_ERROR > 2 )); then
                 print " FAILED\n"
                 print "An error occurred requesting /chunked_upload\n"
                 remove_temp_files
@@ -498,7 +498,7 @@ function db_chunked_upload_file
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the commit is retried for max 3 times
-            if [ $UPLOAD_ERROR -gt 2 ]; then
+            if (( $UPLOAD_ERROR > 2 )); then
                 print " FAILED\n"
                 print "An error occurred requesting /commit_chunked_upload\n"
                 remove_temp_files
@@ -559,15 +559,15 @@ function db_download
     TYPE=$(db_stat "$SRC")
 
     #It's a directory
-    if [ $TYPE == "DIR" ]; then
+    if [[ $TYPE == "DIR" ]]; then
 
         #If the DST folder is not specified, I assume that is the current directory
-        if [ -z "$DST" ]; then
+        if [[ $DST == "" ]]; then
             DST="."
         fi
 
         #Checking if the destination directory exists
-        if [ ! -d "$DST" ]; then
+        if [[ ! -d $DST ]]; then
             local basedir=""
         else
             local basedir=$(basename "$SRC")
@@ -578,7 +578,7 @@ function db_download
         mkdir -p "$DST/$basedir"
 
         #Check
-        if [ $? -eq 0 ]; then
+        if [[ $? == 0 ]]; then
             print "DONE\n"
         else
             print "FAILED\n"
@@ -603,7 +603,7 @@ function db_download
             FILE=${FILE##*/}
             local TYPE=${line#*:}
 
-            if [ "$TYPE" == "false" ]; then
+            if [[ $TYPE == "false" ]]; then
                 db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
             else
                 db_download "$SRC/$FILE" "$DST/$basedir"
@@ -614,15 +614,15 @@ function db_download
         rm -fr $TMP_DIR_CONTENT_FILE
 
     #It's a file
-    elif [ $TYPE == "FILE" ]; then
+    elif [[ $TYPE == "FILE" ]]; then
 
         #Checking DST
-        if [ -z "$DST" ]; then
+        if [[ $DST == "" ]]; then
             DST=$(basename "$SRC")
         fi
 
         #If the destination is a directory, the file will be download into
-        if [ -d "$DST" ]; then
+        if [[ -d $DST ]]; then
             DST="$DST/$SRC"
         fi
 
@@ -644,7 +644,7 @@ function db_download_file
     local FILE_SRC=$(urlencode "$1")
     local FILE_DST=$2
 
-    if [ $SHOW_PROGRESSBAR -eq 1 -a $QUIET -eq 0 ]; then
+    if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
         LINE_CR="\n"
     else
@@ -714,7 +714,7 @@ function db_unlink
 {
     echo -ne "\n Are you sure you want unlink this script from your Dropbox account? [y/n]"
     read answer
-    if [ "$answer" == "y" ]; then
+    if [[ $answer == "y" ]]; then
         rm -fr "$CONFIG_FILE"
         echo -ne "DONE\n"
     fi
@@ -752,7 +752,7 @@ function db_move
     TYPE=$(db_stat "$FILE_DST")
 
     #If the destination it's a directory, the source will be moved into it
-    if [ "$TYPE" == "DIR" ]; then
+    if [[ $TYPE == "DIR" ]]; then
         local filename=$(basename "$FILE_SRC")
         FILE_DST="$FILE_DST/$filename"
     fi
@@ -815,7 +815,7 @@ function db_list
         local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
 
         #It's a directory
-        if [ ! -z "$IS_DIR" ]; then
+        if [[ $IS_DIR != "" ]]; then
 
             print "DONE\n"
 
@@ -835,7 +835,7 @@ function db_list
                 FILE=${FILE##*/}
                 local TYPE=${line#*:}
 
-                if [ "$TYPE" == "false" ]; then
+                if [[ $TYPE == "false" ]]; then
                     printf " [F] $FILE\n"
                 else
                     printf " [D] $FILE\n"
@@ -882,7 +882,7 @@ function db_share
 ################
 
 #CHECKING FOR AUTH FILE
-if [ -f "$CONFIG_FILE" ]; then
+if [[ -f $CONFIG_FILE ]]; then
 
     #Loading data... and change old format config if necesary.
     source "$CONFIG_FILE" 2>/dev/null || {
@@ -890,7 +890,7 @@ if [ -f "$CONFIG_FILE" ]; then
     }
 
     #Checking the loaded data
-    if [ -z "$APPKEY" -o -z "$APPSECRET" -o -z "$OAUTH_ACCESS_TOKEN_SECRET" -o -z "$OAUTH_ACCESS_TOKEN" ]; then
+    if [[ $APPKEY == "" || $APPSECRET == "" || $OAUTH_ACCESS_TOKEN_SECRET == "" || $OAUTH_ACCESS_TOKEN == "" ]]; then
         echo -ne "Error loading data from $CONFIG_FILE...\n"
         echo -ne "It is recommended to run $0 unlink\n"
         remove_temp_files
@@ -898,7 +898,7 @@ if [ -f "$CONFIG_FILE" ]; then
     fi
 
     #Back compatibility with previous Dropbox Uploader versions
-    if [ -z "$ACCESS_LEVEL" ]; then
+    if [[ $ACCESS_LEVEL == "" ]]; then
         ACCESS_LEVEL="dropbox"
     fi
 
@@ -929,7 +929,7 @@ else
         echo -n " # Access level you have chosen, App folder or Full Dropbox [a/f]: "
         read ACCESS_LEVEL
 
-        if [ "$ACCESS_LEVEL" == "a" ]; then
+        if [[ $ACCESS_LEVEL == "a" ]]; then
             ACCESS_LEVEL="sandbox"
             ACCESS_MSG="App Folder"
         else
@@ -939,7 +939,7 @@ else
 
         echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG, it's ok? [y/n]"
         read answer
-        if [ "$answer" == "y" ]; then
+        if [[ $answer == "y" ]]; then
             break;
         fi
 
@@ -953,7 +953,7 @@ else
     OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
     OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
 
-    if [ -n "$OAUTH_TOKEN" -a -n "$OAUTH_TOKEN_SECRET" ]; then
+    if [[ $OAUTH_TOKEN != "" && $OAUTH_TOKEN_SECRET != "" ]]; then
         echo -ne "OK\n"
     else
         echo -ne " FAILED\n\n Please, check your App key and secret...\n\n"
@@ -978,7 +978,7 @@ else
         OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_UID=$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
 
-        if [ -n "$OAUTH_ACCESS_TOKEN" -a -n "$OAUTH_ACCESS_TOKEN_SECRET" -a -n "$OAUTH_ACCESS_UID" ]; then
+        if [[ $OAUTH_ACCESS_TOKEN != "" && $OAUTH_ACCESS_TOKEN_SECRET != "" && $OAUTH_ACCESS_UID != "" ]]; then
             echo -ne "OK\n"
 
             #Saving data in new format, compatible with source command.
@@ -1017,15 +1017,15 @@ case $COMMAND in
         FILE_DST=$ARG2
 
         #Checking FILE_SRC
-        if [ ! -f "$FILE_SRC" -a ! -d "$FILE_SRC" ]; then
+        if [[ ! -f $FILE_SRC && ! -d $FILE_SRC ]]; then
             echo -e "Error: No such file or directory: $FILE_SRC"
             remove_temp_files
             exit 1
         fi
 
         #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
-            if [ -f "$FILE_SRC" ]; then
+        if [[ $FILE_DST == "" ]]; then
+            if [[ -f $FILE_SRC ]]; then
                 FILE_DST=/$(basename "$FILE_SRC")
             else
                 FILE_DST=/
@@ -1042,7 +1042,7 @@ case $COMMAND in
         FILE_DST=$ARG2
 
         #Checking FILE_SRC
-        if [ -z "$FILE_SRC" ]; then
+        if [[ $FILE_SRC == "" ]]; then
             echo -e "Error: Please specify the file to download"
             remove_temp_files
             exit 1
@@ -1057,7 +1057,7 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
+        if [[ $FILE_DST == "" ]]; then
             echo -e "Error: Please specify the file to share"
             remove_temp_files
             exit 1
@@ -1078,7 +1078,7 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
+        if [[ $FILE_DST == "" ]]; then
             echo -e "Error: Please specify the file to remove"
             remove_temp_files
             exit 1
@@ -1094,14 +1094,14 @@ case $COMMAND in
         FILE_DST=$ARG2
 
         #Checking FILE_SRC
-        if [ -z "$FILE_SRC" ]; then
+        if [[ $FILE_SRC == "" ]]; then
             echo -e "Error: Please specify the source file"
             remove_temp_files
             exit 1
         fi
 
         #Checking FILE_DST
-        if [ -z "$FILE_DST" ]; then
+        if [[ $FILE_DST == "" ]]; then
             echo -e "Error: Please specify the destination file"
             remove_temp_files
             exit 1
@@ -1116,7 +1116,7 @@ case $COMMAND in
         DIR_DST=$ARG1
 
         #Checking DIR_DST
-        if [ -z "$DIR_DST" ]; then
+        if [[ $DIR_DST == "" ]]; then
             echo -e "Error: Please specify the destination directory"
             remove_temp_files
             exit 1
@@ -1131,7 +1131,7 @@ case $COMMAND in
         DIR_DST=$ARG1
 
         #Checking DIR_DST
-        if [ -z "$DIR_DST" ]; then
+        if [[ $DIR_DST = "" ]]; then
             DIR_DST="/"
         fi
 
