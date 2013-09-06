@@ -85,6 +85,8 @@ Load the configuration file from a specific file
 
 * **-d**  
 Enable DEBUG mode
+* **-d**  
+Enable DEBUG mode
 
 * **-q**  
 Quiet mode. Don't show progress meter or messages
