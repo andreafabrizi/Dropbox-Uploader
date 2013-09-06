@@ -273,6 +273,42 @@ function sh_mv
     fi
 }
 
+function sh_cp
+{
+    local arg1=$1
+    local arg2=$2
+
+    if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
+
+        #SRC relative or absolute path?
+        if [ ${arg1:0:1} == "/" ]; then
+            SRC="$arg1"
+        else
+            SRC="$CWD/$arg1"
+        fi
+
+        #DST relative or absolute path?
+        if [ ${arg2:0:1} == "/" ]; then
+            DST="$arg2"
+        else
+            DST="$CWD/$arg2"
+        fi
+
+        $DU $DU_OPT copy $(normalize_path "$SRC") $(normalize_path "$DST")
+
+        #Checking for errors
+        if [ $? -ne 0 ]; then
+            echo -e "cp: cannot copy '$arg1' to '$arg2'"
+        fi
+
+    #args error
+    else
+        echo -e "cp: missing operand"
+        echo -e "syntax: cp FILE/DIR DEST_FILE/DIR"
+    fi
+}
+
+
 function sh_free
 {
     $DU $DU_OPT info | grep "Free:" | cut -f 2
@@ -337,6 +373,10 @@ while (true); do
             sh_mv "$arg1" "$arg2"
         ;;
 
+        cp)
+            sh_cp "$arg1" "$arg2"
+        ;;
+
         cat)
             sh_cat "$arg1"
         ;;
@@ -358,7 +398,7 @@ while (true); do
         ;;
 
         help)
-            echo -e "Availabe commands: ls, cd, pwd, get, put, cat, rm, mkdir, mv, free, lls, lpwd, lcd, help, exit\n"
+            echo -e "Supported commands: ls, cd, pwd, get, put, cat, rm, mkdir, mv, cp, free, lls, lpwd, lcd, help, exit\n"
         ;;
 
         quit|exit)
