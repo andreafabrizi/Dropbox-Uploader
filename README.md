@@ -48,11 +48,10 @@ The syntax is quite simple:
 * **upload** [LOCAL_FILE/DIR] &lt;REMOTE_FILE/DIR&gt;  
 Upload a local file or directory to a remote Dropbox folder.  
 If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); 
-in this case, if VERBOSE is set to 1, a . (dot) is printed for every chunk successfully uploaded. 
-Instead, if an error occurs during the chunk uploading, a * (star) is printed and the upload 
-is retried for a maximum of three times.  
-Only if the file is smaller than 150Mb, the standard upload API is used, and if VERBOSE is set 
-to 1 the default curl progress bar is displayed during the upload process.
+in this case a . (dot) is printed for every chunk successfully uploaded and a * (star) if an error 
+occurs (the upload is retried for a maximum of three times).
+Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is used
+the default curl progress bar is displayed during the upload process.
 
 * **download** [REMOTE_FILE/DIR] &lt;LOCAL_FILE/DIR&gt;  
 Download file or directory from Dropbox to a local folder
@@ -82,6 +81,9 @@ Unlink the script from your Dropbox account
 **Optional parameters:**  
 * **-f [FILENAME]**  
 Load the configuration file from a specific file
+
+* **-s**  
+Skip already existing files when download/upload. Default: Overwrite
 
 * **-d**  
 Enable DEBUG mode
