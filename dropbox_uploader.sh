@@ -348,6 +348,18 @@ function db_upload
     local SRC=$(normalize_path "$1")
     local DST=$(normalize_path "$2")
 
+    #Checking if the file/dir exists
+    if [[ ! -f $SRC && ! -d $SRC ]]; then
+        print " > No such file or directory: $SRC\n"
+        return
+    fi
+
+    #Checking if the file/dir has read permissions
+    if [[ ! -r $SRC ]]; then
+        print " > Error reading file $SRC: permission denied\n"
+        return
+    fi
+    
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
     TYPE=$(db_stat "$DST")
     if [[ $TYPE == "DIR" ]]; then
@@ -421,7 +433,7 @@ function db_simple_upload_file
 {
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
-    
+
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
         LINE_CR="\n"
@@ -677,6 +689,15 @@ function db_download_file
     #Checking if the file already exists
     if [[ -f $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
+        return
+    fi
+
+    #Creating the empty file, that for two reasons:
+    #1) In this way I can check if the destination file is writable or not
+    #2) Curl doesn't automatically creates files with 0 bytes size
+    dd if=/dev/zero of="$FILE_DST" count=0 2> /dev/null
+    if [[ $? != 0 ]]; then
+        print " > Error writing file $FILE_DST: permission denied\n"
         return
     fi
 
@@ -1042,8 +1063,8 @@ case $COMMAND in
         FILE_DST=$ARG2
 
         #Checking FILE_SRC
-        if [[ ! -f $FILE_SRC && ! -d $FILE_SRC ]]; then
-            echo -e "Error: No such file or directory: $FILE_SRC"
+        if [[ $FILE_SRC == "" ]]; then
+            echo -e "Error: invalid source file or directory"
             remove_temp_files
             exit 1
         fi
@@ -1068,7 +1089,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [[ $FILE_SRC == "" ]]; then
-            echo -e "Error: Please specify the file to download"
+            echo -e "Error: invalid source file or directory"
             remove_temp_files
             exit 1
         fi
