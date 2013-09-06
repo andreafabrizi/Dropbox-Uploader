@@ -66,7 +66,7 @@ if [ -z "$BASH_VERSION" ]; then
 fi
 
 shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
-shopt -s dotglob  #Bash includes filenames beginning with a ‘.’ in the results of filename expansion
+shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
 while getopts ":qpkdf:" opt; do
@@ -113,7 +113,7 @@ fi
 #Print the message based on $QUIET variable
 function print
 {
-    if [[ $QUIET != 0 ]]; then
+    if [[ $QUIET == 0 ]]; then
 	    echo -ne "$1";
     fi
 }
