@@ -37,6 +37,7 @@ DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
+ERROR_STATUS=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -351,12 +352,14 @@ function db_upload
     #Checking if the file/dir exists
     if [[ ! -f $SRC && ! -d $SRC ]]; then
         print " > No such file or directory: $SRC\n"
+        ERROR_STATUS=1
         return
     fi
 
     #Checking if the file/dir has read permissions
     if [[ ! -r $SRC ]]; then
         print " > Error reading file $SRC: permission denied\n"
+        ERROR_STATUS=1
         return
     fi
     
@@ -453,8 +456,7 @@ function db_simple_upload_file
     else
         print "FAILED\n"
         print "An error occurred requesting /upload\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -505,8 +507,8 @@ function db_chunked_upload_file
             if (( $UPLOAD_ERROR > 2 )); then
                 print " FAILED\n"
                 print "An error occurred requesting /chunked_upload\n"
-                remove_temp_files
-                exit 1
+                ERROR_STATUS=1
+                return
             fi
         fi
 
@@ -534,8 +536,8 @@ function db_chunked_upload_file
             if (( $UPLOAD_ERROR > 2 )); then
                 print " FAILED\n"
                 print "An error occurred requesting /commit_chunked_upload\n"
-                remove_temp_files
-                exit 1
+                ERROR_STATUS=1
+                return
             fi
         fi
 
@@ -616,8 +618,8 @@ function db_download
             print "DONE\n"
         else
             print "FAILED\n"
-            remove_temp_files
-            exit 1
+            ERROR_STATUS=1
+            return
         fi
 
         #Extracting directory content [...]
@@ -664,9 +666,9 @@ function db_download
     
     #Doesn't exists
     else
-        print "Error: No such file or directory: $SRC\n"
-        remove_temp_files
-        exit 1
+        print " > No such file or directory: $SRC\n"
+        ERROR_STATUS=1
+        return
     fi
 }
 
@@ -698,6 +700,7 @@ function db_download_file
     dd if=/dev/zero of="$FILE_DST" count=0 2> /dev/null
     if [[ $? != 0 ]]; then
         print " > Error writing file $FILE_DST: permission denied\n"
+        ERROR_STATUS=1
         return
     fi
 
@@ -712,8 +715,8 @@ function db_download_file
     else
         print "FAILED\n"
         rm -fr "$FILE_DST"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
+        return
     fi
 }
 
@@ -753,8 +756,7 @@ function db_account_info
 
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -785,8 +787,7 @@ function db_delete
         print "DONE\n"
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -816,8 +817,7 @@ function db_move
         print "DONE\n"
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -839,8 +839,7 @@ function db_mkdir
         print "ALREADY EXISTS\n"
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -890,15 +889,13 @@ function db_list
 
         #It's a file
         else
-            print "FAILED $DIR_DST is not a directory!\n"
-            remove_temp_files
-            exit 1
+            print "FAILED: $DIR_DST is not a directory!\n"
+            ERROR_STATUS=1
         fi
 
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -918,8 +915,7 @@ function db_share
         echo $(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
     else
         print "FAILED\n"
-        remove_temp_files
-        exit 1
+        ERROR_STATUS=1
     fi
 }
 
@@ -1038,12 +1034,13 @@ else
             break
         else
             print " FAILED\n"
+            ERROR_STATUS=1
         fi
 
     done;
 
     remove_temp_files
-    exit 0
+    exit $ERROR_STATUS
 fi
 
 ################
@@ -1195,6 +1192,7 @@ case $COMMAND in
 
         if [[ $COMMAND != "" ]]; then
             print "Error: Unknown command: $COMMAND\n\n"
+            ERROR_STATUS=1
         fi
         usage
 
@@ -1203,4 +1201,4 @@ case $COMMAND in
 esac
 
 remove_temp_files
-exit 0
+exit $ERROR_STATUS
