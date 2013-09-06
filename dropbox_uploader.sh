@@ -115,6 +115,31 @@ if [[ $DEBUG != 0 ]]; then
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
 
+if [[ $CURL_BIN == "" ]]; then
+    BIN_DEPS="$BIN_DEPS curl"
+    CURL_BIN="curl"
+fi
+
+#Dependencies check
+which $BIN_DEPS > /dev/null
+if [[ $? != 0 ]]; then
+    for i in $BIN_DEPS; do
+        which $i > /dev/null ||
+            NOT_FOUND="$i $NOT_FOUND"
+    done
+    echo -e "Error: Required program could not be found: $NOT_FOUND"
+    exit 1
+fi
+
+#Check if readlink is installed and supports the -m option
+#It's not necessary, so no problem if it's not installed
+which readlink > /dev/null
+if [[ $? == 0 && $(readlink -m "//test" 2> /dev/null) == "/test" ]]; then
+    HAVE_READLINK=1
+else
+    HAVE_READLINK=0
+fi
+
 #Print the message based on $QUIET variable
 function print
 {
@@ -251,23 +276,6 @@ function check_curl_status
     esac
 }
 
-if [[ $CURL_BIN == "" ]]; then
-    BIN_DEPS="$BIN_DEPS curl"
-    CURL_BIN="curl"
-fi
-
-#Dependencies check
-which $BIN_DEPS > /dev/null
-if [[ $? != 0 ]]; then
-    for i in $BIN_DEPS; do
-        which $i > /dev/null ||
-            NOT_FOUND="$i $NOT_FOUND"
-    done
-    echo -e "Error: Required program could not be found: $NOT_FOUND"
-    remove_temp_files
-    exit 1
-fi
-
 #Urlencode
 function urlencode
 {
@@ -287,15 +295,25 @@ function urlencode
     echo "$encoded"
 }
 
+function normalize_path
+{
+    path=$1
+    if [[ $HAVE_READLINK == 1 ]]; then
+        readlink -m "$path"
+    else
+        echo "$path"
+    fi
+}
+
 #Check if it's a file or directory
 #Returns FILE/DIR/ERR
 function db_stat
 {
-    local FILE=$(urlencode "$1")
+    local FILE=$(normalize_path "$1")
 
     #Checking if it's a file or a directory
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$FILE?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
     #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
@@ -327,8 +345,8 @@ function db_stat
 #$2 = Remote destination file/dir
 function db_upload
 {
-    local SRC="$1"
-    local DST="$2"
+    local SRC=$(normalize_path "$1")
+    local DST=$(normalize_path "$2")
 
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
     TYPE=$(db_stat "$DST")
@@ -357,21 +375,21 @@ function db_upload
 #$2 = Remote destination file
 function db_upload_file
 {
-    local FILE_SRC="$1"
-    local FILE_DST="$2"
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
 
     shopt -s nocasematch
 
     #Checking not allowed file names
     basefile_dst=$(basename "$FILE_DST")
     if [[ $basefile_dst == "thumbs.db" || \
-         $basefile_dst == "desktop.ini" || \
-         $basefile_dst == ".ds_store" || \
-         $basefile_dst == "icon\r" || \
-         $basefile_dst == ".dropbox" || \
-         $basefile_dst == ".dropbox.attr" \
+          $basefile_dst == "desktop.ini" || \
+          $basefile_dst == ".ds_store" || \
+          $basefile_dst == "icon\r" || \
+          $basefile_dst == ".dropbox" || \
+          $basefile_dst == ".dropbox.attr" \
        ]]; then
-        print " > Skipping not allowed file name \"${FILE_DST/\/\///}\"\n"
+        print " > Skipping not allowed file name \"$FILE_DST\"\n"
         return
     fi
 
@@ -393,7 +411,7 @@ function db_upload_file
     #Checking if the file already exists
     TYPE=$(db_stat "$FILE_DST")
     if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
-        print " > Skipping already existing file \"${FILE_DST/\/\///}\"\n"
+        print " > Skipping already existing file \"$FILE_DST\"\n"
         return
     fi
 
@@ -411,8 +429,8 @@ function db_upload_file
 #$2 = Remote destination file
 function db_simple_upload_file
 {
-    local FILE_SRC="$1"
-    local FILE_DST=$(urlencode "$2")
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
     
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
@@ -422,9 +440,9 @@ function db_simple_upload_file
         LINE_CR=""
     fi
 
-    print " > Uploading \"${1/\/\///}\" to \"${2/\/\///}\"... $LINE_CR"
+    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\"... $LINE_CR"
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -i --globoff -o "$RESPONSE_FILE" --upload-file "$FILE_SRC" "$API_UPLOAD_URL/$ACCESS_LEVEL/$(urlencode "$FILE_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
 
     #Check
@@ -443,10 +461,10 @@ function db_simple_upload_file
 #$2 = Remote destination file
 function db_chunked_upload_file
 {
-    local FILE_SRC="$1"
-    local FILE_DST=$(urlencode "$2")
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
 
-    print " > Uploading \"${2/\/\///}\" to \"${2/\/\///}\" z"
+    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
@@ -498,7 +516,7 @@ function db_chunked_upload_file
     while (true); do
 
         time=$(utime)
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$FILE_DST" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "upload_id=$UPLOAD_ID&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" "$API_CHUNKED_UPLOAD_COMMIT_URL/$ACCESS_LEVEL/$(urlencode "$FILE_DST")" 2> /dev/null
         check_curl_status
 
         #Check
@@ -529,8 +547,8 @@ function db_chunked_upload_file
 #$2 = Remote destination dir
 function db_upload_dir
 {
-    local DIR_SRC="$1"
-    local DIR_DST="$2"
+    local DIR_SRC=$(normalize_path "$1")
+    local DIR_DST=$(normalize_path "$2")
 
     #Creatig remote directory
     db_mkdir "$DIR_DST"
@@ -566,8 +584,8 @@ function db_free_quota
 #$2 = Local destination file/dir
 function db_download
 {
-    local SRC="$1"
-    local DST="$2"
+    local SRC=$(normalize_path "$1")
+    local DST=$(normalize_path "$2")
 
     TYPE=$(db_stat "$SRC")
 
@@ -586,9 +604,10 @@ function db_download
             local basedir=$(basename "$SRC")
         fi
 
-        print " > Downloading \"${1/\/\///}\" to \"$DST/$basedir\"... \n"
-        print " > Creating local directory \"$DST/$basedir\"... "
-        mkdir -p "$DST/$basedir"
+        DEST_DIR=$(normalize_path "$DST/$basedir")
+        print " > Downloading \"$SRC\" to \"$DEST_DIR\"... \n"
+        print " > Creating local directory \"$DEST_DIR\"... "
+        mkdir -p "$DEST_DIR"
 
         #Check
         if [[ $? == 0 ]]; then
@@ -617,9 +636,9 @@ function db_download
             local TYPE=${line#*:}
 
             if [[ $TYPE == "false" ]]; then
-                db_download_file "$SRC/$FILE" "$DST/$basedir/$FILE"
+                db_download_file "$SRC/$FILE" "$DEST_DIR/$FILE"
             else
-                db_download "$SRC/$FILE" "$DST/$basedir"
+                db_download "$SRC/$FILE" "$DEST_DIR"
             fi
 
         done < $TMP_DIR_CONTENT_FILE
@@ -654,8 +673,8 @@ function db_download
 #$2 = Local destination file
 function db_download_file
 {
-    local FILE_SRC=$(urlencode "$1")
-    local FILE_DST=$2
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
 
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
@@ -667,13 +686,13 @@ function db_download_file
 
     #Checking if the file already exists
     if [[ -f $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
-        print " > Skipping already existing file \"${FILE_DST/\/\///}\"\n"
+        print " > Skipping already existing file \"$FILE_DST\"\n"
         return
     fi
 
-    print " > Downloading \"$1\" to \"$FILE_DST\"... $LINE_CR"
+    print " > Downloading \"$FILE_SRC\" to \"$FILE_DST\"... $LINE_CR"
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$FILE_SRC?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS --globoff -D "$RESPONSE_FILE" -o "$FILE_DST" "$API_DOWNLOAD_URL/$ACCESS_LEVEL/$(urlencode "$FILE_SRC")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM"
     check_curl_status
 
     #Check
@@ -743,11 +762,11 @@ function db_unlink
 #$1 = Remote file to delete
 function db_delete
 {
-    local FILE_DST=$(urlencode "$1")
+    local FILE_DST=$(normalize_path "$1")
 
-    print " > Deleting \"$1\"... "
+    print " > Deleting \"$FILE_DST\"... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$FILE_DST" "$API_DELETE_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$(urlencode "$FILE_DST")" "$API_DELETE_URL" 2> /dev/null
     check_curl_status
 
     #Check
@@ -765,23 +784,20 @@ function db_delete
 #$2 = New file name or location
 function db_move
 {
-    local FILE_SRC="$1"
-    local FILE_DST="$2"
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
 
     TYPE=$(db_stat "$FILE_DST")
 
     #If the destination it's a directory, the source will be moved into it
     if [[ $TYPE == "DIR" ]]; then
         local filename=$(basename "$FILE_SRC")
-        FILE_DST="$FILE_DST/$filename"
+        FILE_DST=$(normalize_path "$FILE_DST/$filename")
     fi
 
-    local FILE_SRC=$(urlencode "$FILE_SRC")
-    local FILE_DST=$(urlencode "$FILE_DST")
-
-    print " > Moving \"$1\" to \"$2\" ... "
+    print " > Moving \"$FILE_SRC\" to \"$FILE_DST\" ... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$FILE_SRC&to_path=$FILE_DST" "$API_MOVE_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$(urlencode "$FILE_SRC")&to_path=$(urlencode "$FILE_DST")" "$API_MOVE_URL" 2> /dev/null
     check_curl_status
 
     #Check
@@ -798,11 +814,11 @@ function db_move
 #$1 = Remote directory to create
 function db_mkdir
 {
-    local DIR_DST=$(urlencode "$1")
+    local DIR_DST=$(normalize_path "$1")
 
-    print " > Creating Directory \"${1/\/\///}\"... "
+    print " > Creating Directory \"$DIR_DST\"... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$DIR_DST" "$API_MKDIR_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$(urlencode "$DIR_DST")" "$API_MKDIR_URL" 2> /dev/null
     check_curl_status
 
     #Check
@@ -821,11 +837,11 @@ function db_mkdir
 #$1 = Remote directory
 function db_list
 {
-    local DIR_DST=$1
+    local DIR_DST=$(normalize_path "$1")
 
-    print " > Listing \"$1\"... "
+    print " > Listing \"$DIR_DST\"... "
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$DIR_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$DIR_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM" 2> /dev/null
     check_curl_status
 
     #Check
@@ -879,10 +895,10 @@ function db_list
 #$1 = Remote file
 function db_share
 {
-    local FILE_DST=$(urlencode "$1")
+    local FILE_DST=$(normalize_path "$1")
 
     time=$(utime)
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$FILE_DST?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$(urlencode "$FILE_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$time&oauth_nonce=$RANDOM&short_url=false" 2> /dev/null
     check_curl_status
 
     #Check
@@ -1051,7 +1067,7 @@ case $COMMAND in
             fi
         fi
 
-        db_upload "$FILE_SRC" "$FILE_DST"
+        db_upload "$FILE_SRC" "/$FILE_DST"
 
     ;;
 
@@ -1067,7 +1083,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_download "$FILE_SRC" "$FILE_DST"
+        db_download "/$FILE_SRC" "$FILE_DST"
 
     ;;
 
@@ -1082,7 +1098,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_share "$FILE_DST"
+        db_share "/$FILE_DST"
 
     ;;
 
@@ -1103,7 +1119,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_delete "$FILE_DST"
+        db_delete "/$FILE_DST"
 
     ;;
 
@@ -1126,7 +1142,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_move "$FILE_SRC" "$FILE_DST"
+        db_move "/$FILE_SRC" "/$FILE_DST"
 
     ;;
 
@@ -1141,7 +1157,7 @@ case $COMMAND in
             exit 1
         fi
 
-        db_mkdir "$DIR_DST"
+        db_mkdir "/$DIR_DST"
 
     ;;
 
@@ -1154,7 +1170,7 @@ case $COMMAND in
             DIR_DST="/"
         fi
 
-        db_list "$DIR_DST"
+        db_list "/$DIR_DST"
 
     ;;
 
@@ -1166,7 +1182,9 @@ case $COMMAND in
 
     *)
 
-        print "Error: Unknown command: $COMMAND\n\n"
+        if [[ $COMMAND != "" ]]; then
+            print "Error: Unknown command: $COMMAND\n\n"
+        fi
         usage
 
     ;;
