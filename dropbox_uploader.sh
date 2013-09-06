@@ -236,8 +236,7 @@ function check_curl_status
 
         #Proxy error
         5)
-            echo ""
-            echo "Error: Couldn't resolve proxy. The given proxy host could not be resolved."
+            print "\nError: Couldn't resolve proxy. The given proxy host could not be resolved.\n"
 
             remove_temp_files
             exit 1
@@ -245,30 +244,25 @@ function check_curl_status
 
         #Missing CA certificates
         60|58)
-            echo ""
-            echo "Error: cURL is not able to performs peer SSL certificate verification."
-            echo "Please, install the default ca-certificates bundle."
-            echo "To do this in a Debian/Ubuntu based system, try:"
-            echo "  sudo apt-get install ca-certificates"
-            echo ""
-            echo "If the problem persists, try to use the -k option (insecure)."
-            echo ""
+            print "\nError: cURL is not able to performs peer SSL certificate verification.\n"
+            print "Please, install the default ca-certificates bundle.\n"
+            print "To do this in a Debian/Ubuntu based system, try:\n"
+            print "  sudo apt-get install ca-certificates\n\n"
+            print "If the problem persists, try to use the -k option (insecure).\n"
 
             remove_temp_files
             exit 1
         ;;
 
         6)
-            echo ""
-            echo "Error: Couldn't resolve host."
+            print "\nError: Couldn't resolve host.\n"
 
             remove_temp_files
             exit 1
         ;;
 
         7)
-            echo ""
-            echo "Error: Couldn't connect to host."
+            print "\nError: Couldn't connect to host.\n"
 
             remove_temp_files
             exit 1
@@ -1047,7 +1041,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [[ $FILE_SRC == "" ]]; then
-            echo -e "Error: invalid source file or directory"
+            print "Error: invalid source file or directory"
             remove_temp_files
             exit 1
         fi
@@ -1072,7 +1066,7 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [[ $FILE_SRC == "" ]]; then
-            echo -e "Error: invalid source file or directory"
+            print "Error: invalid source file or directory"
             remove_temp_files
             exit 1
         fi
@@ -1087,7 +1081,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [[ $FILE_DST == "" ]]; then
-            echo -e "Error: Please specify the file to share"
+            print "Error: Please specify the file to share"
             remove_temp_files
             exit 1
         fi
@@ -1108,7 +1102,7 @@ case $COMMAND in
 
         #Checking FILE_DST
         if [[ $FILE_DST == "" ]]; then
-            echo -e "Error: Please specify the file to remove"
+            print "Error: Please specify the file to remove"
             remove_temp_files
             exit 1
         fi
@@ -1124,14 +1118,14 @@ case $COMMAND in
 
         #Checking FILE_SRC
         if [[ $FILE_SRC == "" ]]; then
-            echo -e "Error: Please specify the source file"
+            print "Error: Please specify the source file"
             remove_temp_files
             exit 1
         fi
 
         #Checking FILE_DST
         if [[ $FILE_DST == "" ]]; then
-            echo -e "Error: Please specify the destination file"
+            print "Error: Please specify the destination file"
             remove_temp_files
             exit 1
         fi
@@ -1146,7 +1140,7 @@ case $COMMAND in
 
         #Checking DIR_DST
         if [[ $DIR_DST == "" ]]; then
-            echo -e "Error: Please specify the destination directory"
+            print "Error: Please specify the destination directory"
             remove_temp_files
             exit 1
         fi
