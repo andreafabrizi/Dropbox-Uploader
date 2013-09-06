@@ -398,16 +398,6 @@ function db_upload_file
     #Checking file size
     FILE_SIZE=$(file_size "$FILE_SRC")
 
-    #Checking the free quota
-    FREE_QUOTA=$(db_free_quota)
-    if (( $FILE_SIZE > $FREE_QUOTA )); then
-        let FREE_MB_QUOTA=$FREE_QUOTA/1024/1024
-        echo -e "Error: You have no enough space on your DropBox!"
-        echo -e "Free quota: $FREE_MB_QUOTA Mb"
-        remove_temp_files
-        exit 1
-    fi
-
     #Checking if the file already exists
     TYPE=$(db_stat "$FILE_DST")
     if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
