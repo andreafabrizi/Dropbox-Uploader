@@ -36,6 +36,7 @@ TMP_DIR="/tmp"
 DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
+SKIP_EXISTING_FILES=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -69,7 +70,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpkdf:" opt; do
+while getopts ":qpskdf:" opt; do
     case $opt in
 
     f)
@@ -90,6 +91,10 @@ while getopts ":qpkdf:" opt; do
     
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
+    ;;
+
+    s)
+      SKIP_EXISTING_FILES=1
     ;;
 
     \?)
@@ -180,6 +185,7 @@ function usage
 
     echo -e "\nOptional parameters:"
     echo -e "\t-f [FILENAME] Load the configuration file from a specific file"
+    echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
@@ -382,6 +388,13 @@ function db_upload_file
         echo -e "Free quota: $FREE_MB_QUOTA Mb"
         remove_temp_files
         exit 1
+    fi
+
+    #Checking if the file already exists
+    TYPE=$(db_stat "$FILE_DST")
+    if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
+        print " > Skipping already existing file \"${FILE_DST/\/\///}\"\n"
+        return
     fi
 
     if (( $FILE_SIZE > 157286000 )); then
@@ -650,6 +663,12 @@ function db_download_file
     else
         CURL_PARAMETERS="-s"
         LINE_CR=""
+    fi
+
+    #Checking if the file already exists
+    if [[ -f $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
+        print " > Skipping already existing file \"${FILE_DST/\/\///}\"\n"
+        return
     fi
 
     print " > Downloading \"$1\" to \"$FILE_DST\"... $LINE_CR"
