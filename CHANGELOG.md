@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Version 0.12 - 06 September 2013
+* Fixed problem uploading twice the same directory
+* Add checking for not allowed file names
+* Handling connection/resolving host errors
+* Better error handling
+* Converted if condition to BASH native syntax
+* Add normalize_path function, to canonicalize paths
+* Add -s option to skip existing files when upload/download
+* Removed check for free quota on every file upload to improve performance
+* Add checks for file permissions before writing/reading files on the local fs
+* Add copy function
+* Fixed unicode problem in file listing
+* A lot of minor changes and improvements
 
 ## Version 0.11.9 - 27 June 2013
 * Add missing -f option in usage
