@@ -49,6 +49,7 @@ API_UPLOAD_URL="https://api-content.dropbox.com/1/files_put"
 API_DOWNLOAD_URL="https://api-content.dropbox.com/1/files"
 API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_MOVE_URL="https://api.dropbox.com/1/fileops/move"
+API_COPY_URL="https://api.dropbox.com/1/fileops/copy"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
@@ -203,6 +204,7 @@ function usage
     echo -e "\t download [REMOTE_FILE/DIR] <LOCAL_FILE/DIR>"
     echo -e "\t delete   [REMOTE_FILE/DIR]"
     echo -e "\t move     [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]"
+    echo -e "\t copy     [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]"
     echo -e "\t mkdir    [REMOTE_DIR]"
     echo -e "\t list     <REMOTE_DIR>"
     echo -e "\t share    [REMOTE_FILE]"
@@ -806,6 +808,35 @@ function db_move
     fi
 }
 
+#Copy a remote file to a remote location
+#$1 = Remote file to rename or move
+#$2 = New file name or location
+function db_copy
+{
+    local FILE_SRC=$(normalize_path "$1")
+    local FILE_DST=$(normalize_path "$2")
+
+    TYPE=$(db_stat "$FILE_DST")
+
+    #If the destination it's a directory, the source will be copied into it
+    if [[ $TYPE == "DIR" ]]; then
+        local filename=$(basename "$FILE_SRC")
+        FILE_DST=$(normalize_path "$FILE_DST/$filename")
+    fi
+
+    print " > Copying \"$FILE_SRC\" to \"$FILE_DST\" ... "
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&from_path=$(urlencode "$FILE_SRC")&to_path=$(urlencode "$FILE_DST")" "$API_COPY_URL" 2> /dev/null
+    check_curl_status
+
+    #Check
+    if grep -q "HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print "DONE\n"
+    else
+        print "FAILED\n"
+        ERROR_STATUS=1
+    fi
+}
+
 #Create a new directory
 #$1 = Remote directory to create
 function db_mkdir
@@ -1131,6 +1162,29 @@ case $COMMAND in
         fi
 
         db_move "/$FILE_SRC" "/$FILE_DST"
+
+    ;;
+
+    copy)
+
+        FILE_SRC=$ARG1
+        FILE_DST=$ARG2
+
+        #Checking FILE_SRC
+        if [[ $FILE_SRC == "" ]]; then
+            print "Error: Please specify the source file"
+            remove_temp_files
+            exit 1
+        fi
+
+        #Checking FILE_DST
+        if [[ $FILE_DST == "" ]]; then
+            print "Error: Please specify the destination file"
+            remove_temp_files
+            exit 1
+        fi
+
+        db_copy "/$FILE_SRC" "/$FILE_DST"
 
     ;;
 
