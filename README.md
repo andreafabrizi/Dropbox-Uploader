@@ -62,6 +62,9 @@ Remove a remote file or directory from Dropbox
 * **move** [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]  
 Move o rename a remote file or directory
 
+* **copy** [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]  
+Copy a remote file or directory
+
 * **mkdir** [REMOTE_DIR]  
 Create a remote directory on DropBox
 
