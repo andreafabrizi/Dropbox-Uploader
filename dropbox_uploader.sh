@@ -895,9 +895,9 @@ function db_list
                 local TYPE=${line#*:}
 
                 if [[ $TYPE == "false" ]]; then
-                    printf " [F] $FILE\n"
+                    echo -ne " [F] $FILE\n"
                 else
-                    printf " [D] $FILE\n"
+                    echo -ne " [D] $FILE\n"
                 fi
             done < $RESPONSE_FILE
 
