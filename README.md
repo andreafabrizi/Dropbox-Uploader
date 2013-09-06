@@ -83,8 +83,9 @@ Unlink the script from your Dropbox account
 * **-f [FILENAME]**  
 Load the configuration file from a specific file
 
-* **-d**  
-Enable DEBUG mode
+* **-s**  
+Skip already existing files when download/upload. Default: Overwrite
+
 * **-d**  
 Enable DEBUG mode
 
