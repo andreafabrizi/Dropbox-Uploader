@@ -599,7 +599,7 @@ function db_download
             local basedir=$(basename "$SRC")
         fi
 
-        DEST_DIR=$(normalize_path "$DST/$basedir")
+        local DEST_DIR=$(normalize_path "$DST/$basedir")
         print " > Downloading \"$SRC\" to \"$DEST_DIR\"... \n"
         print " > Creating local directory \"$DEST_DIR\"... "
         mkdir -p "$DEST_DIR"
