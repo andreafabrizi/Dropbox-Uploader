@@ -159,7 +159,7 @@ function utime
 #Remove temporary files
 function remove_temp_files
 {
-    if [[ $DEBUG != 0 ]]; then
+    if [[ $DEBUG == 0 ]]; then
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
     fi
