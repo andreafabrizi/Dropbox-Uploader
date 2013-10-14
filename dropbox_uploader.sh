@@ -960,17 +960,17 @@ if [[ -f $CONFIG_FILE ]]; then
 #NEW SETUP...
 else
 
-    echo -ne "\n This is the first time you run this script.\n"
-    echo -ne " Please open this URL from your Browser, and access using your account:\n\n -> $APP_CREATE_URL\n"
-    echo -ne "\n If you haven't already done, click \"Create an App\" and fill in the\n"
-    echo -ne " form with the following data:\n\n"
-    echo -ne "  App name: MyUploader$RANDOM$RANDOM$RANDOM\n"
-    echo -ne "  App type: Core\n"
-    echo -ne "  Permission type: App folder or Full Dropbox\n\n"
-    echo -ne " Now, click on the \"Create\" button.\n\n"
+    echo -ne "\n This is the first time you run this script.\n\n"
+    echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
+    echo -ne " 2) Click on \"Create App\", then select \"Dropbox API app\"\n"
+    echo -ne " 3) Select \"Files and datastores\"\n"
+    echo -ne " 4) Now go on with the configuration, choosing the app permissions and access restrictions to your DropBox folder\n"
+    echo -ne " 5) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM)\n\n"
+
+    echo -ne " Now, click on the \"Create app\" button.\n\n"
 
     echo -ne " When your new App is successfully created, please type the\n"
-    echo -ne " App Key, App Secret and the Access level:\n\n"
+    echo -ne " App Key, App Secret and the Permission type shown in the confirmation page:\n\n"
 
     #Getting the app key and secret from the user
     while (true); do
@@ -981,7 +981,7 @@ else
         echo -n " # App secret: "
         read APPSECRET
 
-        echo -n " # Access level you have chosen, App folder or Full Dropbox [a/f]: "
+        echo -n " # Permission type, App folder or Full Dropbox [a/f]: "
         read ACCESS_LEVEL
 
         if [[ $ACCESS_LEVEL == "a" ]]; then
@@ -1018,8 +1018,8 @@ else
     while (true); do
 
         #USER AUTH
-        echo -ne "\n Please visit this URL from your Browser, and allow Dropbox Uploader\n"
-        echo -ne " to access your DropBox account:\n\n --> ${API_USER_AUTH_URL}?oauth_token=$OAUTH_TOKEN\n"
+        echo -ne "\n Please open the following URL in your Browser, and allow Dropbox Uploader\n"
+        echo -ne " to access your DropBox folder:\n\n --> ${API_USER_AUTH_URL}?oauth_token=$OAUTH_TOKEN\n"
         echo -ne "\nPress enter when done...\n"
         read
 
