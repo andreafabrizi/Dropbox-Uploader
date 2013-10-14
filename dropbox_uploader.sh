@@ -294,7 +294,7 @@ function urlencode
 
 function normalize_path
 {
-    path=$1
+    path=$(echo -e "$1")
     if [[ $HAVE_READLINK == 1 ]]; then
         readlink -m "$path"
     else
