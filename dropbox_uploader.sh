@@ -90,7 +90,7 @@ while getopts ":qpskdf:" opt; do
     p)
       SHOW_PROGRESSBAR=1
     ;;
-    
+
     k)
       CURL_ACCEPT_CERTIFICATES="-k"
     ;;
@@ -276,10 +276,14 @@ function check_http_response
     #Checking response file for generic errors
     if grep -q "HTTP/1.1 400" "$RESPONSE_FILE"; then
         ERROR_MSG=$(sed -n -e 's/{"error": "\([^"]*\)"}/\1/p' "$RESPONSE_FILE")
-        if [[ $ERROR_MSG =~ .*access.attempt.failed.because.this.app.is.not.configured.to.have.* ]]; then
-            echo -e "\nError: The Permission type/Access level configured doesn't match the DropBox App settings!\nPlease run \"$0 unlink\" and try again."
-            exit 1
-        fi
+
+        case $ERROR_MSG in
+             *access?attempt?failed?because?this?app?is?not?configured?to?have*)
+                echo -e "\nError: The Permission type/Access level configured doesn't match the DropBox App settings!\nPlease run \"$0 unlink\" and try again."
+                exit 1
+            ;;
+        esac
+
     fi
 
 }
@@ -368,7 +372,7 @@ function db_upload
         ERROR_STATUS=1
         return
     fi
-    
+
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
     TYPE=$(db_stat "$DST")
     if [[ $TYPE == "DIR" ]]; then
@@ -502,7 +506,7 @@ function db_chunked_upload_file
             print "."
             UPLOAD_ERROR=0
             UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE") 
+            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
         else
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
@@ -665,7 +669,7 @@ function db_download
         fi
 
         db_download_file "$SRC" "$DST"
-    
+
     #Doesn't exists
     else
         print " > No such file or directory: $SRC\n"
