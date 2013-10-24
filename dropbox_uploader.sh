@@ -483,6 +483,7 @@ function db_chunked_upload_file
     local OFFSET=0
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
+    local CHUNK_PARAMS=""
 
     #Uploading chunks...
     while ([[ $OFFSET != $FILE_SIZE ]]); do
