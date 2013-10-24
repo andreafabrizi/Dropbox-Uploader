@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Version 0.12.1 - 24 October 2013
+* Fixed unicode problem with special chars in file names
+* Fixed problem removing temp files
+* Improved detection of configuration error and better handling of http errors
+* Updated setup procedure
+* Fixed incompatibility with old bash version
+
 ## Version 0.12 - 06 September 2013
 * Fixed problem uploading twice the same directory
 * Add checking for not allowed file names
