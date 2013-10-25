@@ -19,6 +19,13 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
+
+
+
+
+
+
+
 #Default configuration file
 CONFIG_FILE=~/.dropbox_uploader
 
@@ -1248,6 +1255,7 @@ case $COMMAND in
     ;;
 
 esac
+
 
 remove_temp_files
 exit $ERROR_STATUS
