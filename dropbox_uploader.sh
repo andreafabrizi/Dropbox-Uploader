@@ -987,7 +987,7 @@ else
     echo -ne " 4) Now go on with the configuration, choosing the app permissions and access restrictions to your DropBox folder\n"
     echo -ne " 5) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM)\n\n"
 
-    echo -ne " Now, click on the \"Create app\" button.\n\n"
+    echo -ne " Now, click on the \"Create App\" button.\n\n"
 
     echo -ne " When your new App is successfully created, please type the\n"
     echo -ne " App Key, App Secret and the Permission type shown in the confirmation page:\n\n"
@@ -1012,7 +1012,7 @@ else
             ACCESS_MSG="Full Dropbox"
         fi
 
-        echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG, it's ok? [y/n]"
+        echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG. Looks ok? [y/n]"
         read answer
         if [[ $answer == "y" ]]; then
             break;
@@ -1038,7 +1038,7 @@ else
     while (true); do
 
         #USER AUTH
-        echo -ne "\n Please open the following URL in your Browser, and allow Dropbox Uploader\n"
+        echo -ne "\n Please open the following URL in your browser, and allow Dropbox Uploader\n"
         echo -ne " to access your DropBox folder:\n\n --> ${API_USER_AUTH_URL}?oauth_token=$OAUTH_TOKEN\n"
         echo -ne "\nPress enter when done...\n"
         read
