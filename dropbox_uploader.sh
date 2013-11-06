@@ -322,15 +322,19 @@ function normalize_path
 function db_stat
 {
     local FILE=$(normalize_path "$1")
-
+    
     #Checking if it's a file or a directory
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
     check_http_response
 
     #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
     #So we must check if the file exists or if it has been deleted
-    local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
-
+    if grep -q "\"is_deleted\":" "$RESPONSE_FILE"; then
+        local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+    else
+        local IS_DELETED="false"
+    fi
+    
     #Exits...
     grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"
     if [[ $? == 0 && $IS_DELETED != "true" ]]; then
