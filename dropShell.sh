@@ -32,7 +32,7 @@ fi
 
 #For MaxOSX install readlink using Homebrew: http://brew.sh/
 #brew install readlink
-if [ "${OSTYPE}" == "darwin9" ]; then
+if [ "${OSTYPE:0:6}" == "darwin" ]; then
     READLINK="greadlink"
 else
     READLINK="readlink"

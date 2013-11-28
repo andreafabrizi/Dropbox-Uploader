@@ -181,7 +181,7 @@ function file_size
         return
 
     #Generic Unix
-    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" || ${OSTYPE} == "darwin9" ]]; then
+    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" || ${OSTYPE:0:6} == "darwin" ]]; then
         stat --format="%s" "$1"
         return
 
