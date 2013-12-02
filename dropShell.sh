@@ -30,8 +30,8 @@ else
     fi
 fi
 
-#For MaxOSX install readlink using Homebrew: http://brew.sh/
-#brew install readlink
+#For MaxOSX, install coreutils (which includes greadlink)
+# $brew install coreutils
 if [ "${OSTYPE:0:6}" == "darwin" ]; then
     READLINK="greadlink"
 else
