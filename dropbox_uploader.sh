@@ -181,11 +181,11 @@ function file_size
         return
 
     #Generic Unix
-    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" || ${OSTYPE:0:6} == "darwin" ]]; then
+    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" ]]; then
         stat --format="%s" "$1"
         return
 
-    #BSD or others OS
+    #BSD, OSX and other OSs
     else
         stat -f "%z" "$1"
         return
