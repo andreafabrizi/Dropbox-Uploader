@@ -77,6 +77,10 @@ while getopts ":qpskdf:" opt; do
 
     f)
       CONFIG_FILE=$OPTARG
+      if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Config file does not exists."
+        exit 1
+      fi      
     ;;
 
     d)
@@ -1013,6 +1017,7 @@ else
     echo -ne " When your new App is successfully created, please type the\n"
     echo -ne " App Key, App Secret and the Permission type shown in the confirmation page:\n\n"
 
+    INPUT_COUNTER=1
     #Getting the app key and secret from the user
     while (true); do
 
@@ -1038,7 +1043,12 @@ else
         if [[ $answer == "y" ]]; then
             break;
         fi
-
+        #prevent the infinite loop when the script is running in a none-interactive environment.
+        INPUT_COUNTER=`expr $INPUT_COUNTER + 1`
+        if [[ $INPUT_COUNTER -ge 3 ]]; then
+          echo -ne "\n Too many regreted inputs, aborting."
+          exit 1
+        fi
     done
 
     #TOKEN REQUESTS
