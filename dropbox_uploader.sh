@@ -641,11 +641,11 @@ function db_download
 
         #Extracing files and subfolders
         TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
-        echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
-
+        echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([^"]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2: \3 \1/p' > $TMP_DIR_CONTENT_FILE
+        
         #For each line...
         while read -r line; do
-
+            
             local FILE=${line%:*}
             FILE=${FILE##*/}
             local TYPE=${line#*:}
@@ -905,19 +905,18 @@ function db_list
 {/g')
 
             #Extracing files and subfolders
-            echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $RESPONSE_FILE
+            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([^"]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2 \3 \1/p' > $RESPONSE_FILE
 
             #For each line...
             while read -r line; do
-
-                local FILE=${line%:*}
-                FILE=${FILE##*/}
-                local TYPE=${line#*:}
+                local FILE=`echo $line | cut -f1 -d ' '`
+                local TYPE=`echo $line | cut -f2 -d ' '`
+                local SIZE=`echo $line | cut -f3 -d ' '`
 
                 if [[ $TYPE == "false" ]]; then
-                    echo -ne " [F] $FILE\n"
+                    echo -ne " [F] $FILE\t$SIZE\n"
                 else
-                    echo -ne " [D] $FILE\n"
+                    echo -ne " [D] $FILE\t$SIZE\n"
                 fi
             done < $RESPONSE_FILE
 
