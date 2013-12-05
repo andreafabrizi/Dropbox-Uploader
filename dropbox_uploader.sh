@@ -77,6 +77,10 @@ while getopts ":qpskdf:" opt; do
 
     f)
       CONFIG_FILE=$OPTARG
+      if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Config file does not exists."
+        exit 1
+      fi      
     ;;
 
     d)
