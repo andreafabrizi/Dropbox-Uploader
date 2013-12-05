@@ -593,8 +593,7 @@ function db_free_quota
         echo $free_quota
 
     else
-        #On error, a big free quota is returned, so if this function fails the upload will not be blocked...
-        echo 1000000000000
+        echo 0
     fi
 }
 
@@ -643,16 +642,18 @@ function db_download
         local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
 {/g')
 
-        #Extracing files and subfolders
+        #Extracting files and subfolders
         TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
-        echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([^"]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2: \3 \1/p' > $TMP_DIR_CONTENT_FILE
-        
-        #For each line...
+        echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
+
+        #For each entry...
         while read -r line; do
             
             local FILE=${line%:*}
-            FILE=${FILE##*/}
             local TYPE=${line#*:}
+
+            #Removing unneeded /
+            FILE=${FILE##*/}
 
             if [[ $TYPE == "false" ]]; then
                 db_download_file "$SRC/$FILE" "$DEST_DIR/$FILE"
@@ -908,20 +909,41 @@ function db_list
             local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
 {/g')
 
-            #Extracing files and subfolders
-            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([^"]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2 \3 \1/p' > $RESPONSE_FILE
+            #Extracting files and subfolders
+            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
 
-            #For each line...
+            #Looking for the biggest file size
+            #to calculate the padding to use
+            local padding=0
             while read -r line; do
-                local FILE=`echo $line | cut -f1 -d ' '`
-                local TYPE=`echo $line | cut -f2 -d ' '`
-                local SIZE=`echo $line | cut -f3 -d ' '`
+                local FILE=${line%:*}
+                local META=${line#*:}
+                local SIZE=${META#*;}
+
+                if (( ${#SIZE} > $padding )); then
+                    padding=${#SIZE}
+                fi
+            done < $RESPONSE_FILE
+
+            #For each entry...
+            while read -r line; do
+
+                local FILE=${line%:*}
+                local META=${line#*:}
+                local TYPE=${META%;*}
+                local SIZE=${META#*;}
+
+                #Removing unneeded /
+                FILE=${FILE##*/}
 
                 if [[ $TYPE == "false" ]]; then
-                    echo -ne " [F] $FILE\t$SIZE\n"
+                    TYPE="F"
                 else
-                    echo -ne " [D] $FILE\t$SIZE\n"
+                    TYPE="D"
                 fi
+
+                printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
+
             done < $RESPONSE_FILE
 
         #It's a file
@@ -1231,7 +1253,7 @@ case $COMMAND in
         DIR_DST=$ARG1
 
         #Checking DIR_DST
-        if [[ $DIR_DST = "" ]]; then
+        if [[ $DIR_DST == "" ]]; then
             DIR_DST="/"
         fi
 
