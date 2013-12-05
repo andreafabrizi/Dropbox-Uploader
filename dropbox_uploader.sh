@@ -1043,7 +1043,7 @@ else
         if [[ $answer == "y" ]]; then
             break;
         fi
-        #prevent the infinite loop when the script is running in a none-intercative environment.
+        #prevent the infinite loop when the script is running in a none-interactive environment.
         INPUT_COUNTER=`expr $INPUT_COUNTER + 1`
         if [[ $INPUT_COUNTER -ge 3 ]]; then
           echo -ne "\n Too many regreted inputs, aborting."
