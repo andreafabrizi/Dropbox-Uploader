@@ -938,7 +938,7 @@ function db_list
                     TYPE="D"
                 fi
 
-                printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
+                printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "`echo -e "$FILE"`"
 
             done < $RESPONSE_FILE
 
