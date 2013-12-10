@@ -113,6 +113,7 @@ while getopts ":qpskdf:" opt; do
 done
 
 if [[ $DEBUG != 0 ]]; then
+    echo $VERSION
     set -x
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
