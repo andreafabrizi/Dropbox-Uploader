@@ -57,7 +57,7 @@ API_SHARES_URL="https://api.dropbox.com/1/shares"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd printf mkdir"
+BIN_DEPS="sed basename date grep stat dd mkdir"
 VERSION="0.12.1"
 
 umask 077
