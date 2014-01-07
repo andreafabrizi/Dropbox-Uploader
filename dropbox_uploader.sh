@@ -276,7 +276,7 @@ function check_http_response
 
     #Checking response file for generic errors
     if grep -q "HTTP/1.1 400" "$RESPONSE_FILE"; then
-        ERROR_MSG=$(sed -n -e 's/{"error": "\([^"]*\)"}/\1/p' "$RESPONSE_FILE")
+        ERROR_MSG="$(sed -n -e 's/{"error": "\([^"]*\)"}/\1/p' "$RESPONSE_FILE")"
 
         case $ERROR_MSG in
              *access?attempt?failed?because?this?app?is?not?configured?to?have*)
@@ -310,7 +310,7 @@ function urlencode
 
 function normalize_path
 {
-    path=$(echo -e "$1")
+    path="$(echo -e "$1")"
     if [[ $HAVE_READLINK == 1 ]]; then
         readlink -m "$path"
     else
@@ -322,7 +322,7 @@ function normalize_path
 #Returns FILE/DIR/ERR
 function db_stat
 {
-    local FILE=$(normalize_path "$1")
+    local FILE="$(normalize_path "$1")"
     
     #Checking if it's a file or a directory
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
@@ -331,7 +331,7 @@ function db_stat
     #Even if the file/dir has been deleted from DropBox we receive a 200 OK response
     #So we must check if the file exists or if it has been deleted
     if grep -q "\"is_deleted\":" "$RESPONSE_FILE"; then
-        local IS_DELETED=$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+        local IS_DELETED="$(sed -n 's/.*"is_deleted":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")"
     else
         local IS_DELETED="false"
     fi
@@ -340,7 +340,7 @@ function db_stat
     grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"
     if [[ $? == 0 && $IS_DELETED != "true" ]]; then
 
-        local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
+        local IS_DIR="$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")"
 
         #It's a directory
         if [[ $IS_DIR != "" ]]; then
@@ -361,8 +361,8 @@ function db_stat
 #$2 = Remote destination file/dir
 function db_upload
 {
-    local SRC=$(normalize_path "$1")
-    local DST=$(normalize_path "$2")
+    local SRC="$(normalize_path "$1")"
+    local DST="$(normalize_path "$2")"
 
     #Checking if the file/dir exists
     if [[ ! -f $SRC && ! -d $SRC ]]; then
@@ -379,9 +379,9 @@ function db_upload
     fi
 
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
-    TYPE=$(db_stat "$DST")
+    TYPE="$(db_stat "$DST")"
     if [[ $TYPE == "DIR" ]]; then
-        local filename=$(basename "$SRC")
+        local filename="$(basename "$SRC")"
         DST="$DST/$filename"
     fi
 
@@ -405,13 +405,13 @@ function db_upload
 #$2 = Remote destination file
 function db_upload_file
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
     shopt -s nocasematch
 
     #Checking not allowed file names
-    basefile_dst=$(basename "$FILE_DST")
+    basefile_dst="$(basename "$FILE_DST")"
     if [[ $basefile_dst == "thumbs.db" || \
           $basefile_dst == "desktop.ini" || \
           $basefile_dst == ".ds_store" || \
@@ -426,10 +426,10 @@ function db_upload_file
     shopt -u nocasematch
 
     #Checking file size
-    FILE_SIZE=$(file_size "$FILE_SRC")
+    FILE_SIZE="$(file_size "$FILE_SRC")"
 
     #Checking if the file already exists
-    TYPE=$(db_stat "$FILE_DST")
+    TYPE="$(db_stat "$FILE_DST")"
     if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
@@ -449,8 +449,8 @@ function db_upload_file
 #$2 = Remote destination file
 function db_simple_upload_file
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
@@ -479,12 +479,12 @@ function db_simple_upload_file
 #$2 = Remote destination file
 function db_chunked_upload_file
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
     print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
 
-    local FILE_SIZE=$(file_size "$FILE_SRC")
+    local FILE_SIZE="$(file_size "$FILE_SRC")"
     local OFFSET=0
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
@@ -511,8 +511,8 @@ function db_chunked_upload_file
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
             print "."
             UPLOAD_ERROR=0
-            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
+            UPLOAD_ID="$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")"
+            OFFSET="$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")"
         else
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
@@ -564,8 +564,8 @@ function db_chunked_upload_file
 #$2 = Remote destination dir
 function db_upload_dir
 {
-    local DIR_SRC=$(normalize_path "$1")
-    local DIR_DST=$(normalize_path "$2")
+    local DIR_SRC="$(normalize_path "$1")"
+    local DIR_DST="$(normalize_path "$2")"
 
     #Creatig remote directory
     db_mkdir "$DIR_DST"
@@ -584,8 +584,8 @@ function db_free_quota
     #Check
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
-        quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
-        used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        quota="$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")"
+        used="$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")"
         let free_quota=$quota-$used
         echo $free_quota
 
@@ -599,10 +599,10 @@ function db_free_quota
 #$2 = Local destination file/dir
 function db_download
 {
-    local SRC=$(normalize_path "$1")
-    local DST=$(normalize_path "$2")
+    local SRC="$(normalize_path "$1")"
+    local DST="$(normalize_path "$2")"
 
-    TYPE=$(db_stat "$SRC")
+    TYPE="$(db_stat "$SRC")"
 
     #It's a directory
     if [[ $TYPE == "DIR" ]]; then
@@ -616,10 +616,10 @@ function db_download
         if [[ ! -d $DST ]]; then
             local basedir=""
         else
-            local basedir=$(basename "$SRC")
+            local basedir="$(basename "$SRC")"
         fi
 
-        local DEST_DIR=$(normalize_path "$DST/$basedir")
+        local DEST_DIR="$(normalize_path "$DST/$basedir")"
         print " > Downloading \"$SRC\" to \"$DEST_DIR\"... \n"
         print " > Creating local directory \"$DEST_DIR\"... "
         mkdir -p "$DEST_DIR"
@@ -636,8 +636,8 @@ function db_download
         #Extracting directory content [...]
         #and replacing "}, {" with "}\n{"
         #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
-        local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
-{/g')
+        local DIR_CONTENT="$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+{/g')"
 
         #Extracting files and subfolders
         TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
@@ -667,7 +667,7 @@ function db_download
 
         #Checking DST
         if [[ $DST == "" ]]; then
-            DST=$(basename "$SRC")
+            DST="$(basename "$SRC")"
         fi
 
         #If the destination is a directory, the file will be download into
@@ -690,8 +690,8 @@ function db_download
 #$2 = Local destination file
 function db_download_file
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
@@ -743,20 +743,20 @@ function db_account_info
     #Check
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
-        name=$(sed -n 's/.*"display_name": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+        name="$(sed -n 's/.*"display_name": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")"
         echo -e "\n\nName:\t$name"
 
-        uid=$(sed -n 's/.*"uid": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        uid="$(sed -n 's/.*"uid": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")"
         echo -e "UID:\t$uid"
 
-        email=$(sed -n 's/.*"email": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+        email="$(sed -n 's/.*"email": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")"
         echo -e "Email:\t$email"
 
-        quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        quota="$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")"
         let quota_mb=$quota/1024/1024
         echo -e "Quota:\t$quota_mb Mb"
 
-        used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        used="$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")"
         let used_mb=$used/1024/1024
         echo -e "Used:\t$used_mb Mb"
 
@@ -786,7 +786,7 @@ function db_unlink
 #$1 = Remote file to delete
 function db_delete
 {
-    local FILE_DST=$(normalize_path "$1")
+    local FILE_DST="$(normalize_path "$1")"
 
     print " > Deleting \"$FILE_DST\"... "
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$(urlencode "$FILE_DST")" "$API_DELETE_URL" 2> /dev/null
@@ -806,15 +806,15 @@ function db_delete
 #$2 = New file name or location
 function db_move
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
-    TYPE=$(db_stat "$FILE_DST")
+    TYPE="$(db_stat "$FILE_DST")"
 
     #If the destination it's a directory, the source will be moved into it
     if [[ $TYPE == "DIR" ]]; then
-        local filename=$(basename "$FILE_SRC")
-        FILE_DST=$(normalize_path "$FILE_DST/$filename")
+        local filename="$(basename "$FILE_SRC")"
+        FILE_DST="$(normalize_path "$FILE_DST/$filename")"
     fi
 
     print " > Moving \"$FILE_SRC\" to \"$FILE_DST\" ... "
@@ -835,15 +835,15 @@ function db_move
 #$2 = New file name or location
 function db_copy
 {
-    local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
+    local FILE_SRC="$(normalize_path "$1")"
+    local FILE_DST="$(normalize_path "$2")"
 
-    TYPE=$(db_stat "$FILE_DST")
+    TYPE="$(db_stat "$FILE_DST")"
 
     #If the destination it's a directory, the source will be copied into it
     if [[ $TYPE == "DIR" ]]; then
-        local filename=$(basename "$FILE_SRC")
-        FILE_DST=$(normalize_path "$FILE_DST/$filename")
+        local filename="$(basename "$FILE_SRC")"
+        FILE_DST="$(normalize_path "$FILE_DST/$filename")"
     fi
 
     print " > Copying \"$FILE_SRC\" to \"$FILE_DST\" ... "
@@ -863,7 +863,7 @@ function db_copy
 #$1 = Remote directory to create
 function db_mkdir
 {
-    local DIR_DST=$(normalize_path "$1")
+    local DIR_DST="$(normalize_path "$1")"
 
     print " > Creating Directory \"$DIR_DST\"... "
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM&root=$ACCESS_LEVEL&path=$(urlencode "$DIR_DST")" "$API_MKDIR_URL" 2> /dev/null
@@ -884,7 +884,7 @@ function db_mkdir
 #$1 = Remote directory
 function db_list
 {
-    local DIR_DST=$(normalize_path "$1")
+    local DIR_DST="$(normalize_path "$1")"
 
     print " > Listing \"$DIR_DST\"... "
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$DIR_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
@@ -893,7 +893,7 @@ function db_list
     #Check
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
 
-        local IS_DIR=$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")
+        local IS_DIR="$(sed -n 's/^\(.*\)\"contents":.\[.*/\1/p' "$RESPONSE_FILE")"
 
         #It's a directory
         if [[ $IS_DIR != "" ]]; then
@@ -903,11 +903,11 @@ function db_list
             #Extracting directory content [...]
             #and replacing "}, {" with "}\n{"
             #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
-            local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
-{/g')
+            local DIR_CONTENT="$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+{/g')"
 
             #Extracting files and subfolders
-            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
+            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\(.*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
 
             #Looking for the biggest file size
             #to calculate the padding to use
@@ -932,14 +932,13 @@ function db_list
 
                 #Removing unneeded /
                 FILE=${FILE##*/}
-
                 if [[ $TYPE == "false" ]]; then
                     TYPE="F"
                 else
                     TYPE="D"
                 fi
 
-                FILE=$(echo -e "$FILE")
+                FILE="$(echo -e "$FILE"|sed 's/\\\(.\)/\1/g')" # first escape BASH special chars and then unescape JSON escapes (the rest)
                 printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
 
             done < $RESPONSE_FILE
@@ -960,7 +959,7 @@ function db_list
 #$1 = Remote file
 function db_share
 {
-    local FILE_DST=$(normalize_path "$1")
+    local FILE_DST="$(normalize_path "$1")"
 
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_SHARES_URL/$ACCESS_LEVEL/$(urlencode "$FILE_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM&short_url=false" 2> /dev/null
     check_http_response
@@ -1047,8 +1046,8 @@ else
     echo -ne "\n > Token request... "
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL" 2> /dev/null
     check_http_response
-    OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
-    OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
+    OAUTH_TOKEN_SECRET="$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")"
+    OAUTH_TOKEN="$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")"
 
     if [[ $OAUTH_TOKEN != "" && $OAUTH_TOKEN_SECRET != "" ]]; then
         echo -ne "OK\n"
@@ -1070,9 +1069,9 @@ else
         echo -ne " > Access Token request... "
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL" 2> /dev/null
         check_http_response
-        OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
-        OAUTH_ACCESS_UID=$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")
+        OAUTH_ACCESS_TOKEN_SECRET="$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")"
+        OAUTH_ACCESS_TOKEN="$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")"
+        OAUTH_ACCESS_UID="$(sed -n 's/.*uid=\([0-9]*\)/\1/p' "$RESPONSE_FILE")"
 
         if [[ $OAUTH_ACCESS_TOKEN != "" && $OAUTH_ACCESS_TOKEN_SECRET != "" && $OAUTH_ACCESS_UID != "" ]]; then
             echo -ne "OK\n"
