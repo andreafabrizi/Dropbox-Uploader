@@ -914,7 +914,7 @@ function db_list
             local padding=0
             while read -r line; do
                 local FILE=${line%:*}
-                local META=${line#*:}
+                local META=${line##*:}
                 local SIZE=${META#*;}
 
                 if (( ${#SIZE} > $padding )); then
@@ -926,7 +926,7 @@ function db_list
             while read -r line; do
 
                 local FILE=${line%:*}
-                local META=${line#*:}
+                local META=${line##*:}
                 local TYPE=${META%;*}
                 local SIZE=${META#*;}
 
