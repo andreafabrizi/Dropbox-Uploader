@@ -91,7 +91,7 @@ CWD="/"
 
 function sh_ls
 {
-    local arg1=$1
+    local arg1="$1"
 
     #Listing current dir
     if [ -z "$arg1" ]; then
@@ -102,9 +102,9 @@ function sh_ls
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT list $(normalize_path "$arg1")
+            $DU $DU_OPT list "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT list $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT list "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -116,7 +116,7 @@ function sh_ls
 
 function sh_cd
 {
-    local arg1=$1
+    local arg1="$1"
 
     OLD_CWD=$CWD
 
@@ -138,16 +138,16 @@ function sh_cd
 
 function sh_get
 {
-    local arg1=$1
-    local arg2=$2
+    local arg1="$1"
+    local arg2="$2"
 
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT download $(normalize_path "$arg1") "$arg2"
+            $DU $DU_OPT download "$(normalize_path "$arg1")" "$arg2"
         else
-            $DU $DU_OPT download $(normalize_path "$CWD/$arg1") "$arg2"
+            $DU $DU_OPT download "$(normalize_path "$CWD/$arg1")" "$arg2"
         fi
 
         #Checking for errors
@@ -164,16 +164,16 @@ function sh_get
 
 function sh_put
 {
-    local arg1=$1
-    local arg2=$2
+    local arg1="$1"
+    local arg2="$2"
 
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
         if [ "${arg2:0:1}" == "/" ]; then
-            $DU $DU_OPT upload "$arg1" $(normalize_path "$arg2")
+            $DU $DU_OPT upload "$arg1" "$(normalize_path "$arg2")"
         else
-            $DU $DU_OPT upload "$arg1" $(normalize_path "$CWD/$arg2")
+            $DU $DU_OPT upload "$arg1" "$(normalize_path "$CWD/$arg2")"
         fi
 
         #Checking for errors
@@ -190,15 +190,15 @@ function sh_put
 
 function sh_rm
 {
-    local arg1=$1
+    local arg1="$1"
 
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT remove $(normalize_path "$arg1")
+            $DU $DU_OPT remove "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT remove $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT remove "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -215,15 +215,15 @@ function sh_rm
 
 function sh_mkdir
 {
-    local arg1=$1
+    local arg1="$1"
 
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT mkdir $(normalize_path "$arg1")
+            $DU $DU_OPT mkdir "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT mkdir $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT mkdir "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -240,8 +240,8 @@ function sh_mkdir
 
 function sh_mv
 {
-    local arg1=$1
-    local arg2=$2
+    local arg1="$1"
+    local arg2="$2"
 
     if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
 
@@ -275,8 +275,8 @@ function sh_mv
 
 function sh_cp
 {
-    local arg1=$1
-    local arg2=$2
+    local arg1="$1"
+    local arg2="$2"
 
     if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
 
@@ -294,7 +294,7 @@ function sh_cp
             DST="$CWD/$arg2"
         fi
 
-        $DU $DU_OPT copy $(normalize_path "$SRC") $(normalize_path "$DST")
+        $DU $DU_OPT copy "$(normalize_path "$SRC")" "$(normalize_path "$DST")"
 
         #Checking for errors
         if [ $? -ne 0 ]; then
@@ -316,7 +316,7 @@ function sh_free
 
 function sh_cat
 {
-    local arg1=$1
+    local arg1="$1"
 
     tmp_cat="/tmp/sh_cat"
     sh_get "$arg1" "$tmp_cat"
@@ -324,16 +324,28 @@ function sh_cat
     rm -fr "$tmp_cat"
 }
 
+function sh_tokenize
+{
+    for (( i=1 ; i<=$# ; i++ )); do
+        printf "${!i}|"
+    done
+    printf "\n"
+}
+
+IFS_OLD="$IFS"
+
 while (true); do
 
     #Reading command from shell
     read -e -p "$username@DropBox:$CWD$ " input
-
-    #Tokenizing command
-    tokens=( $input )
-    cmd=${tokens[0]}
-    arg1=${tokens[1]}
-    arg2=${tokens[2]}
+    IFS='|'
+    read -ra arg <<< "$( eval sh_tokenize $input )"
+    IFS="$IFS_OLD"
+    # dbg lines
+    # for (( i=0 ; i < ${#arg[@]} ; i++ )); do
+    #     echo "arg[$i] = ${arg[$i]}"
+    # done
+    cmd="${arg[0]}"
 
     #Saving command in the history file
     history -s "$input"
@@ -342,11 +354,11 @@ while (true); do
     case $cmd in
 
         ls)
-            sh_ls "$arg1" "$arg2"
+            sh_ls "${arg[1]}" "${arg[2]}"
         ;;
 
         cd)
-            sh_cd "$arg1"
+            sh_cd "${arg[1]}"
         ;;
 
         pwd)
@@ -354,31 +366,31 @@ while (true); do
         ;;
 
         get)
-            sh_get "$arg1" "$arg2"
+            sh_get "${arg[1]}" "${arg[2]}"
         ;;
 
         put)
-            sh_put "$arg1" "$arg2"
+            sh_put "${arg[1]}" "${arg[2]}"
         ;;
 
         rm)
-            sh_rm "$arg1"
+            sh_rm "${arg[1]}"
         ;;
 
         mkdir)
-            sh_mkdir "$arg1"
+            sh_mkdir "${arg[1]}"
         ;;
 
         mv)
-            sh_mv "$arg1" "$arg2"
+            sh_mv "${arg[1]}" "${arg[2]}"
         ;;
 
         cp)
-            sh_cp "$arg1" "$arg2"
+            sh_cp "${arg[1]}" "${arg[2]}"
         ;;
 
         cat)
-            sh_cat "$arg1"
+            sh_cat "${arg[1]}"
         ;;
 
         free)
@@ -394,7 +406,7 @@ while (true); do
         ;;
 
         lcd)
-            cd "$arg1"
+            cd "${arg[1]}"
         ;;
 
         help)

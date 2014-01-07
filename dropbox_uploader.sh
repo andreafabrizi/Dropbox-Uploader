@@ -907,14 +907,14 @@ function db_list
 {/g')
 
             #Extracting files and subfolders
-            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
+            echo "$DIR_CONTENT" | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\(.*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
 
             #Looking for the biggest file size
             #to calculate the padding to use
             local padding=0
             while read -r line; do
                 local FILE=${line%:*}
-                local META=${line#*:}
+                local META=${line##*:}
                 local SIZE=${META#*;}
 
                 if (( ${#SIZE} > $padding )); then
@@ -926,20 +926,19 @@ function db_list
             while read -r line; do
 
                 local FILE=${line%:*}
-                local META=${line#*:}
+                local META=${line##*:}
                 local TYPE=${META%;*}
                 local SIZE=${META#*;}
 
                 #Removing unneeded /
                 FILE=${FILE##*/}
-
                 if [[ $TYPE == "false" ]]; then
                     TYPE="F"
                 else
                     TYPE="D"
                 fi
 
-                FILE=$(echo -e "$FILE")
+                FILE=$(echo -e "$FILE"|sed 's/\\\(.\)/\1/g') # first escape BASH special chars and then unescape JSON escapes (the rest)
                 printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
 
             done < $RESPONSE_FILE
