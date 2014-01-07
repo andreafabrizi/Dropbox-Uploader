@@ -101,7 +101,7 @@ function sh_ls
     else
 
         #Relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             $DU $DU_OPT list "$(normalize_path "$arg1")"
         else
             $DU $DU_OPT list "$(normalize_path "$CWD/$arg1")"
@@ -123,7 +123,7 @@ function sh_cd
     if [ -z "$arg1" ]; then
         CWD="/"
     else
-        arg1=${input:3} #All the arguments
+        arg1="${input:3}" #All the arguments
     fi
 
     CWD=$(normalize_path "$CWD/$arg1/")
@@ -132,7 +132,7 @@ function sh_cd
     #Checking for errors
     if [ $? -ne 0 ]; then
         echo -e "cd: $arg1: No such file or directory"
-        CWD=$OLD_CWD
+        CWD="$OLD_CWD"
     fi
 }
 
@@ -144,7 +144,7 @@ function sh_get
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             $DU $DU_OPT download "$(normalize_path "$arg1")" "$arg2"
         else
             $DU $DU_OPT download "$(normalize_path "$CWD/$arg1")" "$arg2"
@@ -195,7 +195,7 @@ function sh_rm
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             $DU $DU_OPT remove "$(normalize_path "$arg1")"
         else
             $DU $DU_OPT remove "$(normalize_path "$CWD/$arg1")"
@@ -220,7 +220,7 @@ function sh_mkdir
     if [ ! -z "$arg1" ]; then
 
         #Relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             $DU $DU_OPT mkdir "$(normalize_path "$arg1")"
         else
             $DU $DU_OPT mkdir "$(normalize_path "$CWD/$arg1")"
@@ -246,14 +246,14 @@ function sh_mv
     if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
 
         #SRC relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             SRC="$arg1"
         else
             SRC="$CWD/$arg1"
         fi
 
         #DST relative or absolute path?
-        if [ ${arg2:0:1} == "/" ]; then
+        if [ "${arg2:0:1}" == "/" ]; then
             DST="$arg2"
         else
             DST="$CWD/$arg2"
@@ -281,14 +281,14 @@ function sh_cp
     if [ ! -z "$arg1" -a ! -z "$arg2" ]; then
 
         #SRC relative or absolute path?
-        if [ ${arg1:0:1} == "/" ]; then
+        if [ "${arg1:0:1}" == "/" ]; then
             SRC="$arg1"
         else
             SRC="$CWD/$arg1"
         fi
 
         #DST relative or absolute path?
-        if [ ${arg2:0:1} == "/" ]; then
+        if [ "${arg2:0:1}" == "/" ]; then
             DST="$arg2"
         else
             DST="$CWD/$arg2"
@@ -329,7 +329,6 @@ function sh_tokenize
     for (( i=1 ; i<=$# ; i++ )); do
         printf "${!i}|"
     done
-    printf "\n"
 }
 
 IFS_OLD="$IFS"
