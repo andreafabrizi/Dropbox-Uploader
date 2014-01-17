@@ -105,12 +105,13 @@ Doesn't check for SSL certificates (insecure)
 **Examples:**
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
-    ./dropbox_uploader.sh upload /etc/passwd
+    ./dropbox_uploader.sh upload *.zip /
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
-    ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"   (File name with spaces...)
+    ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"
     ./dropbox_uploader.sh share "My File.txt"
+    ./dropbox_uploader.sh list
 ```
 
 ## Tested Environments
