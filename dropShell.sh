@@ -122,11 +122,12 @@ function sh_cd
 
     if [ -z "$arg1" ]; then
         CWD="/"
+    elif [ ${arg1:0:1} == "/" ]; then
+        CWD=$arg1
     else
-        arg1=${input:3} #All the arguments
+        CWD=$(normalize_path "$OLD_CWD/$arg1/")
     fi
 
-    CWD=$(normalize_path "$CWD/$arg1/")
     $DU $DU_OPT list "$CWD" > /dev/null
 
     #Checking for errors
