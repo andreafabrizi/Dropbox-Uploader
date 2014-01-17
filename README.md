@@ -37,7 +37,7 @@ Then give the execution permission to the script and run it:
 The syntax is quite simple:
 
 ```
-./dropbox_uploader.sh COMMAND &lt;PARAMETERS&gt;...
+./dropbox_uploader.sh COMMAND [PARAMETERS]...
 
 [%%]: Optional param
 <%%>: Required param
@@ -176,19 +176,18 @@ You need to install these packages:
 DropShell is an interactive DropBox shell, based on DropBox Uploader:
 
 ```bash
-DropShell v0.1
-The Intractive DropBox SHELL
+DropShell v0.2
+The Intractive Dropbox SHELL
 Andrea Fabrizi - andrea.fabrizi@gmail.com
 
 Type help for the list of the available commands.
 
-andrea@DropBox:/$ ls
- &lt;D&gt; Camera Uploads
- &lt;D&gt; Public
- &lt;D&gt; scripts
- &lt;D&gt; ServerBackup
-andrea@DropBox:/$ cd ServerBackup
-andrea@DropBox:/ServerBackup$ ls
- &lt;F&gt; backup.zip
-andrea@DropBox:/ServerBackup$ get backup.zip
+andrea@Dropbox:/$ ls
+ [D] 0       Apps
+ [D] 0       Camera Uploads
+ [D] 0       Public
+ [D] 0       scripts
+ [D] 0       Security
+ [D] 105843  notes.txt
+andrea@DropBox:/ServerBackup$ get notes.txt
 ```
