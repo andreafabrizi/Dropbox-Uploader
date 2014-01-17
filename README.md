@@ -122,6 +122,7 @@ Doesn't check for SSL certificates (insecure)
 * QNAP
 * iOS
 * OpenWRT
+* Chrome OS
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
