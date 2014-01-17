@@ -201,19 +201,19 @@ function usage
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
     echo -e "\nCommands:"
 
-    echo -e "\t upload   [LOCAL_FILE/DIR]  <REMOTE_FILE/DIR>"
-    echo -e "\t download [REMOTE_FILE/DIR] <LOCAL_FILE/DIR>"
-    echo -e "\t delete   [REMOTE_FILE/DIR]"
-    echo -e "\t move     [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]"
-    echo -e "\t copy     [REMOTE_FILE/DIR] [REMOTE_FILE/DIR]"
-    echo -e "\t mkdir    [REMOTE_DIR]"
-    echo -e "\t list     <REMOTE_DIR>"
-    echo -e "\t share    [REMOTE_FILE]"
+    echo -e "\t upload   <LOCAL_FILE/DIR>  <REMOTE_FILE/DIR>"
+    echo -e "\t download <REMOTE_FILE/DIR> [LOCAL_FILE/DIR]"
+    echo -e "\t delete   <REMOTE_FILE/DIR>"
+    echo -e "\t move     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
+    echo -e "\t copy     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
+    echo -e "\t mkdir    <REMOTE_DIR>"
+    echo -e "\t list     [REMOTE_DIR]"
+    echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t info"
     echo -e "\t unlink"
 
     echo -e "\nOptional parameters:"
-    echo -e "\t-f [FILENAME] Load the configuration file from a specific file"
+    echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
@@ -1105,45 +1105,34 @@ COMMAND=${@:$OPTIND:1}
 ARG1=${@:$OPTIND+1:1}
 ARG2=${@:$OPTIND+2:1}
 
+let argnum=$#-$OPTIND
+
 #CHECKING PARAMS VALUES
 case $COMMAND in
 
     upload)
 
-        FILE_SRC=$ARG1
-        FILE_DST=$ARG2
-
-        #Checking FILE_SRC
-        if [[ $FILE_SRC == "" ]]; then
-            print "Error: invalid source file or directory"
-            remove_temp_files
-            exit 1
+        if [[ $argnum < 2 ]]; then
+            usage
         fi
 
-        #Checking FILE_DST
-        if [[ $FILE_DST == "" ]]; then
-            if [[ -f $FILE_SRC ]]; then
-                FILE_DST=/$(basename "$FILE_SRC")
-            else
-                FILE_DST=/
-            fi
-        fi
+        FILE_DST=${@:$#:1}
 
-        db_upload "$FILE_SRC" "/$FILE_DST"
-
+        for (( i=$OPTIND+1; i<$#; i++ )); do
+            FILE_SRC=${@:$i:1}
+            db_upload "$FILE_SRC" "/$FILE_DST"
+        done
+                    
     ;;
 
     download)
 
+        if [[ $argnum < 1 ]]; then
+            usage
+        fi
+
         FILE_SRC=$ARG1
         FILE_DST=$ARG2
-
-        #Checking FILE_SRC
-        if [[ $FILE_SRC == "" ]]; then
-            print "Error: invalid source file or directory"
-            remove_temp_files
-            exit 1
-        fi
 
         db_download "/$FILE_SRC" "$FILE_DST"
 
@@ -1151,14 +1140,11 @@ case $COMMAND in
 
     share)
 
-        FILE_DST=$ARG1
-
-        #Checking FILE_DST
-        if [[ $FILE_DST == "" ]]; then
-            print "Error: Please specify the file to share"
-            remove_temp_files
-            exit 1
+        if [[ $argnum < 1 ]]; then
+            usage
         fi
+
+        FILE_DST=$ARG1
 
         db_share "/$FILE_DST"
 
@@ -1172,14 +1158,11 @@ case $COMMAND in
 
     delete|remove)
 
-        FILE_DST=$ARG1
-
-        #Checking FILE_DST
-        if [[ $FILE_DST == "" ]]; then
-            print "Error: Please specify the file to remove"
-            remove_temp_files
-            exit 1
+        if [[ $argnum < 1 ]]; then
+            usage
         fi
+
+        FILE_DST=$ARG1
 
         db_delete "/$FILE_DST"
 
@@ -1187,22 +1170,12 @@ case $COMMAND in
 
     move|rename)
 
+        if [[ $argnum < 2 ]]; then
+            usage
+        fi
+
         FILE_SRC=$ARG1
         FILE_DST=$ARG2
-
-        #Checking FILE_SRC
-        if [[ $FILE_SRC == "" ]]; then
-            print "Error: Please specify the source file"
-            remove_temp_files
-            exit 1
-        fi
-
-        #Checking FILE_DST
-        if [[ $FILE_DST == "" ]]; then
-            print "Error: Please specify the destination file"
-            remove_temp_files
-            exit 1
-        fi
 
         db_move "/$FILE_SRC" "/$FILE_DST"
 
@@ -1210,22 +1183,12 @@ case $COMMAND in
 
     copy)
 
+        if [[ $argnum < 2 ]]; then
+            usage
+        fi
+
         FILE_SRC=$ARG1
         FILE_DST=$ARG2
-
-        #Checking FILE_SRC
-        if [[ $FILE_SRC == "" ]]; then
-            print "Error: Please specify the source file"
-            remove_temp_files
-            exit 1
-        fi
-
-        #Checking FILE_DST
-        if [[ $FILE_DST == "" ]]; then
-            print "Error: Please specify the destination file"
-            remove_temp_files
-            exit 1
-        fi
 
         db_copy "/$FILE_SRC" "/$FILE_DST"
 
@@ -1233,14 +1196,11 @@ case $COMMAND in
 
     mkdir)
 
-        DIR_DST=$ARG1
-
-        #Checking DIR_DST
-        if [[ $DIR_DST == "" ]]; then
-            print "Error: Please specify the destination directory"
-            remove_temp_files
-            exit 1
+        if [[ $argnum < 1 ]]; then
+            usage
         fi
+
+        DIR_DST=$ARG1
 
         db_mkdir "/$DIR_DST"
 
