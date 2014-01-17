@@ -318,7 +318,7 @@ function sh_cat
 {
     local arg1=$1
 
-    tmp_cat="/tmp/sh_cat"
+    tmp_cat="/tmp/sh_cat_$RANDOM"
     sh_get "$arg1" "$tmp_cat"
     cat "$tmp_cat"
     rm -fr "$tmp_cat"
