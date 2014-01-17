@@ -102,9 +102,9 @@ function sh_ls
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT list $(normalize_path "$arg1")
+            $DU $DU_OPT list "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT list $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT list "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -145,9 +145,9 @@ function sh_get
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT download $(normalize_path "$arg1") "$arg2"
+            $DU $DU_OPT download "$(normalize_path "$arg1")" "$arg2"
         else
-            $DU $DU_OPT download $(normalize_path "$CWD/$arg1") "$arg2"
+            $DU $DU_OPT download "$(normalize_path "$CWD/$arg1")" "$arg2"
         fi
 
         #Checking for errors
@@ -171,9 +171,9 @@ function sh_put
 
         #Relative or absolute path?
         if [ "${arg2:0:1}" == "/" ]; then
-            $DU $DU_OPT upload "$arg1" $(normalize_path "$arg2")
+            $DU $DU_OPT upload "$arg1" "$(normalize_path "$arg2")"
         else
-            $DU $DU_OPT upload "$arg1" $(normalize_path "$CWD/$arg2")
+            $DU $DU_OPT upload "$arg1" "$(normalize_path "$CWD/$arg2")"
         fi
 
         #Checking for errors
@@ -196,9 +196,9 @@ function sh_rm
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT remove $(normalize_path "$arg1")
+            $DU $DU_OPT remove "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT remove $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT remove "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -221,9 +221,9 @@ function sh_mkdir
 
         #Relative or absolute path?
         if [ ${arg1:0:1} == "/" ]; then
-            $DU $DU_OPT mkdir $(normalize_path "$arg1")
+            $DU $DU_OPT mkdir "$(normalize_path "$arg1")"
         else
-            $DU $DU_OPT mkdir $(normalize_path "$CWD/$arg1")
+            $DU $DU_OPT mkdir "$(normalize_path "$CWD/$arg1")"
         fi
 
         #Checking for errors
@@ -259,7 +259,7 @@ function sh_mv
             DST="$CWD/$arg2"
         fi
 
-        $DU $DU_OPT move $(normalize_path "$SRC") $(normalize_path "$DST")
+        $DU $DU_OPT move "$(normalize_path "$SRC")" "$(normalize_path "$DST")"
 
         #Checking for errors
         if [ $? -ne 0 ]; then
@@ -294,7 +294,7 @@ function sh_cp
             DST="$CWD/$arg2"
         fi
 
-        $DU $DU_OPT copy $(normalize_path "$SRC") $(normalize_path "$DST")
+        $DU $DU_OPT copy "$(normalize_path "$SRC")" "$(normalize_path "$DST")"
 
         #Checking for errors
         if [ $? -ne 0 ]; then
@@ -307,7 +307,6 @@ function sh_cp
         echo -e "syntax: cp FILE/DIR DEST_FILE/DIR"
     fi
 }
-
 
 function sh_free
 {
@@ -330,7 +329,7 @@ while (true); do
     read -e -p "$username@DropBox:$CWD$ " input
 
     #Tokenizing command
-    tokens=( $input )
+    eval tokens=($input)
     cmd=${tokens[0]}
     arg1=${tokens[1]}
     arg2=${tokens[2]}
