@@ -56,8 +56,8 @@ done
 
 #Check DropBox Uploader
 if [ ! -f "$DU" ]; then
-    echo "DropBox Uploader not found: $DU"
-    echo "Please change the 'DU' variable according to the DropBox Uploader location."
+    echo "Dropbox Uploader not found: $DU"
+    echo "Please change the 'DU' variable according to the Dropbox Uploader location."
     exit 1
 else
     DU=$($READLINK -m "$DU")
@@ -79,7 +79,7 @@ function normalize_path
 ################
 
 echo -e "DropShell v$VERSION"
-echo -e "The Intractive DropBox SHELL"
+echo -e "The Intractive Dropbox SHELL"
 echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
 echo -e "Type help for the list of the available commands.\n"
 
@@ -326,7 +326,7 @@ function sh_cat
 while (true); do
 
     #Reading command from shell
-    read -e -p "$username@DropBox:$CWD$ " input
+    read -e -p "$username@Dropbox:$CWD$ " input
 
     #Tokenizing command
     eval tokens=($input)
