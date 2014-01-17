@@ -39,7 +39,7 @@ The syntax is quite simple:
 ```
 ./dropbox_uploader.sh COMMAND &lt;PARAMETERS&gt;...
 
-&lt;%%&gt;: Optional param
+[%%]: Optional param
 <%%>: Required param
 ```
 
