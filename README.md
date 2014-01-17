@@ -188,6 +188,6 @@ andrea@Dropbox:/$ ls
  [D] 0       Public
  [D] 0       scripts
  [D] 0       Security
- [D] 105843  notes.txt
+ [F] 105843  notes.txt
 andrea@DropBox:/ServerBackup$ get notes.txt
 ```
