@@ -41,7 +41,7 @@ fi
 SHELL_HISTORY=~/.dropshell_history
 DU_OPT="-q"
 BIN_DEPS="id $READLINK ls basename ls pwd cut"
-VERSION="0.1"
+VERSION="0.2"
 
 umask 077
 
