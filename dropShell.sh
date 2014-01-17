@@ -159,7 +159,7 @@ function sh_get
     #args error
     else
         echo -e "get: missing operand"
-        echo -e "syntax: get FILE/DIR [LOCAL_FILE/DIR]"
+        echo -e "syntax: get <FILE/DIR> [LOCAL_FILE/DIR]"
     fi
 }
 
@@ -185,7 +185,7 @@ function sh_put
     #args error
     else
         echo -e "put: missing operand"
-        echo -e "syntax: put FILE/DIR [REMOTE_FILE/DIR]"
+        echo -e "syntax: put <FILE/DIR> <REMOTE_FILE/DIR>"
     fi
 }
 
@@ -210,7 +210,7 @@ function sh_rm
     #args error
     else
         echo -e "rm: missing operand"
-        echo -e "syntax: rm FILE/DIR"
+        echo -e "syntax: rm <FILE/DIR>"
     fi
 }
 
@@ -235,7 +235,7 @@ function sh_mkdir
     #args error
     else
         echo -e "mkdir: missing operand"
-        echo -e "syntax: mkdir DIR_NAME"
+        echo -e "syntax: mkdir <DIR_NAME>"
     fi
 }
 
@@ -270,7 +270,7 @@ function sh_mv
     #args error
     else
         echo -e "mv: missing operand"
-        echo -e "syntax: mv FILE/DIR DEST_FILE/DIR"
+        echo -e "syntax: mv <FILE/DIR> <DEST_FILE/DIR>"
     fi
 }
 
@@ -305,7 +305,7 @@ function sh_cp
     #args error
     else
         echo -e "cp: missing operand"
-        echo -e "syntax: cp FILE/DIR DEST_FILE/DIR"
+        echo -e "syntax: cp <FILE/DIR> <DEST_FILE/DIR>"
     fi
 }
 
@@ -318,10 +318,18 @@ function sh_cat
 {
     local arg1=$1
 
-    tmp_cat="/tmp/sh_cat_$RANDOM"
-    sh_get "$arg1" "$tmp_cat"
-    cat "$tmp_cat"
-    rm -fr "$tmp_cat"
+    if [ ! -z "$arg1" ]; then
+
+        tmp_cat="/tmp/sh_cat_$RANDOM"
+        sh_get "$arg1" "$tmp_cat"
+        cat "$tmp_cat"
+        rm -fr "$tmp_cat"
+
+    #args error
+    else
+        echo -e "cat: missing operand"
+        echo -e "syntax: cat <FILE>"
+    fi
 }
 
 while (true); do
@@ -342,7 +350,7 @@ while (true); do
     case $cmd in
 
         ls)
-            sh_ls "$arg1" "$arg2"
+            sh_ls "$arg1"
         ;;
 
         cd)
