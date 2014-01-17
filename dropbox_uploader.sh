@@ -201,7 +201,7 @@ function usage
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
     echo -e "\nCommands:"
 
-    echo -e "\t upload   <LOCAL_FILE/DIR>  <REMOTE_FILE/DIR>"
+    echo -e "\t upload   <LOCAL_FILE/DIR ...>  <REMOTE_FILE/DIR>"
     echo -e "\t download <REMOTE_FILE/DIR> [LOCAL_FILE/DIR]"
     echo -e "\t delete   <REMOTE_FILE/DIR>"
     echo -e "\t move     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
