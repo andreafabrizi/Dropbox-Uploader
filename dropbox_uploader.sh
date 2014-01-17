@@ -323,7 +323,7 @@ function normalize_path
 function db_stat
 {
     local FILE=$(normalize_path "$1")
-    
+
     #Checking if it's a file or a directory
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
     check_http_response
@@ -335,7 +335,7 @@ function db_stat
     else
         local IS_DELETED="false"
     fi
-    
+
     #Exits...
     grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"
     if [[ $? == 0 && $IS_DELETED != "true" ]]; then
@@ -645,7 +645,7 @@ function db_download
 
         #For each entry...
         while read -r line; do
-            
+
             local FILE=${line%:*}
             local TYPE=${line#*:}
 
@@ -1122,7 +1122,7 @@ case $COMMAND in
             FILE_SRC=${@:$i:1}
             db_upload "$FILE_SRC" "/$FILE_DST"
         done
-                    
+
     ;;
 
     download)
