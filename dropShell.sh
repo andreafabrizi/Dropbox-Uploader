@@ -79,7 +79,7 @@ function normalize_path
 ################
 
 echo -e "DropShell v$VERSION"
-echo -e "The Intractive Dropbox SHELL"
+echo -e "The Interactive Dropbox SHELL"
 echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
 echo -e "Type help for the list of the available commands.\n"
 
