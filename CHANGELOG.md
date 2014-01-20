@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Version 0.13 - 17 Jan 2013
+## Version 0.13 - 17 Jan 2014
 * Minor languages fixes, based on issue #88
 * Fix issue #91, sed take long time to process regexp on big data
 * Fix issue #87, second chunked upload fails after successful first
