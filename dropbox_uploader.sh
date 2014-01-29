@@ -147,7 +147,7 @@ fi
 function print
 {
     if [[ $QUIET == 0 ]]; then
-	    echo -ne "$1";
+        echo -ne "$1";
     fi
 }
 
@@ -240,15 +240,15 @@ function update_scripts() {
 
     SCRIPTS=("dropbox_uploader.sh")
     if [[ -f "$SCRIPTPATH/dropShell.sh" ]]; then
-	SCRIPTS+=("dropShell.sh")
+    SCRIPTS+=("dropShell.sh")
     fi
 
     echo "#!/bin/bash" > "$UPDATE_SCRIPT"
 
     for SCRIPTNAME in ${SCRIPTS[@]}; do
-	if [[ ${#SCRIPTNAME} -gt $MAX ]]; then
+        if [[ ${#SCRIPTNAME} -gt $MAX ]]; then
             MAX=${#SCRIPTNAME}
-	fi
+        fi
     done
 
     for SCRIPTNAME in ${SCRIPTS[@]}; do
@@ -260,7 +260,7 @@ function update_scripts() {
         if ! curl -s "$UPDATE_BASE/$SCRIPTNAME" > "$TMP_FILE"  ; then
             echo "
             Failed: Error while trying to download new version of $SCRIPTNAME!
-	    Source:      $UPDATE_BASE/$SCRIPTNAME
+            Source:      $UPDATE_BASE/$SCRIPTNAME
             Destination: $TMP_FILE"
             continue
         fi
