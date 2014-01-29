@@ -211,6 +211,7 @@ function usage
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t info"
     echo -e "\t unlink"
+    echo -e "\t update"
 
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
@@ -223,6 +224,73 @@ function usage
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
     exit 1
+}
+
+# Update scripts
+function update_scripts() {
+    echo "Performing self-update..."
+
+    UPDATE_BASE="https://raw.github.com/andreafabrizi/Dropbox-Uploader/master"
+    UPDATE_SCRIPT="$TMP_DIR/updateScript.sh"
+
+    # http://stackoverflow.com/a/4774063
+    pushd `dirname $0` > /dev/null
+    SCRIPTPATH="`pwd -P`"
+    popd > /dev/null
+
+    SCRIPTS=("dropbox_uploader.sh")
+    if [[ -f "$SCRIPTPATH/dropShell.sh" ]]; then
+	SCRIPTS+=("dropShell.sh")
+    fi
+
+    echo "#!/bin/bash" > "$UPDATE_SCRIPT"
+
+    for SCRIPTNAME in ${SCRIPTS[@]}; do
+	if [[ ${#SCRIPTNAME} -gt $MAX ]]; then
+            MAX=${#SCRIPTNAME}
+	fi
+    done
+
+    for SCRIPTNAME in ${SCRIPTS[@]}; do
+
+        SCRIPT="$SCRIPTPATH/$SCRIPTNAME"
+        TMP_FILE="$TMP_DIR/$SCRIPTNAME.tmp"
+
+        printf "Downloading %-$((${MAX}+2))s... " "\"$SCRIPTNAME\""
+        if ! curl -s "$UPDATE_BASE/$SCRIPTNAME" > "$TMP_FILE"  ; then
+            echo "
+            Failed: Error while trying to download new version of $SCRIPTNAME!
+	    Source:      $UPDATE_BASE/$SCRIPTNAME
+            Destination: $TMP_FILE"
+            continue
+        fi
+        echo "Done."
+
+        # Copy over modes from old version
+        OCTALMODE=$(stat -c '%a' $SCRIPT)
+        if ! chmod $OCTALMODE "$TMP_FILE" ; then
+            echo "Failed: Error while trying to set mode on $TMP_FILE"
+            continue
+        fi
+
+        eval `grep -m 1 'VERSION="' "$SCRIPT"`
+        cat >> "$UPDATE_SCRIPT" << EOF
+if mv "$TMP_FILE" "$SCRIPT"; then
+    eval \`grep -m 1 'VERSION="' "$SCRIPT"\`
+    printf '%-4s %-${MAX}s %5s => %5s\n' "OK" "$SCRIPTNAME" "$VERSION" "\$VERSION"
+else
+    printf '%4s %-${MAX}s\n' "FAIL" "$SCRIPTNAME"
+    rm "$TMP_FILE"
+fi
+EOF
+
+    done
+
+    echo 'rm $0' >> "$UPDATE_SCRIPT"
+
+    echo "Inserting update process... "
+    bash "$UPDATE_SCRIPT"
+    exec echo "Done!"
 }
 
 #Check the curl exit code
@@ -1222,6 +1290,12 @@ case $COMMAND in
     unlink)
 
         db_unlink
+
+    ;;
+    
+    update)
+
+        update_scripts
 
     ;;
 
