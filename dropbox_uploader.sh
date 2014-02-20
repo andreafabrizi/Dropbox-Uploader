@@ -365,7 +365,7 @@ function db_upload
     local DST=$(normalize_path "$2")
 
     #Checking if the file/dir exists
-    if [[ ! -f $SRC && ! -d $SRC ]]; then
+    if [[ ! -e $SRC && ! -d $SRC ]]; then
         print " > No such file or directory: $SRC\n"
         ERROR_STATUS=1
         return
@@ -386,7 +386,7 @@ function db_upload
     fi
 
     #It's a file
-    if [[ -f $SRC ]]; then
+    if [[ -e $SRC ]]; then
         db_upload_file "$SRC" "$DST"
 
     #It's a directory
@@ -702,7 +702,7 @@ function db_download_file
     fi
 
     #Checking if the file already exists
-    if [[ -f $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
+    if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
     fi
@@ -980,7 +980,7 @@ function db_share
 ################
 
 #CHECKING FOR AUTH FILE
-if [[ -f $CONFIG_FILE ]]; then
+if [[ -e $CONFIG_FILE ]]; then
 
     #Loading data... and change old format config if necesary.
     source "$CONFIG_FILE" 2>/dev/null || {
