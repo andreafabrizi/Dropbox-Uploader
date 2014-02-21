@@ -984,7 +984,7 @@ if [[ -e $CONFIG_FILE ]]; then
 
     #Loading data... and change old format config if necesary.
     source "$CONFIG_FILE" 2>/dev/null || {
-        sed -i 's/:/=/' "$CONFIG_FILE" && source "$CONFIG_FILE" 2>/dev/null
+        sed -i'' 's/:/=/' "$CONFIG_FILE" && source "$CONFIG_FILE" 2>/dev/null
     }
 
     #Checking the loaded data
