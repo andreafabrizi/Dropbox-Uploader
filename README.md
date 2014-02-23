@@ -11,6 +11,18 @@ It's written in BASH scripting language and only needs **cURL**.
 
 Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
+## Features
+
+* Cross platform
+* Support for the official Dropbox API
+* No password required or stored
+* Simple and chunked file upload
+* File and recursive directory download
+* File and recursive directory upload
+* Shell wildcard expansion (only for upload)
+* Delete/Move/Rename/Copy/List files
+* Create share link
+
 ## Getting started
 
 First, clone the repository using git (recommended):
