@@ -73,7 +73,7 @@ Download file or directory from Dropbox to a local folder
 Remove a remote file or directory from Dropbox
 
 * **move** &lt;REMOTE_FILE/DIR&gt; &lt;REMOTE_FILE/DIR&gt;  
-Move o rename a remote file or directory
+Move or rename a remote file or directory
 
 * **copy** &lt;REMOTE_FILE/DIR&gt; &lt;REMOTE_FILE/DIR&gt;  
 Copy a remote file or directory
