@@ -141,6 +141,12 @@ Doesn't check for SSL certificates (insecure)
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
+## Running as cron job
+Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is HOME_DIRECTORY/.dropbox_uploader. This means that if you do the setup with your user and then you try to run a cron job as root, it won't works.  
+So, when running this script using cron, please keep in mind the following:
+* Remember to setup the script with the user used to run the cron job
+* Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly
+* My advise is, for security reasons, to don't share the same configuration file with different users
 
 ## How to setup a proxy
 
