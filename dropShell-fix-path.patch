@@ -1,0 +1,4 @@
+26c26
+<     DU=$(which dropbox_uploader.sh)
+---
+> 	DU=$(which @{dropbox_uploader_command_name})
