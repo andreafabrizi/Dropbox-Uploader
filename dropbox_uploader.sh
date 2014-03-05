@@ -385,13 +385,13 @@ function db_upload
         DST="$DST/$filename"
     fi
 
-    #It's a file
-    if [[ -e $SRC ]]; then
-        db_upload_file "$SRC" "$DST"
-
     #It's a directory
-    elif [[ -d $SRC ]]; then
+    if [[ -d $SRC ]]; then
         db_upload_dir "$SRC" "$DST"
+
+    #It's a file
+    elif [[ -e $SRC ]]; then
+        db_upload_file "$SRC" "$DST"
 
     #Unsupported object...
     else
