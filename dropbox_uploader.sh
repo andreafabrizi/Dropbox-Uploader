@@ -57,7 +57,7 @@ API_SHARES_URL="https://api.dropbox.com/1/shares"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd mkdir"
+BIN_DEPS="sed basename date grep stat dd mkdir split"
 VERSION="0.13"
 
 umask 077
@@ -147,7 +147,7 @@ fi
 function print
 {
     if [[ $QUIET == 0 ]]; then
-	    echo -ne "$1";
+        echo -ne "$1";
     fi
 }
 
@@ -202,6 +202,7 @@ function usage
     echo -e "\nCommands:"
 
     echo -e "\t upload   <LOCAL_FILE/DIR ...>  <REMOTE_FILE/DIR>"
+    echo -e "\t pipe     <REMOTE_FILE>"
     echo -e "\t download <REMOTE_FILE/DIR> [LOCAL_FILE/DIR]"
     echo -e "\t delete   <REMOTE_FILE/DIR>"
     echo -e "\t move     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
@@ -385,13 +386,13 @@ function db_upload
         DST="$DST/$filename"
     fi
 
-    #It's a directory
-    if [[ -d $SRC ]]; then
-        db_upload_dir "$SRC" "$DST"
-
     #It's a file
-    elif [[ -e $SRC ]]; then
+    if [[ -e $SRC ]]; then
         db_upload_file "$SRC" "$DST"
+
+    #It's a directory
+    elif [[ -d $SRC ]]; then
+        db_upload_dir "$SRC" "$DST"
 
     #Unsupported object...
     else
@@ -401,7 +402,7 @@ function db_upload
 
 #Generic upload wrapper around db_chunked_upload_file and db_simple_upload_file
 #The final upload function will be choosen based on the file size
-#$1 = Local source file
+#$1 = Local source file or null string if sending from stdin
 #$2 = Remote destination file
 function db_upload_file
 {
@@ -425,15 +426,20 @@ function db_upload_file
 
     shopt -u nocasematch
 
-    #Checking file size
-    FILE_SIZE=$(file_size "$FILE_SRC")
-
     #Checking if the file already exists
     TYPE=$(db_stat "$FILE_DST")
     if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
     fi
+
+    if [ -z "$FILE_SRC" ]; then
+      db_chunked_upload_file "" "$FILE_DST"
+      return
+    fi
+
+    #Checking file size
+    FILE_SIZE=$(file_size "$FILE_SRC")
 
     if (( $FILE_SIZE > 157286000 )); then
         #If the file is greater than 150Mb, the chunked_upload API will be used
@@ -474,59 +480,85 @@ function db_simple_upload_file
     fi
 }
 
+
+#Put a chunk and check response
+function db_put_chunk
+{
+    #Only for the first request these parameters are not included
+    if [[ $OFFSET != 0 ]]; then
+        CHUNK_PARAMS="upload_id=$UPLOAD_ID&offset=$OFFSET"
+    fi
+
+    #Uploading the chunk...
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    check_http_response
+
+    #Check
+    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print "."
+        UPLOAD_ERROR=0
+        UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+        OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
+    else
+        print "*"
+        let UPLOAD_ERROR=$UPLOAD_ERROR+1
+
+        #On error, the upload is retried for max 3 times
+        if (( $UPLOAD_ERROR > 2 )); then
+            print " FAILED\n"
+            print "An error occurred requesting /chunked_upload\n"
+            ERROR_STATUS=1
+            return
+        fi
+    fi
+}
+
 #Chunked file upload
-#$1 = Local source file
+#$1 = Local source file or null string for sending from stdin
 #$2 = Remote destination file
 function db_chunked_upload_file
 {
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
+    if [ -z $FILE_SRC ]; then
+        print " > Uploading to \"$FILE_DST\""
+    else
+        print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
+    fi
 
-    local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
     local CHUNK_PARAMS=""
 
     #Uploading chunks...
-    while ([[ $OFFSET != $FILE_SIZE ]]); do
+    if [ ! -z "$FILE_SRC" ]; then
 
-        let OFFSET_MB=$OFFSET/1024/1024
+        #It's regular file
+        local FILE_SIZE=$(file_size "$FILE_SRC")
+        while ([[ $OFFSET != $FILE_SIZE ]]); do
 
-        #Create the chunk
-        dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1048576 skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
+            let OFFSET_MB=$OFFSET/1024/1024
 
-        #Only for the first request these parameters are not included
-        if [[ $OFFSET != 0 ]]; then
-            CHUNK_PARAMS="upload_id=$UPLOAD_ID&offset=$OFFSET"
-        fi
+            #Create the chunk
+            dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1048576 skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
 
-        #Uploading the chunk...
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
-        check_http_response
+            db_put_chunk
+        done
+    
+    #Sending from stdin
+    else
+         #Store new pipe data
+         echo -n 0 > "$CHUNK_FILE.dat"
 
-        #Check
-        if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-            print "."
-            UPLOAD_ERROR=0
-            UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-            OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
-        else
-            print "*"
-            let UPLOAD_ERROR=$UPLOAD_ERROR+1
+         #Loop over chunks
+         split -b $(($CHUNK_SIZE*1024*1024)) --filter="cat >\"$CHUNK_FILE\"; sh \"$0\" _put_chunk \"$CHUNK_FILE\""
 
-            #On error, the upload is retried for max 3 times
-            if (( $UPLOAD_ERROR > 2 )); then
-                print " FAILED\n"
-                print "An error occurred requesting /chunked_upload\n"
-                ERROR_STATUS=1
-                return
-            fi
-        fi
-
-    done
+         #read upload_id for commit
+         read -r OFFSET UPLOAD_ID <"$CHUNK_FILE.dat"
+         rm "$CHUNK_FILE.dat"
+    fi
 
     UPLOAD_ERROR=0
 
@@ -1123,6 +1155,32 @@ case $COMMAND in
             db_upload "$FILE_SRC" "/$FILE_DST"
         done
 
+    ;;
+
+    pipe)
+
+      if [[ $argnum < 1 ]]; then
+          usage
+      fi
+      
+      FILE_DST=$2
+
+      db_upload_file "" "/$FILE_DST"
+
+    ;;
+
+    _put_chunk)
+
+      if [ $argnum -ne 1 ]; then
+          echo "This command should only invoked internally"
+      fi
+
+      CHUNK_FILE=$2
+      read -r OFFSET UPLOAD_ID <"$CHUNK_FILE.dat"
+
+      db_put_chunk
+
+      echo -n "$OFFSET $UPLOAD_ID" >"$CHUNK_FILE.dat"
     ;;
 
     download)
