@@ -390,7 +390,7 @@ function db_upload
         db_upload_dir "$SRC" "$DST"
 
     #It's a file
-    elif [[ -e $SRC ]]; then
+    elif [[ -f $SRC ]]; then
         db_upload_file "$SRC" "$DST"
 
     #Unsupported object...
