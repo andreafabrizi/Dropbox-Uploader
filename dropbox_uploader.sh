@@ -435,7 +435,7 @@ function db_upload_file
         return
     fi
 
-    if (( $FILE_SIZE > 157286000 )); then
+    if [[ $FILE_SIZE -gt 157286000 ]]; then
         #If the file is greater than 150Mb, the chunked_upload API will be used
         db_chunked_upload_file "$FILE_SRC" "$FILE_DST"
     else
@@ -518,7 +518,7 @@ function db_chunked_upload_file
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the upload is retried for max 3 times
-            if (( $UPLOAD_ERROR > 2 )); then
+            if [[ $UPLOAD_ERROR -gt 2 ]]; then
                 print " FAILED\n"
                 print "An error occurred requesting /chunked_upload\n"
                 ERROR_STATUS=1
@@ -546,7 +546,7 @@ function db_chunked_upload_file
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the commit is retried for max 3 times
-            if (( $UPLOAD_ERROR > 2 )); then
+            if [[ $UPLOAD_ERROR -gt 2 ]]; then
                 print " FAILED\n"
                 print "An error occurred requesting /commit_chunked_upload\n"
                 ERROR_STATUS=1
@@ -917,7 +917,7 @@ function db_list
                 local META=${line##*:}
                 local SIZE=${META#*;}
 
-                if (( ${#SIZE} > $padding )); then
+                if [[ ${#SIZE} -gt $padding ]]; then
                     padding=${#SIZE}
                 fi
             done < $RESPONSE_FILE
@@ -1112,7 +1112,7 @@ case $COMMAND in
 
     upload)
 
-        if [[ $argnum < 2 ]]; then
+        if [[ $argnum -lt 2 ]]; then
             usage
         fi
 
@@ -1127,7 +1127,7 @@ case $COMMAND in
 
     download)
 
-        if [[ $argnum < 1 ]]; then
+        if [[ $argnum -lt 1 ]]; then
             usage
         fi
 
@@ -1140,7 +1140,7 @@ case $COMMAND in
 
     share)
 
-        if [[ $argnum < 1 ]]; then
+        if [[ $argnum -lt 1 ]]; then
             usage
         fi
 
@@ -1158,7 +1158,7 @@ case $COMMAND in
 
     delete|remove)
 
-        if [[ $argnum < 1 ]]; then
+        if [[ $argnum -lt 1 ]]; then
             usage
         fi
 
@@ -1170,7 +1170,7 @@ case $COMMAND in
 
     move|rename)
 
-        if [[ $argnum < 2 ]]; then
+        if [[ $argnum -lt 2 ]]; then
             usage
         fi
 
@@ -1183,7 +1183,7 @@ case $COMMAND in
 
     copy)
 
-        if [[ $argnum < 2 ]]; then
+        if [[ $argnum -lt 2 ]]; then
             usage
         fi
 
@@ -1196,7 +1196,7 @@ case $COMMAND in
 
     mkdir)
 
-        if [[ $argnum < 1 ]]; then
+        if [[ $argnum -lt 1 ]]; then
             usage
         fi
 
