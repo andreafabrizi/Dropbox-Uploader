@@ -452,7 +452,7 @@ function db_simple_upload_file
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
+    if [[ $SHOW_PROGRESSBAR == 1 ]]; then
         CURL_PARAMETERS="--progress-bar"
         LINE_CR="\n"
     else
@@ -693,7 +693,7 @@ function db_download_file
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
+    if [[ $SHOW_PROGRESSBAR == 1 ]]; then
         CURL_PARAMETERS="--progress-bar"
         LINE_CR="\n"
     else
