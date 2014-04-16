@@ -300,7 +300,8 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * ) printf -v o '%%%02x' "'$c"
+            [\x00-\xFF] ) printf -v o '%%%02x' "'$c" ;;
+            * )  o="${c}"
         esac
         encoded+="${o}"
     done
