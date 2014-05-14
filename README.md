@@ -34,7 +34,7 @@ git clone https://github.com/andreafabrizi/Dropbox-Uploader/
 or download the script manually using this command:
 
 ```bash
-curl "https://raw.github.com/andreafabrizi/Dropbox-Uploader/master/dropbox_uploader.sh" -o dropbox_uploader.sh
+curl "https://raw.githubusercontent.com/andreafabrizi/Dropbox-Uploader/master/dropbox_uploader.sh" -o dropbox_uploader.sh
 ```
 
 Then give the execution permission to the script and run it:
