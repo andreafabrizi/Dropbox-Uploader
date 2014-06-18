@@ -1035,7 +1035,7 @@ else
             ACCESS_MSG="Full Dropbox"
         fi
 
-        echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG. Looks ok? [y/n]"
+        echo -ne "\n > App key is $APPKEY, App secret is $APPSECRET and Access level is $ACCESS_MSG. Looks ok? [y/n]: "
         read answer
         if [[ $answer == "y" ]]; then
             break;
