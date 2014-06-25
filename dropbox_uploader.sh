@@ -72,7 +72,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":cqpskdf:" opt; do
     case $opt in
 
     f)
@@ -97,6 +97,10 @@ while getopts ":qpskdf:" opt; do
 
     s)
       SKIP_EXISTING_FILES=1
+    ;;
+
+    c)
+      SKIP_EXISTING_FILES=2
     ;;
 
     \?)
@@ -215,6 +219,7 @@ function usage
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
+    echo -e "\t-c            Compare file size and skip already existing files of same size when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
@@ -310,7 +315,7 @@ function urlencode
 
 function normalize_path
 {
-    path=$(echo -e "$1")
+    path="$(echo -e "$1")"
     if [[ $HAVE_READLINK == 1 ]]; then
         readlink -m "$path"
     else
@@ -319,10 +324,19 @@ function normalize_path
 }
 
 #Check if it's a file or directory
-#Returns FILE/DIR/ERR
+#Param $1 file/dir path
+#Param $2 options ( ’GET_REMOTE_FILE_SIZE' for getting remote file size )
+#Returns FILE/DIR/ERR or Remote Filesize
 function db_stat
 {
     local FILE=$(normalize_path "$1")
+    local OPTIONS="$2"
+    local TYPE=''
+
+    #Set internal default for db_stat $OPTIONS when no option is passed
+    if [[ $OPTIONS == '' ]]; then
+      OPTIONS='FILE_SYSTEM_TYPE'
+    fi
 
     #Checking if it's a file or a directory
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
@@ -344,16 +358,29 @@ function db_stat
 
         #It's a directory
         if [[ $IS_DIR != "" ]]; then
-            echo "DIR"
+            TYPE='DIR'
         #It's a file
         else
-            echo "FILE"
+            TYPE='FILE'
         fi
 
     #Doesn't exists
     else
-        echo "ERR"
+        TYPE='ERR'
     fi
+
+    # Check for
+    case $OPTIONS in
+        FILE_SYSTEM_TYPE)
+            echo $TYPE
+        ;;
+
+        GET_REMOTE_FILE_SIZE)
+            if grep -q "\"bytes\":" "$RESPONSE_FILE"; then
+                echo $(sed -n 's/.*"bytes":.\([^,]*\).*/\1/p' "$RESPONSE_FILE")
+            fi
+        ;;
+    esac
 }
 
 #Generic upload wrapper around db_upload_file and db_upload_dir functions
@@ -379,7 +406,7 @@ function db_upload
     fi
 
     #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
-    TYPE=$(db_stat "$DST")
+    local TYPE=$(db_stat "$DST")
     if [[ $TYPE == "DIR" ]]; then
         local filename=$(basename "$SRC")
         DST="$DST/$filename"
@@ -426,16 +453,32 @@ function db_upload_file
     shopt -u nocasematch
 
     #Checking file size
-    FILE_SIZE=$(file_size "$FILE_SRC")
+    local FILE_SIZE_LOCAL=$(file_size "$FILE_SRC")
 
     #Checking if the file already exists
-    TYPE=$(db_stat "$FILE_DST")
-    if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
-        print " > Skipping already existing file \"$FILE_DST\"\n"
-        return
+    local TYPE=$(db_stat "$FILE_DST")
+
+    if [[ $TYPE != "ERR" ]]; then
+        case $SKIP_EXISTING_FILES in
+            # skip existing files
+            1)
+                print " > Skipping already existing file \"$FILE_DST\"\n"
+                return
+            ;;
+            # compare file size of (existing) files
+            2)
+                # get file size of remote file
+                FILE_SIZE_REMOTE=$(db_stat "$FILE_DST" "GET_REMOTE_FILE_SIZE")
+                # skip upload when file sizes are equal
+                if [[ $FILE_SIZE_LOCAL == $FILE_SIZE_REMOTE ]]; then
+                    print " > Skipping already existing file with same size \"$FILE_DST\"\n"
+                    return
+                fi
+            ;;
+        esac
     fi
 
-    if [[ $FILE_SIZE -gt 157286000 ]]; then
+    if [[ $FILE_SIZE_LOCAL -gt 157286000 ]]; then
         #If the file is greater than 150Mb, the chunked_upload API will be used
         db_chunked_upload_file "$FILE_SRC" "$FILE_DST"
     else
@@ -484,14 +527,14 @@ function db_chunked_upload_file
 
     print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
 
-    local FILE_SIZE=$(file_size "$FILE_SRC")
+    local FILE_SIZE_LOCAL=$(file_size "$FILE_SRC")
     local OFFSET=0
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
     local CHUNK_PARAMS=""
 
     #Uploading chunks...
-    while ([[ $OFFSET != $FILE_SIZE ]]); do
+    while ([[ $OFFSET != $FILE_SIZE_LOCAL ]]); do
 
         let OFFSET_MB=$OFFSET/1024/1024
 
@@ -602,7 +645,7 @@ function db_download
     local SRC=$(normalize_path "$1")
     local DST=$(normalize_path "$2")
 
-    TYPE=$(db_stat "$SRC")
+    local TYPE=$(db_stat "$SRC")
 
     #It's a directory
     if [[ $TYPE == "DIR" ]]; then
@@ -809,7 +852,7 @@ function db_move
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    TYPE=$(db_stat "$FILE_DST")
+    local TYPE=$(db_stat "$FILE_DST")
 
     #If the destination it's a directory, the source will be moved into it
     if [[ $TYPE == "DIR" ]]; then
@@ -838,7 +881,7 @@ function db_copy
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    TYPE=$(db_stat "$FILE_DST")
+    local TYPE=$(db_stat "$FILE_DST")
 
     #If the destination it's a directory, the source will be copied into it
     if [[ $TYPE == "DIR" ]]; then
