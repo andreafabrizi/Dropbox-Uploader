@@ -146,7 +146,7 @@ fi
 #Check if the printf command is installed
 #otherwise the bash builtin version will be used
 PRINTF=$(which printf)
-if [[ $? == 0 ]]; then
+if [[ $? != 0 ]]; then
     PRINTF=printf
 fi
 
@@ -307,7 +307,7 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * ) $PRINTF -v o '%%%02x' "'$c"
+            * ) $PRINTF '%%%02x' "'$c"
         esac
         encoded+="${o}"
     done
