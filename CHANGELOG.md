@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Version 0.14 - 15 Jul 2014
+* Fix issue #112, replaced bash condition -f with -e
+* Fix issue #117, sed: 1: invalid command code z
+* Fix issue #122, Directory upload doesn't work
+* Fix issue #132, enhanced cross compatibility for bash conditions
+
 ## Version 0.13 - 17 Jan 2014
 * Minor languages fixes, based on issue #88
 * Fix issue #91, sed take long time to process regexp on big data
@@ -149,7 +155,7 @@
 * Minor bug fixes
 
 ## Version 0.8.1 - 31 Aug 2011 (by Dawid Ferenczy - www.ferenczy.cz)
-* added prompt for the Dropbox password from keyboard, if there is no password 
+* added prompt for the Dropbox password from keyboard, if there is no password
   hardcoded or given as script command line parameter (interactive mode)
 * added INTERACTIVE_MODE variable - when set to 1 show CURL progress bar.
   Set to 1 automatically when there is no password hardcoded or given as
@@ -182,4 +188,4 @@
 * Code clean
 
 ## Version 0.1 - 23 Aug 2010:
-* Initial release 
+* Initial release
