@@ -129,7 +129,7 @@ Doesn't check for SSL certificates (insecure)
 ## Tested Environments
 
 * GNU Linux
-* FreeBSD 8.3
+* FreeBSD 8.3/10.0
 * MacOSX
 * Windows/Cygwin
 * Raspberry Pi
