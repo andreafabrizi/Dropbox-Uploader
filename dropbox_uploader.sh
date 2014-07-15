@@ -143,6 +143,13 @@ else
     HAVE_READLINK=0
 fi
 
+#Check if the printf command is installed
+#otherwise the bash builtin version will be used
+PRINTF=$(which printf)
+if [[ $? == 0 ]]; then
+    PRINTF=printf
+fi
+
 #Print the message based on $QUIET variable
 function print
 {
@@ -300,7 +307,7 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * ) printf -v o '%%%02x' "'$c"
+            * ) $PRINTF -v o '%%%02x' "'$c"
         esac
         encoded+="${o}"
     done
@@ -940,7 +947,7 @@ function db_list
                 fi
 
                 FILE=$(echo -e "$FILE")
-                printf " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
+                $PRINTF " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
 
             done < $RESPONSE_FILE
 
