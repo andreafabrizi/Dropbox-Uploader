@@ -148,12 +148,14 @@ fi
 #Note that the external printf command can cause character encoding issues!
 builtin printf "" 2> /dev/null
 if [[ $? == 0 ]]; then
-    PRINTF="builtin printf -v o "
+    PRINTF="builtin printf"
+    PRINTF_OPT="-v o"
 else
     PRINTF=$(which printf)
     if [[ $? != 0 ]]; then
         echo -e "Error: Required program could not be found: printf"
     fi
+    PRINTF_OPT=""
 fi
 
 #Print the message based on $QUIET variable
@@ -313,7 +315,7 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * ) $PRINTF '%%%02x' "'$c"
+            * ) $PRINTF $PRINTF_OPT '%%%02x' "'$c"
         esac
         encoded+="${o}"
     done
