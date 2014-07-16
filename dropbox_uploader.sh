@@ -143,11 +143,17 @@ else
     HAVE_READLINK=0
 fi
 
-#Check if the printf command is installed
-#otherwise the bash builtin version will be used
-PRINTF=$(which printf)
-if [[ $? != 0 ]]; then
-    PRINTF=printf
+#Forcing to use the builtin printf, if it's present, because it's better
+#otherwise the external printf program will be used
+#Note that the external printf command can cause character encoding issues!
+builtin printf "" 2> /dev/null
+if [[ $? == 0 ]]; then
+    PRINTF="builtin printf -v o "
+else
+    PRINTF=$(which printf)
+    if [[ $? != 0 ]]; then
+        echo -e "Error: Required program could not be found: printf"
+    fi
 fi
 
 #Print the message based on $QUIET variable
