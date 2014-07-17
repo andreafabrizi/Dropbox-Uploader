@@ -16,6 +16,7 @@ Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Upload
 * Cross platform
 * Support for the official Dropbox API
 * No password required or stored
+* Simple step-by-step configuration wizard
 * Simple and chunked file upload
 * File and recursive directory download
 * File and recursive directory upload
@@ -43,6 +44,8 @@ Then give the execution permission to the script and run it:
  $chmod +x dropbox_uploader.sh
  $./dropbox_uploader.sh
 ```
+
+The first time you run `dropbox_uploader`, you'll be guided through a wizard in order to configure access to your Dropbox. This configuration will be stored in `~/.dropbox_uploader`.
 
 ## Usage
 
