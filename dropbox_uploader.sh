@@ -216,14 +216,15 @@ function usage
     echo -e "Usage: $0 COMMAND [PARAMETERS]..."
     echo -e "\nCommands:"
 
-    echo -e "\t upload   <LOCAL_FILE/DIR ...>  <REMOTE_FILE/DIR>"
-    echo -e "\t download <REMOTE_FILE/DIR> [LOCAL_FILE/DIR]"
-    echo -e "\t delete   <REMOTE_FILE/DIR>"
-    echo -e "\t move     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
-    echo -e "\t copy     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
-    echo -e "\t mkdir    <REMOTE_DIR>"
-    echo -e "\t list     [REMOTE_DIR]"
-    echo -e "\t share    <REMOTE_FILE>"
+    echo -e "\t upload          <LOCAL_FILE/DIR ...>  <REMOTE_FILE/DIR>"
+    echo -e "\t download        <REMOTE_FILE/DIR> [LOCAL_FILE/DIR]"
+    echo -e "\t delete          <REMOTE_FILE/DIR>"
+    echo -e "\t delete_local    <LOCAL_FILE/DIR>  <REMOTE_FILE/DIR>"
+    echo -e "\t move            <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
+    echo -e "\t copy            <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
+    echo -e "\t mkdir           <REMOTE_DIR>"
+    echo -e "\t list            [REMOTE_DIR]"
+    echo -e "\t share           <REMOTE_FILE>"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -990,6 +991,26 @@ function db_share
     fi
 }
 
+#Delete local
+#$1 = Local source dir
+#$2 = Remote destination dir
+function db_delete_local
+{
+    local DIR_SRC=$(normalize_path "$1")
+    local DIR_DST=$(normalize_path "$2")
+
+    print " > Comparing local:\"$DIR_SRC\" with remote:\"$DIR_DST\"...\n "
+
+    local DIR_DST_CONTENTS=$(db_list "/$DIR_DST")
+
+    for file in "$DIR_SRC/"*; do
+        if [[ "$DIR_DST_CONTENTS" != *"${file##*/}"* ]]; then
+            print "Deleting local file: $file \n"
+            rm "$file"
+        fi
+    done
+}
+
 ################
 #### SETUP  ####
 ################
@@ -1180,6 +1201,24 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         db_delete "/$FILE_DST"
+
+    ;;
+
+    delete_local)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        DIR_SRC=$ARG1
+        DIR_DST=$ARG2
+
+        #Checking DIR_DST
+        if [[ $DIR_DST == "" ]]; then
+            DIR_DST="/"
+        fi
+
+        db_delete_local "/$DIR_SRC" "/$DIR_DST"
 
     ;;
 
