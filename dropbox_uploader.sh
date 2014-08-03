@@ -57,6 +57,7 @@ API_SHARES_URL="https://api.dropbox.com/1/shares"
 APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
+TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd mkdir"
 VERSION="0.14"
 
@@ -178,6 +179,7 @@ function remove_temp_files
     if [[ $DEBUG == 0 ]]; then
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
+        rm -fr "$TEMP_FILE"
     fi
 }
 
@@ -921,8 +923,20 @@ function db_list
             local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
 {/g')
 
-            #Converting escaped quotes to unicode format and extracting files and subfolders
-            echo "$DIR_CONTENT" | sed 's/\\"/\\u0022/' | sed -n 's/.*"bytes": *\([0-9]*\),.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\2:\3;\1/p' > $RESPONSE_FILE
+            #Converting escaped quotes to unicode format
+            echo "$DIR_CONTENT" | sed 's/\\"/\\u0022/' > "$TEMP_FILE"
+
+            #Extracting files and subfolders
+            rm -fr "$RESPONSE_FILE"
+            while read -r line; do
+
+                local FILE=$(echo "$line" | sed -n 's/.*"path": *"\([^"]*\)".*/\1/p')
+                local IS_DIR=$(echo "$line" | sed -n 's/.*"is_dir": *\([^,]*\).*/\1/p')
+                local SIZE=$(echo "$line" | sed -n 's/.*"bytes": *\([0-9]*\).*/\1/p')
+
+                echo -e "$FILE:$IS_DIR;$SIZE" >> "$RESPONSE_FILE"
+
+            done < "$TEMP_FILE"
 
             #Looking for the biggest file size
             #to calculate the padding to use
@@ -935,9 +949,27 @@ function db_list
                 if [[ ${#SIZE} -gt $padding ]]; then
                     padding=${#SIZE}
                 fi
-            done < $RESPONSE_FILE
+            done < "$RESPONSE_FILE"
 
-            #For each entry...
+            #For each entry, printing directories...
+            while read -r line; do
+
+                local FILE=${line%:*}
+                local META=${line##*:}
+                local TYPE=${META%;*}
+                local SIZE=${META#*;}
+
+                #Removing unneeded /
+                FILE=${FILE##*/}
+
+                if [[ $TYPE != "false" ]]; then
+                    FILE=$(echo -e "$FILE")
+                    $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+                fi
+
+            done < "$RESPONSE_FILE"
+
+            #For each entry, printing files...
             while read -r line; do
 
                 local FILE=${line%:*}
@@ -949,15 +981,11 @@ function db_list
                 FILE=${FILE##*/}
 
                 if [[ $TYPE == "false" ]]; then
-                    TYPE="F"
-                else
-                    TYPE="D"
+                    FILE=$(echo -e "$FILE")
+                    $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
                 fi
 
-                FILE=$(echo -e "$FILE")
-                $PRINTF " [$TYPE] %-${padding}s %s\n" "$SIZE" "$FILE"
-
-            done < $RESPONSE_FILE
+            done < "$RESPONSE_FILE"
 
         #It's a file
         else
@@ -1060,7 +1088,7 @@ else
 
     #TOKEN REQUESTS
     echo -ne "\n > Token request... "
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_REQUEST_TOKEN_URL" 2> /dev/null
     check_http_response
     OAUTH_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\).*/\1/p' "$RESPONSE_FILE")
     OAUTH_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)/\1/p' "$RESPONSE_FILE")
@@ -1083,7 +1111,7 @@ else
 
         #API_ACCESS_TOKEN_URL
         echo -ne " > Access Token request... "
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o $RESPONSE_FILE --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_ACCESS_TOKEN_URL" 2> /dev/null
         check_http_response
         OAUTH_ACCESS_TOKEN_SECRET=$(sed -n 's/oauth_token_secret=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
         OAUTH_ACCESS_TOKEN=$(sed -n 's/.*oauth_token=\([a-z A-Z 0-9]*\)&.*/\1/p' "$RESPONSE_FILE")
