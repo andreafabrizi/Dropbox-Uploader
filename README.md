@@ -191,6 +191,9 @@ To use a proxy server, just set the **https_proxy** environment variable:
 You need to install these packages:  
 * curl
 * ca-certificates
+* dos2unix
+
+Before running the script, you need to convert it using the dos2unix command.
 
 
 **Build cURL from source:**
