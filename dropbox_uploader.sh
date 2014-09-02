@@ -329,7 +329,14 @@ function normalize_path
 {
     path=$(echo -e "$1")
     if [[ $HAVE_READLINK == 1 ]]; then
-        readlink -m "$path"
+        new_path=$(readlink -m "$path")
+
+        #Adding back the final slash, if present in the source
+        if [[ "${path: -1}" == "/" ]]; then
+            new_path="$new_path/"
+        fi
+
+        echo "$new_path"
     else
         echo "$path"
     fi
@@ -395,10 +402,23 @@ function db_upload
         return
     fi
 
-    #If DST it's a folder, it will be the destination folder, where the file will be uploaded in
-    #If DST it's a file or doesn' exists, it will be the destination name
     TYPE=$(db_stat "$DST")
-    if [[ $TYPE == "DIR" || "${DST: -1}" == "/" || "${DST::1}" == "/" ]]; then
+
+    #If DST it's a file, do nothing, it's the default behaviour
+    if [[ $TYPE == "FILE" ]]; then
+        DST="$DST"
+
+    #if DST doesn't exists and doesn't ends with a /, it will be the destination file name
+    elif [[ $TYPE == "ERR" && "${DST: -1}" != "/" ]]; then
+        DST="$DST"
+
+    #if DST doesn't exists and ends with a /, it will be the destination folder
+    elif [[ $TYPE == "ERR" && "${DST: -1}" == "/" ]]; then
+        local filename=$(basename "$SRC")
+        DST="$DST/$filename"
+
+    #If DST it'a directory, it will be the destination folder
+    elif [[ $TYPE == "DIR" ]]; then
         local filename=$(basename "$SRC")
         DST="$DST/$filename"
     fi
