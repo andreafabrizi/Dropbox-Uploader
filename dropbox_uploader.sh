@@ -962,7 +962,7 @@ function db_list
                 #Removing unneeded /
                 FILE=${FILE##*/}
 
-                if [[ $TYPE != "false" ]]; then
+                if [[ $TYPE == "true" ]]; then
                     FILE=$(echo -e "$FILE")
                     $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
                 fi
