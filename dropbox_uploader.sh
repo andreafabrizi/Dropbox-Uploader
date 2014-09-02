@@ -395,9 +395,10 @@ function db_upload
         return
     fi
 
-    #Checking if DST it's a folder or if it doesn' exists (in this case will be the destination name)
+    #If DST it's a folder, it will be the destination folder, where the file will be uploaded in
+    #If DST it's a file or doesn' exists, it will be the destination name
     TYPE=$(db_stat "$DST")
-    if [[ $TYPE == "DIR" ]]; then
+    if [[ $TYPE == "DIR" || "${DST: -1}" == "/" || "${DST::1}" == "/" ]]; then
         local filename=$(basename "$SRC")
         DST="$DST/$filename"
     fi
