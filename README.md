@@ -120,6 +120,9 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-p**  
+Prune/Delete the source file after uploading
+
 
 **Examples:**
 ```bash

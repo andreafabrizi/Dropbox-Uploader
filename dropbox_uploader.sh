@@ -38,6 +38,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+DELETE_SOURCE=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -99,6 +100,9 @@ while getopts ":qpskdf:" opt; do
     s)
       SKIP_EXISTING_FILES=1
     ;;
+    p)
+	  DELETE_SOURCE=1
+	;;
 
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -505,6 +509,9 @@ function db_simple_upload_file
     #Check
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
+        if [[ $DELETE_SOURCE == 1 ]]; then
+        	rm -fr $1
+        fi
     else
         print "FAILED\n"
         print "An error occurred requesting /upload\n"
@@ -551,6 +558,9 @@ function db_chunked_upload_file
             UPLOAD_ERROR=0
             UPLOAD_ID=$(sed -n 's/.*"upload_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
             OFFSET=$(sed -n 's/.*"offset": *\([^}]*\).*/\1/p' "$RESPONSE_FILE")
+	        if [[ $DELETE_SOURCE == 1 ]]; then
+	        	rm -fr $1
+	        fi
         else
             print "*"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
