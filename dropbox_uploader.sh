@@ -41,7 +41,7 @@ ERROR_STATUS=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
-API_USER_AUTH_URL="https://www2.dropbox.com/1/oauth/authorize"
+API_USER_AUTH_URL="https://www.dropbox.com/1/oauth/authorize"
 API_ACCESS_TOKEN_URL="https://api.dropbox.com/1/oauth/access_token"
 API_CHUNKED_UPLOAD_URL="https://api-content.dropbox.com/1/chunked_upload"
 API_CHUNKED_UPLOAD_COMMIT_URL="https://api-content.dropbox.com/1/commit_chunked_upload"
@@ -54,7 +54,7 @@ API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
 API_SHARES_URL="https://api.dropbox.com/1/shares"
-APP_CREATE_URL="https://www2.dropbox.com/developers/apps"
+APP_CREATE_URL="https://www.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
