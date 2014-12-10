@@ -137,8 +137,17 @@ fi
 
 #Check if readlink is installed and supports the -m option
 #It's not necessary, so no problem if it's not installed
-which readlink > /dev/null
-if [[ $? == 0 && $(readlink -m "//test" 2> /dev/null) == "/test" ]]; then
+
+#For MacOSX, install coreutils (which includes greadlink)
+# $brew install coreutils
+if [ "${OSTYPE:0:6}" == "darwin" ]; then
+    READLINK="greadlink"
+else
+    READLINK="readlink"
+fi
+
+which $READLINK > /dev/null
+if [[ $? == 0 && $($READLINK -m "//test" 2> /dev/null) == "/test" ]]; then
     HAVE_READLINK=1
 else
     HAVE_READLINK=0
@@ -329,7 +338,7 @@ function normalize_path
 {
     path=$(echo -e "$1")
     if [[ $HAVE_READLINK == 1 ]]; then
-        new_path=$(readlink -m "$path")
+        new_path=$($READLINK -m "$path")
 
         #Adding back the final slash, if present in the source
         if [[ "${path: -1}" == "/" ]]; then
