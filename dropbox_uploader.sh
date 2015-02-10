@@ -226,6 +226,7 @@ function usage
     echo -e "\t mkdir    <REMOTE_DIR>"
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
+    echo -e "\t metadata <REMOTE_FILE/DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -340,6 +341,18 @@ function normalize_path
     else
         echo "$path"
     fi
+}
+
+#Get metadata for a remote file/dir
+#$1 = Remote file
+function db_metadata
+{
+    local FILE=$(normalize_path "$1")
+
+    print " > Getting metadata for \"$FILE\"... $LINE_CR"
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    check_http_response
+    sed '1,/^\r\{0,1\}$/d' $RESPONSE_FILE
 }
 
 #Check if it's a file or directory
@@ -1212,6 +1225,18 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         db_share "/$FILE_DST"
+
+    ;;
+
+    metadata)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_DST=$ARG1
+
+        db_metadata "/$FILE_DST"
 
     ;;
 
