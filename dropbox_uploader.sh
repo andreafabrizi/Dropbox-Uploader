@@ -764,16 +764,6 @@ function db_download_file
         return
     fi
 
-    #Creating the empty file, that for two reasons:
-    #1) In this way I can check if the destination file is writable or not
-    #2) Curl doesn't automatically creates files with 0 bytes size
-    dd if=/dev/zero of="$FILE_DST" count=0 2> /dev/null
-    if [[ $? != 0 ]]; then
-        print " > Error writing file $FILE_DST: permission denied\n"
-        ERROR_STATUS=1
-        return
-    fi
-
     #Don't download files with modified timestamps equal or higher than upstream if -m is present.
     if [[ -e $FILE_DST && $CHECK_MODIFIED == 1 ]]; then
       #Checking if the file has changed
@@ -787,6 +777,16 @@ function db_download_file
         echo "File '"$FILE_SRC"' up to date, skipping as requested by -m flag."
         return
       fi
+    fi
+
+    #Creating the empty file, that for two reasons:
+    #1) In this way I can check if the destination file is writable or not
+    #2) Curl doesn't automatically creates files with 0 bytes size
+    dd if=/dev/zero of="$FILE_DST" count=0 2> /dev/null
+    if [[ $? != 0 ]]; then
+        print " > Error writing file $FILE_DST: permission denied\n"
+        ERROR_STATUS=1
+        return
     fi
 
     print " > Downloading \"$FILE_SRC\" to \"$FILE_DST\"... $LINE_CR"
