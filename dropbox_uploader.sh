@@ -19,8 +19,14 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-#Default configuration file
-CONFIG_FILE=~/.dropbox_uploader
+#Try to load the config placed beside the script - or fall back to the default placed in the home directory.
+SCRIPT_DIR=`dirname $0`
+if [ -e "$SCRIPT_DIR/.dropbox_uploader" ]; then
+    CONFIG_FILE=/Users/phi/Dropbox-Uploader/.dropbox_uploader
+else
+    CONFIG_FILE=~/.dropbox_uploader
+fi
+
 
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
