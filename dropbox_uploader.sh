@@ -150,13 +150,13 @@ fi
 builtin printf "" 2> /dev/null
 if [[ $? == 0 ]]; then
     PRINTF="builtin printf"
-    PRINTF_OPT="-v o"
+    PRINTF_URLENCODE="yes"
 else
     PRINTF=$(which printf)
     if [[ $? != 0 ]]; then
         echo -e "Error: Required program could not be found: printf"
     fi
-    PRINTF_OPT=""
+    PRINTF_URLENCODE=""
 fi
 
 #Print the message based on $QUIET variable
@@ -317,7 +317,25 @@ function urlencode
         c=${string:$pos:1}
         case "$c" in
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
-            * ) $PRINTF $PRINTF_OPT '%%%02x' "'$c"
+            * )
+                if [ -n "$PRINTF_URLENCODE" ]; then
+                    o=''
+                    $PRINTF -v value '%d' "'$c"
+                    local leadingbitmask=63
+                    local bitprefix=128
+                    
+                    if (( value < 0x80 )); then
+                        $PRINTF -v o "%%%x" "$value"
+                    else
+                        while (( value > leadingbitmask )); do
+                            $PRINTF -v o "%%%x%s" $(( t = 0x80 | value & 0x3f )) $o
+                            (( value >>= 6, bitprefix += leadingbitmask+1, leadingbitmask>>=1 ))
+                        done
+                        $PRINTF -v o "%%%x%s" $(( t = bitprefix | value )) $o
+                    fi
+                else
+                    print "\nError: Unable to urlencode file.\n"
+                fi
         esac
         encoded+="${o}"
     done
