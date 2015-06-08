@@ -38,6 +38,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+DELETE_SRC=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -73,7 +74,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qpskdrf:" opt; do
     case $opt in
 
     f)
@@ -98,6 +99,10 @@ while getopts ":qpskdf:" opt; do
 
     s)
       SKIP_EXISTING_FILES=1
+    ;;
+
+    r)
+      DELETE_SRC=1
     ;;
 
     \?)
@@ -236,6 +241,7 @@ function usage
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-r            Delete local files/folders after successful upload"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -434,6 +440,10 @@ function db_upload
     #Unsupported object...
     else
         print " > Skipping not regular file \"$SRC\"\n"
+    fi
+
+    if [[ $DELETE_SRC == 1 && $ERROR_STATUS == 0 ]]; then
+        rm -rf "$SRC"
     fi
 }
 
