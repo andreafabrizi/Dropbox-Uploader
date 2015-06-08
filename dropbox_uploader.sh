@@ -1071,9 +1071,8 @@ else
     echo -ne "\n This is the first time you run this script.\n\n"
     echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
     echo -ne " 2) Click on \"Create App\", then select \"Dropbox API app\"\n"
-    echo -ne " 3) Select \"Files and datastores\"\n"
-    echo -ne " 4) Now go on with the configuration, choosing the app permissions and access restrictions to your DropBox folder\n"
-    echo -ne " 5) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM)\n\n"
+    echo -ne " 3) Now go on with the configuration, choosing the app permissions and access restrictions to your DropBox folder\n"
+    echo -ne " 4) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM)\n\n"
 
     echo -ne " Now, click on the \"Create App\" button.\n\n"
 
@@ -1083,13 +1082,13 @@ else
     #Getting the app key and secret from the user
     while (true); do
 
-        echo -n " # App key: "
+        echo -ne " # App key: "
         read APPKEY
 
-        echo -n " # App secret: "
+        echo -ne " # App secret: "
         read APPSECRET
 
-        echo -n " # Permission type, App folder or Full Dropbox [a/f]: "
+        echo -ne "\nPermission type:\n App folder [a]: If you choose that the app only needs access to files it creates\n Full Dropbox [f]: If you choose that the app needs access to files already on Dropbox\n\n # Permission type [a/f]: "
         read ACCESS_LEVEL
 
         if [[ $ACCESS_LEVEL == "a" ]]; then
