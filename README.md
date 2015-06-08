@@ -120,6 +120,9 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-r**  
+Delete local files/folders after successful upload
+
 
 **Examples:**
 ```bash
