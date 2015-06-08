@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Version 0.15 - 08 Jun 2015
+* Fix issue #163, List only show folders but not files
+* Fix issue #168, Share call not returning a share link
+* Fix issue #172, list command always return an unnamed dir on an empty directory
+* Fix issue #165, Issue with uploading a file to a folder
+* Fix issue #162, Uploading a folder to a folder that already exists on dropbox has unexpected behaviour
+* Updated setup procedure
+
 ## Version 0.14 - 15 Jul 2014
 * Fix issue #112, replaced bash condition -f with -e
 * Fix issue #117, sed: 1: invalid command code z
