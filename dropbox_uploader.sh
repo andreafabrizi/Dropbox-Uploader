@@ -58,7 +58,7 @@ APP_CREATE_URL="https://www.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd mkdir"
+BIN_DEPS="sed basename date grep stat dd mkdir rm"
 VERSION="0.14"
 
 umask 077
