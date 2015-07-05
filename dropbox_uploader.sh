@@ -1034,6 +1034,7 @@ function db_share
         print " > Share link: "
         SHARE_LINK=$(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
         echo "$SHARE_LINK"
+        echo "$SHARE_LINK" > _link.txt
     else
         print "FAILED\n"
         ERROR_STATUS=1
