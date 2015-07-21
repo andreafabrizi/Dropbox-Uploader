@@ -52,6 +52,7 @@ API_DELETE_URL="https://api.dropbox.com/1/fileops/delete"
 API_MOVE_URL="https://api.dropbox.com/1/fileops/move"
 API_COPY_URL="https://api.dropbox.com/1/fileops/copy"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
+API_REVISIONS_URL="https://api.dropbox.com/1/revisions"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
 API_SHARES_URL="https://api.dropbox.com/1/shares"
@@ -232,6 +233,7 @@ function usage
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t metadata <REMOTE_FILE/DIR>"
+    echo -e "\t revisions <REMOTE_FILE/DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -355,7 +357,18 @@ function db_metadata
     print " > Getting metadata for \"$FILE\"... $LINE_CR\n" >&2
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
     check_http_response
-    JSON=$(sed '1,/^\r\{0,1\}$/d' $RESPONSE_FILE)
+    JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' $RESPONSE_FILE)
+    print "$JSON\n"
+}
+
+function db_revisions
+{
+    local FILE=$(normalize_path "$1")
+
+    print " > Getting revisions for \"$FILE\"... $LINE_CR\n" >&2
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_REVISIONS_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    check_http_response
+    JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
     print "$JSON\n"
 }
 
@@ -1255,6 +1268,18 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         db_metadata "/$FILE_DST"
+
+    ;;
+    
+    revisions)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_DST=$ARG1
+
+        db_revisions "/$FILE_DST"
 
     ;;
     
