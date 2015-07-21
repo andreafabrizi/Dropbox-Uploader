@@ -37,6 +37,7 @@ DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
+CHECK_MODIFIED=0
 ERROR_STATUS=0
 
 #Don't edit these...
@@ -73,7 +74,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qpsmkdf:" opt; do
     case $opt in
 
     f)
@@ -99,7 +100,11 @@ while getopts ":qpskdf:" opt; do
     s)
       SKIP_EXISTING_FILES=1
     ;;
-
+    
+    m)
+      CHECK_MODIFIED=1
+    ;;
+    
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -226,6 +231,7 @@ function usage
     echo -e "\t mkdir    <REMOTE_DIR>"
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
+    echo -e "\t metadata <REMOTE_FILE/DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -340,6 +346,17 @@ function normalize_path
     else
         echo "$path"
     fi
+}
+
+function db_metadata
+{
+    local FILE=$(normalize_path "$1")
+
+    print " > Getting metadata for \"$FILE\"... $LINE_CR\n" >&2
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    check_http_response
+    JSON=$(sed '1,/^\r\{0,1\}$/d' $RESPONSE_FILE)
+    print "$JSON\n"
 }
 
 #Check if it's a file or directory
@@ -743,6 +760,21 @@ function db_download_file
     if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
+    fi
+
+    #Don't download files with modified timestamps equal or higher than upstream if -m is present.
+    if [[ -e $FILE_DST && $CHECK_MODIFIED == 1 ]]; then
+      #Checking if the file has changed
+      LOCAL_LAST_MODIFIED=$(stat --printf="%Y" ".$FILE_SRC")
+      $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE_DST")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+      DATE=$(sed '1,/^\r\{0,1\}$/d' $RESPONSE_FILE | grep -Po '"modified":.*?[^\\]",' | sed 's/"modified":\s*//g' | sed 's/[",]//g')
+      REMOTE_LAST_MODIFIED=$(date --date="$DATE" +%s)
+      if [ "$REMOTE_LAST_MODIFIED" -gt "$LOCAL_LAST_MODIFIED" ]; then
+        echo "File '"$FILE_SRC"' has changed on Dropbox, downlading..." >&2
+      else
+        echo "File '"$FILE_SRC"' up to date, skipping as requested by -m flag."
+        return
+      fi
     fi
 
     #Creating the empty file, that for two reasons:
@@ -1213,10 +1245,23 @@ case $COMMAND in
         db_share "/$FILE_DST"
 
     ;;
+    
+    metadata)
 
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_DST=$ARG1
+
+        db_metadata "/$FILE_DST"
+
+    ;;
+    
     info)
 
         db_account_info
+
 
     ;;
 
