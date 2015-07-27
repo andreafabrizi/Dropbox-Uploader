@@ -53,6 +53,9 @@ API_MOVE_URL="https://api.dropbox.com/1/fileops/move"
 API_COPY_URL="https://api.dropbox.com/1/fileops/copy"
 API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_REVISIONS_URL="https://api.dropbox.com/1/revisions"
+API_DELTA_URL="https://api.dropbox.com/1/delta"
+API_DELTA_LATEST_CURSOR_URL="https://api.dropbox.com/1/delta/latest_cursor"
+API_LONGPOLL_DELTA_URL="https://api-notify.dropbox.com/1/longpoll_delta"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
 API_SHARES_URL="https://api.dropbox.com/1/shares"
@@ -61,7 +64,7 @@ RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd mkdir"
-VERSION="0.14"
+VERSION="0.15"
 
 umask 077
 
@@ -101,11 +104,11 @@ while getopts ":qpsmkdf:" opt; do
     s)
       SKIP_EXISTING_FILES=1
     ;;
-    
+
     m)
       CHECK_MODIFIED=1
     ;;
-    
+
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -169,7 +172,7 @@ fi
 function print
 {
     if [[ $QUIET == 0 ]]; then
-	    echo -ne "$1";
+            echo -ne "$1";
     fi
 }
 
@@ -234,6 +237,9 @@ function usage
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t metadata <REMOTE_FILE/DIR>"
     echo -e "\t revisions <REMOTE_FILE/DIR>"
+    echo -e "\t delta [CURSOR]"
+    echo -e "\t latest_cursor"
+    echo -e "\t longpoll_delta"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -355,7 +361,7 @@ function db_metadata
     local FILE=$(normalize_path "$1")
 
     print " > Getting metadata for \"$FILE\"... $LINE_CR\n" >&2
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_METADATA_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM&include_deleted=true" 2> /dev/null
     check_http_response
     JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' $RESPONSE_FILE)
     print "$JSON\n"
@@ -368,6 +374,41 @@ function db_revisions
     print " > Getting revisions for \"$FILE\"... $LINE_CR\n" >&2
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_REVISIONS_URL/$ACCESS_LEVEL/$(urlencode "$FILE")?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
     check_http_response
+
+    JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
+    print "$JSON\n"
+}
+
+function db_delta
+{
+    local CURSOR="$1"
+
+    print " > Getting delta info... "
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_URL?cursor=$CURSOR" 2> /dev/null
+    check_http_response
+
+    JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
+    print "$JSON\n"
+}
+
+function db_delta_latest_cursor
+{
+    print " > Getting latest cursor... "
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_LATEST_CURSOR_URL" 2> /dev/null
+    check_http_response
+
+    JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
+    print "$JSON\n"
+}
+
+function db_longpoll_delta
+{
+    print " > Getting longpolll delta... "
+#    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_LONGPOLL_DELTA_URL" 2> /dev/null
+#    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_LONGPOLL_DELTA_URL/$ACCESS_LEVEL/?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_LONGPOLL_DELTA_URL?cursor=AAFQWEbvjAaF9GuUgRHaI-XJ-3qXluEjrHqb2gonpOiAoRfQgrEFJo2Bn-jLC_vxFVLbdoICTT_gaYOQvCYa6EfAD4c0n4Dvg1XoxMRoSlZG7P1yfmIIfbspOt653Wu73ME&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET" 2> /dev/null
+    check_http_response
+# AQUI
     JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
     print "$JSON\n"
 }
@@ -1258,7 +1299,7 @@ case $COMMAND in
         db_share "/$FILE_DST"
 
     ;;
-    
+
     metadata)
 
         if [[ $argnum -lt 1 ]]; then
@@ -1270,7 +1311,7 @@ case $COMMAND in
         db_metadata "/$FILE_DST"
 
     ;;
-    
+
     revisions)
 
         if [[ $argnum -lt 1 ]]; then
@@ -1282,7 +1323,29 @@ case $COMMAND in
         db_revisions "/$FILE_DST"
 
     ;;
-    
+
+    delta)
+        if [[ $argnum -lt 1 ]]; then
+            db_delta
+        else
+            CURSOR=$ARG1
+            db_delta "$CURSOR"
+        fi
+
+    ;;
+
+    latest_cursor)
+
+        db_delta_latest_cursor
+
+    ;;
+
+    longpoll_delta)
+
+        db_longpoll_delta
+
+    ;;
+
     info)
 
         db_account_info
