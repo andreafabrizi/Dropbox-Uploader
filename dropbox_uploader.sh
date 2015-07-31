@@ -319,7 +319,7 @@ function urlencode
             [-_.~a-zA-Z0-9] ) o="${c}" ;;
             * ) $PRINTF $PRINTF_OPT '%%%02x' "'$c"
         esac
-        encoded+="${o}"
+        encoded="${encoded}${o}"
     done
 
     echo "$encoded"
