@@ -54,6 +54,8 @@ API_METADATA_URL="https://api.dropbox.com/1/metadata"
 API_INFO_URL="https://api.dropbox.com/1/account/info"
 API_MKDIR_URL="https://api.dropbox.com/1/fileops/create_folder"
 API_SHARES_URL="https://api.dropbox.com/1/shares"
+API_SAVEURL_URL="https://api.dropbox.com/1/save_url/auto"
+API_SAVEURL_JOB_URL="https://api.dropbox.com/1/save_url_job"
 APP_CREATE_URL="https://www.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
@@ -227,6 +229,7 @@ function usage
     echo -e "\t mkdir    <REMOTE_DIR>"
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
+    echo -e "\t saveurl  <URL> <REMOTE_DIR>"
     echo -e "\t info"
     echo -e "\t unlink"
 
@@ -771,6 +774,61 @@ function db_download_file
     fi
 }
 
+#Saveurl
+#$1 = URL
+#$2 = Remote file destination
+function db_saveurl
+{
+    local URL="$1"
+    local FILE_DST=$(normalize_path "$2")
+    local FILE_NAME=$(basename "$URL")
+
+    print " > Downloading \"$URL\" to \"$FILE_DST\"..."
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "url=$(urlencode "$URL")&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_SAVEURL_URL/$FILE_NAME" 2> /dev/null
+    check_http_response
+
+    JOB_ID=$(sed -n 's/.*"job": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+    if [ -z "$JOB_ID" ]; then
+        print " > Error getting the job id\n"
+        return
+    fi
+
+    #Checking the status
+    while (true); do
+
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_SAVEURL_JOB_URL/$JOB_ID" 2> /dev/null
+        check_http_response
+
+        STATUS=$(sed -n 's/.*"status": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+        case $STATUS in
+
+            PENDING)
+                print "."
+            ;;
+
+            DOWNLOADING)
+                print "+"
+            ;;
+
+            COMPLETE)
+                print " DONE\n"
+                break
+            ;;
+
+            FAILED)
+                print " ERROR\n"
+                MESSAGE=$(sed -n 's/.*"error": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+                print " > Error: $MESSAGE\n"
+                break
+            ;;
+
+        esac
+
+        sleep 2
+
+    done
+}
+
 #Prints account info
 function db_account_info
 {
@@ -1200,6 +1258,19 @@ case $COMMAND in
         FILE_DST=$ARG2
 
         db_download "/$FILE_SRC" "$FILE_DST"
+
+    ;;
+
+    saveurl)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        URL=$ARG1
+        FILE_DST=$ARG2
+
+        db_saveurl "$URL" "$FILE_DST"
 
     ;;
 
