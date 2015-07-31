@@ -331,12 +331,12 @@ function urlencode
 
 function normalize_path
 {
-    path=$(echo -e "$1")
+    path=$(echo -e "${1//\/\//\/}")
     if [[ $HAVE_READLINK == 1 ]]; then
         new_path=$(readlink -m "$path")
 
         #Adding back the final slash, if present in the source
-        if [[ "${path: -1}" == "/" ]]; then
+        if [[ ${path: -1} == "/" && ${#path} > 1 ]]; then
             new_path="$new_path/"
         fi
 
@@ -788,7 +788,7 @@ function db_saveurl
     check_http_response
 
     JOB_ID=$(sed -n 's/.*"job": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-    if [ -z "$JOB_ID" ]; then
+    if [[ $JOB_ID == "" ]]; then
         print " > Error getting the job id\n"
         return
     fi
