@@ -617,25 +617,6 @@ function db_upload_dir
     done
 }
 
-#Returns the free space on DropBox in bytes
-function db_free_quota
-{
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_INFO_URL" 2> /dev/null
-    check_http_response
-
-    #Check
-    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-
-        quota=$(sed -n 's/.*"quota": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
-        used=$(sed -n 's/.*"normal": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
-        let free_quota=$quota-$used
-        echo $free_quota
-
-    else
-        echo 0
-    fi
-}
-
 #Generic download wrapper
 #$1 = Remote source file/dir
 #$2 = Local destination file/dir
