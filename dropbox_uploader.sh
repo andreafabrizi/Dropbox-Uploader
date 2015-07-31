@@ -184,31 +184,32 @@ function remove_temp_files
 }
 
 #Returns the file size in bytes
-# generic GNU Linux: linux-gnu
-# windows cygwin:    cygwin
-# raspberry pi:      linux-gnueabihf
-# macosx:            darwin10.0
-# freebsd:           FreeBSD
-# qnap:              linux-gnueabi
-# iOS:               darwin9
 function file_size
 {
+    #Generic GNU
+    SIZE=$(stat --format="%s" "$1" 2> /dev/null)
+    if [ $? -eq 0 ]; then
+        echo $SIZE
+        return
+    fi   
+
     #Some embedded linux devices
-    if [[ $OSTYPE == "linux-gnueabi" || $OSTYPE == "linux-gnu" ]]; then
-        stat -c "%s" "$1"
-        return
-
-    #Generic Unix
-    elif [[ ${OSTYPE:0:5} == "linux" || $OSTYPE == "cygwin" || ${OSTYPE:0:7} == "solaris" ]]; then
-        stat --format="%s" "$1"
-        return
-
-    #BSD, OSX and other OSs
-    else
-        stat -f "%z" "$1"
+    SIZE=$(stat -c "%s" "$1" 2> /dev/null)
+    if [ $? -eq 0 ]; then
+        echo $SIZE
         return
     fi
+
+    #BSD, OSX and other OSs
+    SIZE=$(stat -f "%z" "$1" 2> /dev/null)
+    if [ $? -eq 0 ]; then
+        echo $SIZE
+        return
+    fi
+
+    echo "0"
 }
+
 
 #Usage
 function usage
