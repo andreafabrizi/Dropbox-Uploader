@@ -784,7 +784,7 @@ function db_saveurl
     local FILE_NAME=$(basename "$URL")
 
     print " > Downloading \"$URL\" to \"$FILE_DST\"..."
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "url=$(urlencode "$URL")&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_SAVEURL_URL/$FILE_NAME" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "url=$(urlencode "$URL")&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_SAVEURL_URL/$FILE_DST/$FILE_NAME" 2> /dev/null
     check_http_response
 
     JOB_ID=$(sed -n 's/.*"job": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
@@ -1270,7 +1270,7 @@ case $COMMAND in
         URL=$ARG1
         FILE_DST=$ARG2
 
-        db_saveurl "$URL" "$FILE_DST"
+        db_saveurl "$URL" "/$FILE_DST"
 
     ;;
 
