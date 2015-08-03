@@ -331,7 +331,7 @@ function urlencode
 
 function normalize_path
 {
-    path=$(echo -e "${1//\/\//\/}")
+    path=$(echo -e "${1//\/\///}")
     if [[ $HAVE_READLINK == 1 ]]; then
         new_path=$(readlink -m "$path")
 
