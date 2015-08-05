@@ -40,6 +40,7 @@ SKIP_EXISTING_FILES=0
 CHECK_MODIFIED=0
 ERROR_STATUS=0
 TIMEOUT_LONGPOLL=30 # Default value is 30 and it's the minimun allowed value - Max value is 480
+PATHD="" # Default directory for Delta API
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -81,7 +82,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpsmkdft:" opt; do
+while getopts ":qpsmkdftx:" opt; do
     case $opt in
 
     f)
@@ -113,11 +114,19 @@ while getopts ":qpsmkdft:" opt; do
     ;;
 
     t)
-     if [[ $OPTARG -ge 30 && $OPTARG -le 480 ]]; then
+      if [[ $OPTARG -ge 30 && $OPTARG -le 480 ]]; then
         TIMEOUT_LONGPOLL=$OPTARG
-     else
+      else
         echo "Option -$opt has a invalid argument: MIN value 30 and MAX value 480."
         exit 1
+     fi
+    ;;
+
+    x)
+     if [ $(echo ${OPTARG:0:1}) == "/" ]; then
+       PATHD=$(echo ${OPTARG:1})
+     else
+       PATHD=$OPTARG
     fi
     ;;
 
@@ -396,7 +405,7 @@ function db_delta
     local CURSOR="$1"
 
     print " > Getting delta info...\n"
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_URL?cursor=$CURSOR" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_URL?cursor=$CURSOR&path_prefix=/$PATHD" 2> /dev/null
     check_http_response
 
     JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
