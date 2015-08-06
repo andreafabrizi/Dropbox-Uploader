@@ -123,11 +123,13 @@ while getopts ":qpsmkdftx:" opt; do
     ;;
 
     x)
-     if [ $(echo ${OPTARG:0:1}) == "/" ]; then
-       PATHD=$(echo ${OPTARG:1})
-     else
-       PATHD=$OPTARG
-    fi
+     PATHD=$OPTARG
+     if [ $(echo ${PATHD:0:1}) == "/" ]; then
+       PATHD=$(echo ${PATHD:1})
+     fi
+     if [ $(echo ${PATHD: -1}) == "/" ]; then
+      PATHD=$(echo ${PATHD:0:-1})
+     fi
     ;;
 
     \?)
@@ -272,6 +274,8 @@ function usage
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-t [SECONDS]  Time that Longpoll Delta use for refresh: Default: 30 seconds. Max: 480"
+    echo -e "\t-x <PATH>     Path for Delta or latest_cursor. Default: root (/)"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -415,7 +419,7 @@ function db_delta
 function db_delta_latest_cursor
 {
     print " > Getting latest cursor...\n"
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_LATEST_CURSOR_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --data "oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" "$API_DELTA_LATEST_CURSOR_URL?path_prefix=/PROYECTOS" 2> /dev/null
     check_http_response
 
     JSON=$(sed -e '1,/^\r\{0,1\}$/d' -e 's/\[/\[\n/g' -e 's/\]/\n\]/g' -e 's/{"/{\n\"/g' -e 's/\",/\",\n/g' -e 's/\,\ \"/,\n\"/g' -e 's/\ \"/"/g' -e 's/\:\"/\:\ \"/g' -e 's/}/\n}/g' -e 's/}, {/},\n{/g' $RESPONSE_FILE)
