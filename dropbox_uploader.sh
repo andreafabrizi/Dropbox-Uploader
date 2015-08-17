@@ -117,6 +117,8 @@ done
 
 if [[ $DEBUG != 0 ]]; then
     echo $VERSION
+    uname -a 2> /dev/null
+    cat /etc/issue 2> /dev/null
     set -x
     RESPONSE_FILE="$TMP_DIR/du_resp_debug"
 fi
