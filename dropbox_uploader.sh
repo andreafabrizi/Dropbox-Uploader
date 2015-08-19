@@ -38,6 +38,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+USE_ENVIRONMENT_VARIABLE=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -75,7 +76,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qpskdef:" opt; do
     case $opt in
 
     f)
@@ -100,6 +101,10 @@ while getopts ":qpskdf:" opt; do
 
     s)
       SKIP_EXISTING_FILES=1
+    ;;
+
+    e)
+      USE_ENVIRONMENT_VARIABLE=1
     ;;
 
     \?)
@@ -1086,8 +1091,22 @@ function db_share
 #### SETUP  ####
 ################
 
+#CHECKING FOR AUTH ENVIRONMENT VARIABLES
+if [[ $USE_ENVIRONMENT_VARIABLE == 1 ]]; then
+  #Checking the loaded data
+  if [[ $APPKEY == "" || $APPSECRET == "" || $OAUTH_ACCESS_TOKEN_SECRET == "" || $OAUTH_ACCESS_TOKEN == "" ]]; then
+      echo -ne "Error loading data from environment variables...\n"
+      remove_temp_files
+      exit 1
+  fi
+
+  #Back compatibility with previous Dropbox Uploader versions
+  if [[ $ACCESS_LEVEL == "" ]]; then
+      ACCESS_LEVEL="dropbox"
+  fi
+
 #CHECKING FOR AUTH FILE
-if [[ -e $CONFIG_FILE ]]; then
+elif [[ -e $CONFIG_FILE ]]; then
 
     #Loading data... and change old format config if necesary.
     source "$CONFIG_FILE" 2>/dev/null || {
