@@ -315,7 +315,7 @@ function check_http_response
 #Urlencode
 function urlencode
 {
-    local string="${1}"
+    local string=$(echo -e "${1}")
     local strlen=${#string}
     local encoded=""
 
