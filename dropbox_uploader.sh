@@ -315,7 +315,8 @@ function check_http_response
 #Urlencode
 function urlencode
 {
-    local string="${1}"
+    #The printf is necessary to correctly decode unicode sequences
+    local string=$($PRINTF "${1}")
     local strlen=${#string}
     local encoded=""
 
@@ -333,7 +334,8 @@ function urlencode
 
 function normalize_path
 {
-    path="${1//\/\///}"
+    #The printf is necessary to correctly decode unicode sequences
+    path=$($PRINTF "${1//\/\///}")
     if [[ $HAVE_READLINK == 1 ]]; then
         new_path=$(readlink -m "$path")
 
