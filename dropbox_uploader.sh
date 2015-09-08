@@ -75,8 +75,12 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qpskdf:c:" opt; do
     case $opt in
+
+    c)
+      CHUNK_SIZE=$OPTARG
+    ;;
 
     f)
       CONFIG_FILE=$OPTARG
@@ -237,6 +241,7 @@ function usage
 
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
+    echo -e "\t-c <SIZE>     Split up the file in chunks of this size (in Mb). Default: 4"
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
