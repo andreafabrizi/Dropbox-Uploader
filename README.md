@@ -108,6 +108,9 @@ Unlink the script from your Dropbox account
 * **-f &lt;FILENAME&gt;**  
 Load the configuration file from a specific file
 
+* **-c &lt;SIZE&gt;**
+Split up the file in chunks of this size (in Mb). Default: 4
+
 * **-s**  
 Skip already existing files when download/upload. Default: Overwrite
 
