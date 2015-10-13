@@ -75,7 +75,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qrpskdf:" opt; do
     case $opt in
 
     f)
@@ -88,6 +88,10 @@ while getopts ":qpskdf:" opt; do
 
     q)
       QUIET=1
+    ;;
+
+    r)
+      RAW_OUTPUT=1
     ;;
 
     p)
@@ -229,6 +233,7 @@ function usage
     echo -e "\t move     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
     echo -e "\t copy     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
     echo -e "\t mkdir    <REMOTE_DIR>"
+    echo -e "\t rmdir    <REMOTE_DIR>"
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
@@ -240,6 +245,7 @@ function usage
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
+    echo -e "\t-r            Raw mode for 'list' - lists outputs, one per line, no extra output, like ls -1."
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
 
@@ -885,6 +891,40 @@ function db_delete
     fi
 }
 
+#Delete a remote empty directory.
+#$1 = Remote dir to delete
+function db_rmdir
+{
+    local FILE_DST=$(normalize_path "$1")
+
+    # only delete directory entries
+    TYPE=$(db_stat "$FILE_DST")
+    if [[ $TYPE != "DIR" ]]; then
+	print "ONLY DIRECTORIES ALLOWED\n"
+	ERROR_STATUS=1
+	return
+    fi
+
+    # this saving state is ... inelegant
+    SAVE_RAW=$RAW_OUTPUT;  SAVE_QUIET=$QUIET
+    # set these to what we want
+    RAW_OUTPUT=1; QUIET=1
+
+    CONTENTS=$(db_list "$FILE_DST")
+
+    # restore variables
+    RAW_OUTPUT=$SAVE_RAW;  QUIET=$SAVE_QUIET
+
+    if [[ -n "$CONTENTS" ]]; then 
+	print "DIRECTORY NOT EMPTY, NOT DELETING\n"
+	ERROR_STATUS=1
+	return
+    fi
+
+    db_delete "$FILE_DST"
+
+}
+
 #Move/Rename a remote file
 #$1 = Remote file to rename or move
 #$2 = New file name or location
@@ -1029,10 +1069,14 @@ function db_list
                 #Removing unneeded /
                 FILE=${FILE##*/}
 
-                if [[ $TYPE == "true" ]]; then
-                    FILE=$(echo -e "$FILE")
-                    $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
-                fi
+		if [[ $TYPE == "true" ]]; then
+		    FILE=$(echo -e "$FILE")
+		    if [[ $RAW_OUTPUT == 1 ]]; then
+			$PRINTF "$FILE\n"
+                    else
+			$PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+                    fi
+		fi
 
             done < "$RESPONSE_FILE"
 
@@ -1048,9 +1092,13 @@ function db_list
                 FILE=${FILE##*/}
 
                 if [[ $TYPE == "false" ]]; then
-                    FILE=$(echo -e "$FILE")
-                    $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
-                fi
+		    FILE=$(echo -e "$FILE")
+		    if [[ $RAW_OUTPUT == 1 ]]; then
+			$PRINTF "$FILE\n"
+		    else
+			$PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
+                    fi
+		fi
 
             done < "$RESPONSE_FILE"
 
@@ -1288,6 +1336,18 @@ case $COMMAND in
         FILE_DST=$ARG1
 
         db_delete "/$FILE_DST"
+
+    ;;
+
+    rmdir)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_DST=$ARG1
+
+        db_rmdir "/$FILE_DST"
 
     ;;
 
