@@ -41,8 +41,8 @@ curl "https://raw.githubusercontent.com/andreafabrizi/Dropbox-Uploader/master/dr
 Then give the execution permission to the script and run it:
 
 ```bash
- $chmod +x dropbox_uploader.sh
- $./dropbox_uploader.sh
+ $ chmod +x dropbox_uploader.sh
+ $ ./dropbox_uploader.sh
 ```
 
 The first time you run `dropbox_uploader`, you'll be guided through a wizard in order to configure access to your Dropbox. This configuration will be stored in `~/.dropbox_uploader`.
@@ -126,14 +126,14 @@ Doesn't check for SSL certificates (insecure)
 
 **Examples:**
 ```bash
-    ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
-    ./dropbox_uploader.sh upload *.zip /
-    ./dropbox_uploader.sh download /backup.zip
-    ./dropbox_uploader.sh delete /backup.zip
-    ./dropbox_uploader.sh mkdir /myDir/
-    ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"
-    ./dropbox_uploader.sh share "My File.txt"
-    ./dropbox_uploader.sh list
+    $ ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
+    $ ./dropbox_uploader.sh upload *.zip /
+    $ ./dropbox_uploader.sh download /backup.zip
+    $ ./dropbox_uploader.sh delete /backup.zip
+    $ ./dropbox_uploader.sh mkdir /myDir/
+    $ ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"
+    $ ./dropbox_uploader.sh share "My File.txt"
+    $ ./dropbox_uploader.sh list
 ```
 
 ## Tested Environments
@@ -164,9 +164,9 @@ To use a proxy server, just set the **https_proxy** environment variable:
 
 **Linux:**
 ```bash
-    export HTTP_PROXY_USER=XXXX
-    export HTTP_PROXY_PASSWORD=YYYY
-    export https_proxy=http://192.168.0.1:8080
+    $ export HTTP_PROXY_USER=XXXX
+    $ export HTTP_PROXY_PASSWORD=YYYY
+    $ export https_proxy=http://192.168.0.1:8080
 ```
 
 **BSD:**
@@ -180,8 +180,8 @@ To use a proxy server, just set the **https_proxy** environment variable:
 
 **Debian & Ubuntu Linux:**
 ```bash
-    sudo apt-get install bash (Probably BASH is already installed on your system)
-    sudo apt-get install curl
+    $ sudo apt-get install bash (Probably BASH is already installed on your system)
+    $ sudo apt-get install curl
 ```
 
 **BSD:**
@@ -209,7 +209,7 @@ DropShell is an interactive DropBox shell, based on DropBox Uploader:
 
 ```bash
 DropShell v0.2
-The Intractive Dropbox SHELL
+The Interactive Dropbox SHELL
 Andrea Fabrizi - andrea.fabrizi@gmail.com
 
 Type help for the list of the available commands.
