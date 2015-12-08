@@ -262,6 +262,7 @@ function usage
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
+    echo -e "\t-h            Show file sizes in human readable format"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
 
