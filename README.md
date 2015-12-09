@@ -117,6 +117,9 @@ Enable DEBUG mode
 * **-q**  
 Quiet mode. Don't show progress meter or messages
 
+* **-h**  
+Show file sizes in human readable format
+
 * **-p**  
 Show cURL progress meter
 

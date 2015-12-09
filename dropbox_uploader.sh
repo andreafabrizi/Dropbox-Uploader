@@ -75,7 +75,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdf:" opt; do
+while getopts ":qpskdhf:" opt; do
     case $opt in
 
     f)
@@ -100,6 +100,10 @@ while getopts ":qpskdf:" opt; do
 
     s)
       SKIP_EXISTING_FILES=1
+    ;;
+
+    h)
+      HUMAN_READABLE_SIZE=1
     ;;
 
     \?)
@@ -187,6 +191,24 @@ function remove_temp_files
     fi
 }
 
+#Converts bytes to human readable format
+function convert_bytes
+{
+    if [[ $HUMAN_READABLE_SIZE == 1 ]]; then
+	if (($1 > 1073741824));then
+	    echo $(($1/1073741824)).$(($1%1073741824/100000000))"G";
+	elif (($1 > 1048576));then
+	    echo $(($1/1048576)).$(($1%1048576/100000))"M";
+	elif (($1 > 1024));then
+	    echo $(($1/1024)).$(($1%1024/100))"K";
+	else
+	    echo $1;
+	fi
+    else
+	echo $1;
+    fi
+}
+
 #Returns the file size in bytes
 function file_size
 {
@@ -240,6 +262,7 @@ function usage
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
+    echo -e "\t-h            Show file sizes in human readable format"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
 
@@ -999,7 +1022,7 @@ function db_list
 
                 local FILE=$(echo "$line" | sed -n 's/.*"path": *"\([^"]*\)".*/\1/p')
                 local IS_DIR=$(echo "$line" | sed -n 's/.*"is_dir": *\([^,]*\).*/\1/p')
-                local SIZE=$(echo "$line" | sed -n 's/.*"bytes": *\([0-9]*\).*/\1/p')
+                local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"bytes": *\([0-9]*\).*/\1/p'))
 
                 echo -e "$FILE:$IS_DIR;$SIZE" >> "$RESPONSE_FILE"
 
