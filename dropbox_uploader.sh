@@ -1113,8 +1113,22 @@ function db_share
 #### SETUP  ####
 ################
 
+#CHECKING FOR ENVIRONMENT VARIABLES
+if [ "${DBU_APPKEY}" != "" ] && [ "${DBU_APPSECRET}" != "" ] && [ "${DBU_OAUTH_ACCESS_TOKEN_SECRET}" != "" ] && [ "${DBU_OAUTH_ACCESS_TOKEN}" != "" ]; then
+
+    APPKEY="${DBU_APPKEY}"
+    APPSECRET="${DBU_APPSECRET}"
+    ACCESS_LEVEL="${DBU_ACCESS_LEVEL}"
+    OAUTH_ACCESS_TOKEN_SECRET="${DBU_OAUTH_ACCESS_TOKEN_SECRET}"
+    OAUTH_ACCESS_TOKEN="${DBU_OAUTH_ACCESS_TOKEN}"
+
+    #Back compatibility with previous Dropbox Uploader versions
+    if [[ $ACCESS_LEVEL == "" ]]; then
+        ACCESS_LEVEL="dropbox"
+    fi
+
 #CHECKING FOR AUTH FILE
-if [[ -e $CONFIG_FILE ]]; then
+elif [[ -e $CONFIG_FILE ]]; then
 
     #Loading data... and change old format config if necesary.
     source "$CONFIG_FILE" 2>/dev/null || {
