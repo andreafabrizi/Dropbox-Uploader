@@ -3,9 +3,7 @@ all:
 	@echo "Run 'make uninstall' for uninstallation."
 
 install:
-	cp dropbox_uploader.sh /usr/bin/dropbox_uploader.sh
-	cp dropShell.sh /usr/bin/dropShell.sh
+	install -vb -m 755 drop{box_uploader,Shell}.sh /usr/local/bin
 
 uninstall:
-	rm /usr/bin/dropbox_uploader.sh
-	rm /usr/bin/dropShell.sh
+	rm /usr/local/bin/drop{box_uploader,Shell}.sh
