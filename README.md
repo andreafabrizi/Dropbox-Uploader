@@ -45,6 +45,12 @@ Then give the execution permission to the script and run it:
  $./dropbox_uploader.sh
 ```
 
+Alternatively install the script by running:
+
+```bash
+ $make install
+```
+
 The first time you run `dropbox_uploader`, you'll be guided through a wizard in order to configure access to your Dropbox. This configuration will be stored in `~/.dropbox_uploader`.
 
 ### Configuration wizard
