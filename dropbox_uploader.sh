@@ -75,11 +75,15 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:" opt; do
+while getopts ":qpskdhf:l:" opt; do
     case $opt in
 
     f)
       CONFIG_FILE=$OPTARG
+    ;;
+
+    l)
+      LIMIT_RATE_UPLOAD=$OPTARG
     ;;
 
     d)
@@ -265,6 +269,7 @@ function usage
     echo -e "\t-h            Show file sizes in human readable format"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-l <RATE>     Limit upload rate"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -520,6 +525,7 @@ function db_simple_upload_file
 {
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
+    local CURL_PARAMETERS=""
 
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="--progress-bar"
@@ -527,6 +533,10 @@ function db_simple_upload_file
     else
         CURL_PARAMETERS="-s"
         LINE_CR=""
+    fi
+
+    if [ ! -z $LIMIT_RATE_UPLOAD ]; then
+        CURL_PARAMETERS="$CURL_PARAMETERS --limit-rate $LIMIT_RATE_UPLOAD"
     fi
 
     print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\"... $LINE_CR"
@@ -558,6 +568,11 @@ function db_chunked_upload_file
     local UPLOAD_ID=""
     local UPLOAD_ERROR=0
     local CHUNK_PARAMS=""
+    local CURL_PARAMETERS=""
+
+    if [ ! -z $LIMIT_RATE_UPLOAD ]; then
+        CURL_PARAMETERS="$CURL_PARAMETERS --limit-rate $LIMIT_RATE_UPLOAD"
+    fi
 
     #Uploading chunks...
     while ([[ $OFFSET != $FILE_SIZE ]]); do
@@ -574,7 +589,7 @@ function db_chunked_upload_file
 
         #Uploading the chunk...
         echo > "$RESPONSE_FILE"
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES $CURL_PARAMETERS -s --show-error --globoff -i -o "$RESPONSE_FILE" --upload-file "$CHUNK_FILE" "$API_CHUNKED_UPLOAD_URL?$CHUNK_PARAMS&oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
         #check_http_response not needed, because we have to retry the request in case of error
 
         #Check
