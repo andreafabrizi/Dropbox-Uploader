@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Version 0.16 - 31 Jul 2015
+* Add saveurl command to download remote files directly into a dropbox folder
+* Fixed issue #174: $DU needs quoting in dropShell
+* The share command will now return by default the short url
+* Improved portability of the file_size function
+* Fixed minor bash compatibility issue in the urlencode function
+* Improved normalize_path function and minor fix
+* Removed deprecated db_free_quota function
+
 ## Version 0.15 - 08 Jun 2015
 * Fix issue #163, List only show folders but not files
 * Fix issue #168, Share call not returning a share link

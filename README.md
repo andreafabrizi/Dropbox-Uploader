@@ -93,7 +93,10 @@ List the contents of the remote Dropbox folder
 
 * **share** &lt;REMOTE_FILE&gt;  
 Get a public share link for the specified file or directory
- 
+
+* **saveurl** &lt;URL&gt; &lt;REMOTE_DIR&gt;  
+Download a file from an URL to a Dropbox folder directly (the file is NOT downloaded locally)
+
 * **info**  
 Print some info about your Dropbox account
 
@@ -113,6 +116,9 @@ Enable DEBUG mode
 
 * **-q**  
 Quiet mode. Don't show progress meter or messages
+
+* **-h**  
+Show file sizes in human readable format
 
 * **-p**  
 Show cURL progress meter
