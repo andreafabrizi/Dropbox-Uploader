@@ -6,7 +6,7 @@ A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbo
 Usage:
 
 1. Edit thunar-dropbox.sh and insert proper path to *dropbox_uploader.sh* as a *dropup* variable
-2. Create [custom action](https://www.linux.com/learn/tutorials/440846-extend-xfces-thunar-file-manager-with-custom-actions) in Thunar, choose the name, icon and set command as:
+2. Create [custom action](https://www.linux.com/learn/tutorials/440846-extend-xfces-thunar-file-manager-with-custom-actions) in Thunar, choose the name, icon and set command as: <br>
 `xfce4-terminal -H -x /path/to/thunar-dropbox.sh %f`
 3. Set "File Pattern" to * (asterisk)
 4. Set "Appears if selection contains" - tick all
