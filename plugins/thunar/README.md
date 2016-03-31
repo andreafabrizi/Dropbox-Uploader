@@ -17,6 +17,8 @@ A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbo
 
 _NB:_ it takes about one-two seconds to generate the link, so don't immediately try to paste the link!
 
+Tested on Xubuntu 15.10 with Thunar 1.6.6
+
 ## Requirements
 
 * [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
@@ -30,7 +32,7 @@ _NB:_ it takes about one-two seconds to generate the link, so don't immediately 
 
 ## Known drawbacks
 
-* install.sh script might be smoother (sed command not working properly without some workarounds)
+* install.sh script might be smoother (sed command not working properly without some workarounds - waiting for help, posted question on [StackExchange](http://unix.stackexchange.com/questions/273366/sed-cannot-insert-if-a-file-ends-with-empty-line))
 
 ## About the author of the plugin
 
