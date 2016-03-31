@@ -2,15 +2,18 @@
 
 A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader) that provides a convenient method to share your Dropbox files with one click!
 
+## Installation
+
+1. install [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
+2. install `xclip` package
+3. move Dropbox-Uploader to your desired path (for example /opt//Dropbox-Uploader/)
+4. run plugins/thunar/install.sh script (chmod +x install.sh and thunar-dropbox.sh if necessary)
+5. restart thunar
 
 ## How to use
 
-1. Edit thunar-dropbox.sh and insert proper path to *dropbox_uploader.sh* as a *dropup* variable
-2. Create [custom action](https://www.linux.com/learn/tutorials/440846-extend-xfces-thunar-file-manager-with-custom-actions) in Thunar, choose the name, icon and set command as: <br>
-`/path/to/thunar-dropbox.sh %f`
-3. Set "File Pattern" to * (asterisk), in "Appears if selection contains" - tick all boxes
-4. In order to share a file (or directory), right click and choose your custom action
-5. Your link has been copied to your clipboard!
+1. In order to get a link, right click on a file and choose "Dropbox: share link" option
+2. Your link has been copied to your clipboard!
 
 _NB:_ it takes about one-two seconds to generate the link, so don't immediately try to paste the link!
 
@@ -22,14 +25,17 @@ _NB:_ it takes about one-two seconds to generate the link, so don't immediately 
 ## To do
 
 * ~~copy to clipboard~~
-* create custom action automatically (custom icon?)
+* ~~create custom action automatically~~
 * if not in Dropbox folder, copy to Dropbox/Public and share
 
-## About the author
+## Known drawbacks
+
+* install.sh script might be smoother (sed command not working properly without some workarounds)
+
+## About the author of the plugin
 
 * github: [mDfRg](https://github.com/mDfRg)
 * website: [mindefrag.net](http://mindefrag.net/)
-* community: [stackoverflow](http://stackoverflow.com/users/4697442/mdfrg)
 
 ---
 
