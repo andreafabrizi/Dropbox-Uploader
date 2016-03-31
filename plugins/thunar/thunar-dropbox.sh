@@ -6,4 +6,9 @@ chosen=$1
 
 path_dropbox=${chosen#*Dropbox/}
 
-$dropup share $path_dropbox
+share_link_text=$($dropup share $path_dropbox)
+
+cut_share_link=${share_link_text#*: }
+
+echo $cut_share_link | xclip -selection "clipboard"
+

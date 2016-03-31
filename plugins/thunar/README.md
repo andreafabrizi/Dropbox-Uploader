@@ -3,18 +3,25 @@
 A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader) that provides a convenient method to share your Dropbox files with one click!
 
 
-Usage:
+## How to use
 
 1. Edit thunar-dropbox.sh and insert proper path to *dropbox_uploader.sh* as a *dropup* variable
 2. Create [custom action](https://www.linux.com/learn/tutorials/440846-extend-xfces-thunar-file-manager-with-custom-actions) in Thunar, choose the name, icon and set command as: <br>
-`xfce4-terminal -H -x /path/to/thunar-dropbox.sh %f`
-3. Set "File Pattern" to * (asterisk)
-4. Set "Appears if selection contains" - tick all
-5. In order to share a file, right click and choose your custom action
+`/path/to/thunar-dropbox.sh %f`
+3. Set "File Pattern" to * (asterisk), in "Appears if selection contains" - tick all boxes
+4. In order to share a file (or directory), right click and choose your custom action
+5. Your link has been copied to your clipboard!
+
+_NB:_ it takes about one-two seconds to generate the link, so don't immediately try to paste the link!
+
+## Requirements
+
+* [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
+* xclip
 
 ## To do
 
-* copy to clipboard
+* ~~copy to clipboard~~
 * create custom action automatically (custom icon?)
 * if not in Dropbox folder, copy to Dropbox/Public and share
 
