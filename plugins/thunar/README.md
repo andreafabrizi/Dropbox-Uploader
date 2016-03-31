@@ -12,20 +12,15 @@ A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbo
 
 ## How to use
 
-1. In order to get a link, right click on a file and choose "Dropbox: share link" option.
-2. You should see a notify-send popup with information about ready-to-share link.
-3. Your link has been copied to your clipboard!
-
-Simply right-click on a file...
+**1. In order to get a link, right click on a file and choose "Dropbox: share link" option.**
 
 ![thunar-dropbox01](https://cloud.githubusercontent.com/assets/11591703/14191395/f833afda-f797-11e5-96db-b779e1919248.jpg)
 
-...click to share it...
-
+**2. You should see a notify-send popup with information about ready-to-share link.**
 
 ![thunar-dropbox02](https://cloud.githubusercontent.com/assets/11591703/14191398/f856abc0-f797-11e5-9b14-93e5b75411a1.jpg)
 
-...and after few seconds a link to the file will be copied to your clipboard (ctrl+v to paste it)!
+**3. Your link has been copied to your clipboard!**
 
 _NB:_ it takes about one-two seconds to generate the link, so don't immediately try to paste the link!
 
