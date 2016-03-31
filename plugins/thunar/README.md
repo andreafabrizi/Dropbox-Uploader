@@ -28,7 +28,9 @@ Tested on Xubuntu 15.10 with Thunar 1.6.6
 
 * ~~copy to clipboard~~
 * ~~create custom action automatically~~
-* if not in Dropbox folder, copy to Dropbox/Public and share
+* ~~if not in Dropbox folder, copy to Dropbox/Public and share~~
+* ~~notify alert that making link was successful~~
+* troubleshooting
 
 ## Known drawbacks
 
