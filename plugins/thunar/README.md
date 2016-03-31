@@ -4,20 +4,32 @@ A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbo
 
 ## Installation
 
-1. install [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
-2. install `xclip` package
-3. move Dropbox-Uploader to your desired path (for example /opt//Dropbox-Uploader/)
-4. run plugins/thunar/install.sh script (chmod +x install.sh and thunar-dropbox.sh if necessary)
-5. restart thunar
+1. Install [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
+2. Install `xclip` package
+3. Move Dropbox-Uploader to your desired path (for example /opt/Dropbox-Uploader/)
+4. Run `plugins/thunar/install.sh` script (chmod +x install.sh and thunar-dropbox.sh if necessary) & restart thunar
+5. This plugin works if you have your Dropbox folder located in standard path ($HOME/Dropbox). If not, create a symlink (ln -s).
 
 ## How to use
 
-1. In order to get a link, right click on a file and choose "Dropbox: share link" option
-2. Your link has been copied to your clipboard!
+1. In order to get a link, right click on a file and choose "Dropbox: share link" option.
+2. You should see a notify-send popup with information about ready-to-share link.
+3. Your link has been copied to your clipboard!
+
+Simply right-click on a file...
+
+![thunar-dropbox01](https://cloud.githubusercontent.com/assets/11591703/14191395/f833afda-f797-11e5-96db-b779e1919248.jpg)
+
+...click to share it...
+
+
+![thunar-dropbox02](https://cloud.githubusercontent.com/assets/11591703/14191398/f856abc0-f797-11e5-9b14-93e5b75411a1.jpg)
+
+...and after few seconds a link to the file will be copied to your clipboard (ctrl+v to paste it)!
 
 _NB:_ it takes about one-two seconds to generate the link, so don't immediately try to paste the link!
 
-Tested on Xubuntu 15.10 with Thunar 1.6.6
+_Tested on Xubuntu 15.10 with Thunar 1.6.6_
 
 ## Requirements
 
@@ -35,6 +47,7 @@ Tested on Xubuntu 15.10 with Thunar 1.6.6
 ## Known drawbacks
 
 * install.sh script might be smoother (sed command not working properly without some workarounds - waiting for help, posted question on [StackExchange](http://unix.stackexchange.com/questions/273366/sed-cannot-insert-if-a-file-ends-with-empty-line))
+* for some unknown reason Dropbox-Uploader sometimes gives "FAILED" result instead of a link. This is npt a script specific issue and in such scenario I encourage to simply try again.
 
 ## About the author of the plugin
 
