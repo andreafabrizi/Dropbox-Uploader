@@ -42,6 +42,7 @@ _Tested on Xubuntu 15.10 with Thunar 1.6.6_
 ## Known drawbacks
 
 * sharing files / directories **with spaces in names does not work**
+* you can select one file / directory at the same time 
 * for some unknown reason Dropbox-Uploader sometimes gives "FAILED" result instead of a link. This is npt a script specific issue and in such scenario I encourage to simply try again.
 
 ## About the author of the plugin
