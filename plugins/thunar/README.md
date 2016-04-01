@@ -4,7 +4,7 @@ A simple extension to [Dropbox Uploader](https://github.com/andreafabrizi/Dropbo
 
 ## Installation
 
-1. Install [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader)
+1. Download and install [Dropbox Uploader](https://github.com/andreafabrizi/Dropbox-Uploader) (or this fork). Follow instructions in your terminal.
 2. Install `xclip` package
 3. Move Dropbox-Uploader to your desired path (for example /opt/Dropbox-Uploader/)
 4. Run `plugins/thunar/install.sh` script (chmod +x install.sh and thunar-dropbox.sh if necessary) & restart thunar
@@ -41,9 +41,8 @@ _Tested on Xubuntu 15.10 with Thunar 1.6.6_
 
 ## Known drawbacks
 
-* sharing files / directories **with spaces in names does not work**
 * you can select one file / directory at the same time 
-* for some unknown reason Dropbox-Uploader sometimes gives "FAILED" result instead of a link. This is npt a script specific issue and in such scenario I encourage to simply try again.
+* for some unknown reason Dropbox-Uploader sometimes gives "FAILED" result instead of a link. This is not a script specific issue and in such scenario, simply try again.
 
 ## About the author of the plugin
 
