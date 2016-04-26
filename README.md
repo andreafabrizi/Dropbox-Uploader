@@ -56,7 +56,7 @@ The configuration wizard is pretty self-explanatory. One thing to notice is that
 The syntax is quite simple:
 
 ```
-./dropbox_uploader.sh COMMAND [PARAMETERS]...
+./dropbox_uploader.sh [PARAMETERS] COMMAND...
 
 [%%]: Optional param
 <%%>: Required param
