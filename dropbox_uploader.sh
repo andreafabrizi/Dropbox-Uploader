@@ -242,7 +242,7 @@ function usage
 {
     echo -e "Dropbox Uploader v$VERSION"
     echo -e "Andrea Fabrizi - andrea.fabrizi@gmail.com\n"
-    echo -e "Usage: $0 COMMAND [PARAMETERS]..."
+    echo -e "Usage: $0 [PARAMETERS] COMMAND..."
     echo -e "\nCommands:"
 
     echo -e "\t upload   <LOCAL_FILE/DIR ...>  <REMOTE_FILE/DIR>"
