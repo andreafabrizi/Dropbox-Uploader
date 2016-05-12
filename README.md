@@ -172,27 +172,6 @@ To use a proxy server, just set the **https_proxy** environment variable:
     export https_proxy=http://192.168.0.1:8080
 ```
 
-**BSD:**
-```bash
-    setenv HTTP_PROXY_USER XXXX
-    setenv HTTP_PROXY_PASSWORD YYYY
-    setenv https_proxy http://192.168.0.1:8080
-```
-   
-## BASH and Curl installation
-
-**Debian & Ubuntu Linux:**
-```bash
-    sudo apt-get install bash (Probably BASH is already installed on your system)
-    sudo apt-get install curl
-```
-
-**BSD:**
-```bash
-    cd /usr/ports/shells/bash && make install clean
-    cd /usr/ports/ftp/curl && make install clean
-```
-
 **Cygwin:**  
 You need to install these packages:  
 * curl
