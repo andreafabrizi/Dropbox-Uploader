@@ -867,7 +867,11 @@ function db_account_info
         let used_mb=$used/1024/1024
         echo -e "Used:\t$used_mb Mb"
 
-        let free_mb=($quota-$used)/1024/1024
+        shared=$(sed -n 's/.*"shared": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+        let shared_mb=$shared/1024/1024
+        echo -e "Shared:\t$shared_mb Mb"
+
+        let free_mb=($quota-$used-shared)/1024/1024
         echo -e "Free:\t$free_mb Mb"
 
         echo ""
