@@ -151,6 +151,7 @@ Doesn't check for SSL certificates (insecure)
 * OpenWRT
 * Chrome OS
 * OpenBSD
+* Ubuntu 12.04
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
