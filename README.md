@@ -111,6 +111,9 @@ Load the configuration file from a specific file
 * **-s**  
 Skip already existing files when download/upload. Default: Overwrite
 
+* **-S** 
+(Beta) Download the server version if it has changed revision (/!\ the local changed will be lost /!\
+
 * **-d**  
 Enable DEBUG mode
 
@@ -227,8 +230,3 @@ andrea@Dropbox:/$ ls
 andrea@DropBox:/ServerBackup$ get notes.txt
 ```
 
-## Donations
-
- If you want to support this project, please consider donating:
- * PayPal: andrea.fabrizi@gmail.com
- * BTC: 1JHCGAMpKqUwBjcT3Kno9Wd5z16K6WKPqG
