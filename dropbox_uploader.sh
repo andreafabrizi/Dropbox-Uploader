@@ -37,6 +37,7 @@ DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
+SYNC_REVISION=0
 ERROR_STATUS=0
 
 #Don't edit these...
@@ -75,7 +76,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:" opt; do
+while getopts ":qpsSkdhf:" opt; do
     case $opt in
 
     f)
@@ -101,7 +102,9 @@ while getopts ":qpskdhf:" opt; do
     s)
       SKIP_EXISTING_FILES=1
     ;;
-
+    S)
+      SYNC_REVISION=1
+    ;;
     h)
       HUMAN_READABLE_SIZE=1
     ;;
@@ -260,6 +263,7 @@ function usage
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
+    echo -e "\t-S            (Beta) Download the server version if it has changed revision (/!\ the local changed will be lost /!\\"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-h            Show file sizes in human readable format"
@@ -673,16 +677,28 @@ function db_download
 
         local DEST_DIR=$(normalize_path "$DST/$basedir")
         print " > Downloading \"$SRC\" to \"$DEST_DIR\"... \n"
-        print " > Creating local directory \"$DEST_DIR\"... "
-        mkdir -p "$DEST_DIR"
-
-        #Check
-        if [[ $? == 0 ]]; then
-            print "DONE\n"
-        else
-            print "FAILED\n"
-            ERROR_STATUS=1
-            return
+        
+        if [ ! -d "$DEST_DIR" ]; then
+        
+            print " > Creating local directory \"$DEST_DIR\"... "
+            mkdir -p "$DEST_DIR"
+    
+            #Check
+            if [[ $? == 0 ]]; then
+                print "DONE\n"
+            else
+                print "FAILED\n"
+                ERROR_STATUS=1
+                return
+            fi
+        fi
+        
+        if [ ! -d "$DEST_DIR.dropbox" ]; then
+            # create .dropbox hidden directory
+            mkdir -p "$DEST_DIR/.dropbox"
+            if [[ $? != 0 ]]; then
+                print "FAILED to create .dropbox directory !\n"
+            fi
         fi
 
         #Extracting directory content [...]
@@ -693,19 +709,31 @@ function db_download
 
         #Extracting files and subfolders
         TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
-        echo "$DIR_CONTENT" | sed -n 's/.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2/p' > $TMP_DIR_CONTENT_FILE
+        echo "$DIR_CONTENT" | sed -n 's/.*"rev": *"\([^"]*\)",.*"path": *"\([^"]*\)",.*"is_dir": *\([^"]*\),.*/\1:\2:\3/p' > $TMP_DIR_CONTENT_FILE
 
         #For each entry...
         while read -r line; do
 
             local FILE=${line%:*}
-            local TYPE=${line#*:}
+            local FILE=${FILE#*:}
+            local REV=${line%%:*}
+            local TYPE=${line##*:}
 
             #Removing unneeded /
             FILE=${FILE##*/}
 
+            #Is a file
             if [[ $TYPE == "false" ]]; then
-                db_download_file "$SRC/$FILE" "$DEST_DIR/$FILE"
+            
+                local CURR_REV=$(get_file_rev "$DEST_DIR/.dropbox/$FILE")
+                if [[ $CURR_REV == $REV && $SYNC_REVISION == 1 ]];then
+                    echo "Current file revision is same, skipped"
+                else
+                    db_download_file "$SRC/$FILE" "$DEST_DIR/$FILE"
+                    #Creating files revision in the .dropbox hidden directory
+                    print "File: $FILE | Server rev: $REV vs current rev $CURR_REV\n"
+                    echo "$REV" > "$DEST_DIR/.dropbox/$FILE"
+                fi
             else
                 db_download "$SRC/$FILE" "$DEST_DIR"
             fi
@@ -717,17 +745,44 @@ function db_download
     #It's a file
     elif [[ $TYPE == "FILE" ]]; then
 
+        local DST_PATH=""
         #Checking DST
+        #If the destination is the current directory
         if [[ $DST == "" ]]; then
             DST=$(basename "$SRC")
+            DST_PATH=$(normalize_path ".")
         fi
-
+        
         #If the destination is a directory, the file will be download into
         if [[ -d $DST ]]; then
-            DST="$DST/$SRC"
+            DST="$DST/$(basename $SRC)"
+            DST_PATH=${DST%/*}
         fi
-
-        db_download_file "$SRC" "$DST"
+        
+        local CURR_REV=$(get_file_rev $DST_PATH/.dropbox/$FILE"")
+        if [[ $CURR_REV == $REV && $SYNC_REVISION == 1 ]];then
+            echo "Current file revision is same, skipped"
+        else
+            db_download_file "$SRC" "$DST"
+        
+            #Create the revision file in the .dropbox hidden directory
+            local METADATA=$(sed -n '/^x-dropbox-metadata.*/p' "$RESPONSE_FILE")
+            local REV_FILE=$(echo "$METADATA" | sed -n 's/.*"rev": *"\([^"]*\)",.*"path": *"\([^"]*\)",.*/\1:\2/p')
+            local FILE=${REV_FILE#*:}
+            local REV=${REV_FILE%:*}
+            #Removing unneeded /
+            FILE=${FILE##*/}
+            #Creating files revision
+            print "File: $FILE | Rev: $REV\n"
+            #Test if the hiden .dropbox directory exist
+            if [[ ! -d "$DST_PATH/.dropbox" ]]; then
+                mkdir -p "$DST_PATH/.dropbox"
+                if [[ $? != 0 ]]; then
+                    print "FAILED to create .dropbox directory !\n"
+                fi
+            fi
+            echo "$REV" > "$DST_PATH/.dropbox/$FILE"
+        fi
 
     #Doesn't exists
     else
@@ -754,7 +809,7 @@ function db_download_file
     fi
 
     #Checking if the file already exists
-    if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
+    if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 && $SYNC_REVISION == 0 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
     fi
@@ -781,6 +836,18 @@ function db_download_file
         rm -fr "$FILE_DST"
         ERROR_STATUS=1
         return
+    fi
+}
+
+function get_file_rev
+{
+    local REV_FILE="$1"
+    
+    #Revision file exist ?
+    if [ -e "$REV_FILE" ];then
+        cat "$REV_FILE"
+    else
+        echo 0
     fi
 }
 
@@ -1010,6 +1077,8 @@ function db_list
             #Extracting directory content [...]
             #and replacing "}, {" with "}\n{"
             #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
+        #    echo "$RESPONSE_FILE"
+        #    exit
             local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
 {/g')
 
