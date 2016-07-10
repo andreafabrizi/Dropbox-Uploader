@@ -20,7 +20,8 @@
 #
 
 #Default configuration file
-CONFIG_FILE=~/.dropbox_uploader
+FILE_NAME=$(basename "$0" | cut -d. -f1)
+CONFIG_FILE=~/.$FILE_NAME.cfg
 
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
@@ -38,6 +39,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+NO_DL_BACKUPS=0
 
 #Don't edit these...
 API_REQUEST_TOKEN_URL="https://api.dropbox.com/1/oauth/request_token"
@@ -61,7 +63,7 @@ RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd mkdir"
-VERSION="0.16"
+VERSION="0.17"
 
 umask 077
 
@@ -75,7 +77,7 @@ shopt -s nullglob #Bash allows filename patterns which match no files to expand 
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:" opt; do
+while getopts ":qpskdhnf:" opt; do
     case $opt in
 
     f)
@@ -104,6 +106,10 @@ while getopts ":qpskdhf:" opt; do
 
     h)
       HUMAN_READABLE_SIZE=1
+    ;;
+
+    n)
+      NO_DL_BACKUPS=1
     ;;
 
     \?)
@@ -217,7 +223,7 @@ function file_size
     if [ $? -eq 0 ]; then
         echo $SIZE
         return
-    fi   
+    fi
 
     #Some embedded linux devices
     SIZE=$(stat -c "%s" "$1" 2> /dev/null)
@@ -757,6 +763,17 @@ function db_download_file
     if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
+    elif [[ -e $FILE_DST && $NO_DL_BACKUPS == 0 ]]; then
+        mkdir -p $(dirname "$FILE_DST")/.$FILE_NAME
+        BU_FILE=$(dirname "$FILE_DST")/.$FILE_NAME/$(basename "$FILE_DST").`date +%Y%m%d%H%M%S`
+        print " > Backing up \"$FILE_DST\" to \"$BU_FILE\"... $LINE_CR"
+        cp -p $FILE_DST $BU_FILE
+        if [[ $? != 0 ]]; then
+           print " > Error copying to \"$BU_FILE\"\n"
+           ERROR_STATUS=1
+           return
+        fi
+        print "DONE\n"
     fi
 
     #Creating the empty file, that for two reasons:
