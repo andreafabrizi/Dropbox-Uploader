@@ -58,6 +58,7 @@ API_MKDIR_URL="https://api.dropboxapi.com/2/files/create_folder"
 API_SHARE_URL="https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings"
 API_SAVEURL_URL="https://api.dropboxapi.com/2/files/save_url"
 API_SAVEURL_JOBSTATUS_URL="https://api.dropboxapi.com/2/files/save_url/check_job_status"
+API_SEARCH_URL="https://api.dropboxapi.com/2/files/search"
 APP_CREATE_URL="https://www.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
@@ -263,6 +264,7 @@ function usage
     echo -e "\t list     [REMOTE_DIR]"
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
+    echo -e "\t search   <QUERY>"
     echo -e "\t info"
     echo -e "\t space"
     echo -e "\t unlink"
@@ -1137,6 +1139,91 @@ function db_share
     fi
 }
 
+#Search on Dropbox
+#$1 = query
+function db_search
+{
+    local QUERY="$1"
+
+    print " > Searching for \"$QUERY\"... "
+
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"\",\"query\": \"$QUERY\",\"start\": 0,\"max_results\": 1000,\"mode\": \"filename\"}" "$API_SEARCH_URL" 2> /dev/null
+    check_http_response
+
+    #Check
+    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print "DONE\n"
+    else
+        print "FAILED\n"
+        ERROR_STATUS=1
+    fi
+
+    #Extracting directory content [...]
+    #and replacing "}, {" with "}\n{"
+    #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
+    local DIR_CONTENT=$(sed 's/}, *{/}\
+{/g' "$RESPONSE_FILE")
+
+    #Converting escaped quotes to unicode format
+    echo "$DIR_CONTENT" | sed 's/\\"/\\u0022/' > "$TEMP_FILE"
+
+    #Extracting files and subfolders
+    rm -fr "$RESPONSE_FILE"
+    while read -r line; do
+
+        local FILE=$(echo "$line" | sed -n 's/.*"path_display": *"\([^"]*\)".*/\1/p')
+        local TYPE=$(echo "$line" | sed -n 's/.*".tag": *"\([^"]*\).*/\1/p')
+        local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"size": *\([0-9]*\).*/\1/p'))
+
+        echo -e "$FILE:$TYPE;$SIZE" >> "$RESPONSE_FILE"
+
+    done < "$TEMP_FILE"
+
+    #Looking for the biggest file size
+    #to calculate the padding to use
+    local padding=0
+    while read -r line; do
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local SIZE=${META#*;}
+
+        if [[ ${#SIZE} -gt $padding ]]; then
+            padding=${#SIZE}
+        fi
+    done < "$RESPONSE_FILE"
+
+    #For each entry, printing directories...
+    while read -r line; do
+
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local TYPE=${META%;*}
+        local SIZE=${META#*;}
+
+        if [[ $TYPE == "folder" ]]; then
+            FILE=$(echo -e "$FILE")
+            $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+        fi
+
+    done < "$RESPONSE_FILE"
+
+    #For each entry, printing files...
+    while read -r line; do
+
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local TYPE=${META%;*}
+        local SIZE=${META#*;}
+
+        if [[ $TYPE == "file" ]]; then
+            FILE=$(echo -e "$FILE")
+            $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
+        fi
+
+    done < "$RESPONSE_FILE"
+
+}
+
 ################
 #### SETUP  ####
 ################
@@ -1330,6 +1417,18 @@ case $COMMAND in
         DIR_DST=$ARG1
 
         db_mkdir "/$DIR_DST"
+
+    ;;
+
+    search)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        QUERY=$ARG1
+
+        db_search "$QUERY"
 
     ;;
 
