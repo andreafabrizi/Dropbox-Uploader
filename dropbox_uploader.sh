@@ -25,7 +25,7 @@ CONFIG_FILE=~/.dropbox_uploader
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition
 #Lower values may increase the number of http requests
-CHUNK_SIZE=4
+CHUNK_SIZE=50
 
 #Curl location
 #If not set, curl will be searched into the $PATH
