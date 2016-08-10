@@ -204,18 +204,18 @@ function remove_temp_files
 #Converts bytes to human readable format
 function convert_bytes
 {
-    if [[ $HUMAN_READABLE_SIZE == 1 ]]; then
-	if (($1 > 1073741824));then
-	    echo $(($1/1073741824)).$(($1%1073741824/100000000))"G";
-	elif (($1 > 1048576));then
-	    echo $(($1/1048576)).$(($1%1048576/100000))"M";
-	elif (($1 > 1024));then
-	    echo $(($1/1024)).$(($1%1024/100))"K";
-	else
-	    echo $1;
-	fi
+    if [[ $HUMAN_READABLE_SIZE == 1 && "$1" != "" ]]; then
+	    if (($1 > 1073741824));then
+	        echo $(($1/1073741824)).$(($1%1073741824/100000000))"G";
+	    elif (($1 > 1048576));then
+	        echo $(($1/1048576)).$(($1%1048576/100000))"M";
+	    elif (($1 > 1024));then
+	        echo $(($1/1024)).$(($1%1024/100))"K";
+	    else
+	        echo $1;
+	    fi
     else
-	echo $1;
+	    echo $1;
     fi
 }
 
