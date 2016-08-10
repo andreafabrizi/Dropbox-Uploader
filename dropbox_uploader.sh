@@ -76,6 +76,13 @@ fi
 shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
 
+#Check temp folder
+if [[ ! -d "$TMP_DIR" ]]; then
+    echo -e "Error: the temporary folder $TMP_DIR doesn't exists!"
+    echo -e "Please edit this script and set the TMP_DIR variable to a valid temporary folder to use."
+    exit 1
+fi
+
 #Look for optional config file parameter
 while getopts ":qpskdhf:" opt; do
     case $opt in
