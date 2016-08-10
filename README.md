@@ -7,7 +7,7 @@ It's written in BASH scripting language and only needs **cURL**.
 **Why use this script?**
 
 * **Portable:** It's written in BASH scripting and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
-* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API for the authentication process. 
+* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API v2 for the authentication process. 
 
 Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
@@ -97,8 +97,14 @@ Get a public share link for the specified file or directory
 * **saveurl** &lt;URL&gt; &lt;REMOTE_DIR&gt;  
 Download a file from an URL to a Dropbox folder directly (the file is NOT downloaded locally)
 
+* **search** &lt;QUERY&gt;
+Search for a specific pattern on Dropbox and returns the list of matching files or directories
+
 * **info**  
 Print some info about your Dropbox account
+
+* **space**
+Print some info about the space usage on your Dropbox account
 
 * **unlink**  
 Unlink the script from your Dropbox account
