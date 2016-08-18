@@ -715,7 +715,7 @@ function db_download
         while read -r line; do
 
             local FILE=${line%:*}
-            local TYPE=${line#*:}
+            local TYPE=${line##*:}
 
             FILE=${FILE##*/}
 
