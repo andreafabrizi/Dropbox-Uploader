@@ -6,10 +6,10 @@ It's written in BASH scripting language and only needs **cURL**.
 
 **Why use this script?**
 
-* **Portable:** It's written in BASH scripting and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
+* **Portable:** It's written in BASH scripting and only needs `cURL` (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
 * **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API v2 for the authentication process. 
 
-Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
+Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
 ## Features
 
@@ -29,7 +29,7 @@ Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Upload
 First, clone the repository using git (recommended):
 
 ```bash
-git clone https://github.com/andreafabrizi/Dropbox-Uploader/
+git clone https://github.com/andreafabrizi/Dropbox-Uploader.git
 ```
 
 or download the script manually using this command:
@@ -161,7 +161,7 @@ Doesn't check for SSL certificates (insecure)
 If you have successfully tested this script on others systems or platforms please let me know!
 
 ## Running as cron job
-Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is HOME_DIRECTORY/.dropbox_uploader. This means that if you do the setup with your user and then you try to run a cron job as root, it won't works.  
+Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is `$HOME/.dropbox_uploader`. This means that if you do the setup with your user and then you try to run a cron job as root, it won't work.
 So, when running this script using cron, please keep in mind the following:
 * Remember to setup the script with the user used to run the cron job
 * Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly
