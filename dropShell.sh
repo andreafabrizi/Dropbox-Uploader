@@ -32,7 +32,7 @@ fi
 
 #For MacOSX, install coreutils (which includes greadlink)
 # $brew install coreutils
-if [ "${OSTYPE:0:6}" == "darwin" ]; then
+if [ "${OSTYPE:0:6}" == "darwin" -o "${OSTYPE:0:7}" == "freebsd" ]; then
     READLINK="greadlink"
 else
     READLINK="readlink"
