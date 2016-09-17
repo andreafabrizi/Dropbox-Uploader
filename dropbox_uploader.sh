@@ -391,6 +391,11 @@ function db_stat
 {
     local FILE=$(normalize_path "$1")
 
+    if [[ $FILE == "/" ]]; then
+        echo "DIR"
+        return
+    fi
+
     #Checking if it's a file or a directory
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE\"}" "$API_METADATA_URL" 2> /dev/null
     check_http_response
@@ -697,8 +702,14 @@ function db_download
             fi
         fi
 
+        if [[ $SRC == "/" ]]; then
+            SRC_REQ=""
+        else
+            SRC_REQ="$SRC"
+        fi
+
         #Getting folder content
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC\", \"recursive\": false, \"include_deleted\": false}" "$API_FOLDER_LIST_URL" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC_REQ\", \"recursive\": false, \"include_deleted\": false}" "$API_FOLDER_LIST_URL" 2> /dev/null
         check_http_response
 
         #Extracting directory content [...]
