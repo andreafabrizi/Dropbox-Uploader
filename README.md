@@ -14,14 +14,14 @@ Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wik
 ## Features
 
 * Cross platform
-* Support for the official Dropbox API
+* Support for the official Dropbox API v2
 * No password required or stored
 * Simple step-by-step configuration wizard
 * Simple and chunked file upload
 * File and recursive directory download
 * File and recursive directory upload
 * Shell wildcard expansion (only for upload)
-* Delete/Move/Rename/Copy/List files
+* Delete/Move/Rename/Copy/List/Share files
 * Create share link
 
 ## Getting started
@@ -46,10 +46,6 @@ Then give the execution permission to the script and run it:
 ```
 
 The first time you run `dropbox_uploader`, you'll be guided through a wizard in order to configure access to your Dropbox. This configuration will be stored in `~/.dropbox_uploader`.
-
-### Configuration wizard
-
-The configuration wizard is pretty self-explanatory. One thing to notice is that if you choose "App permission", your uploads will end up on Dropbox under an `App/<your_app_name>` folder. To have them stored in another folder, such as in `/dir/`, you'll need to give Dropbox-Uploader permission to all Dropbox files.
 
 ## Usage
 
@@ -161,10 +157,11 @@ Doesn't check for SSL certificates (insecure)
 If you have successfully tested this script on others systems or platforms please let me know!
 
 ## Running as cron job
-Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is `$HOME/.dropbox_uploader`. This means that if you do the setup with your user and then you try to run a cron job as root, it won't work.
+Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is `$HOME/.dropbox_uploader`. This means that if you setup the script with your user and then you try to run a cron job as root, it won't work.
 So, when running this script using cron, please keep in mind the following:
 * Remember to setup the script with the user used to run the cron job
-* Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly
+* Always specify the full script path when running it (e.g.  /path/to/dropbox_uploader.sh)
+* Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly (e.g. -f /home/youruser/.dropbox_uploader)
 * My advice is, for security reasons, to not share the same configuration file with different users
 
 ## How to setup a proxy
