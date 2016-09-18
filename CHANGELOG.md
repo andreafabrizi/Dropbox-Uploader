@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Version 0.2 - 10 Aug 2016
+## Version 1.0 - 10 Aug 2016
 * Add search option
 * Increase chunk size to 50MB for better performance
 * Add testUnit script
