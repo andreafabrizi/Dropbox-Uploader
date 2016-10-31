@@ -90,7 +90,7 @@ Create a remote directory on Dropbox
 * **list** [REMOTE_DIR]  
 List the contents of the remote Dropbox folder
 
-* **monitor** [REMOTE_DIR] [TIMEOUT]
+* **monitor** [REMOTE_DIR] [TIMEOUT]  
 Monitor the remote Dropbox folder for changes. If timeout is specified, at the first change event the function will return.
 
 * **share** &lt;REMOTE_FILE&gt;  
