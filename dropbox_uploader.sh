@@ -52,6 +52,7 @@ API_MOVE_URL="https://api.dropboxapi.com/2/files/move"
 API_COPY_URL="https://api.dropboxapi.com/2/files/copy"
 API_METADATA_URL="https://api.dropboxapi.com/2/files/get_metadata"
 API_LIST_FOLDER_URL="https://api.dropboxapi.com/2/files/list_folder"
+API_LIST_FOLDER_CONTINUE_URL="https://api.dropboxapi.com/2/files/list_folder/continue"
 API_ACCOUNT_INFO_URL="https://api.dropboxapi.com/2/users/get_current_account"
 API_ACCOUNT_SPACE_URL="https://api.dropboxapi.com/2/users/get_space_usage"
 API_MKDIR_URL="https://api.dropboxapi.com/2/files/create_folder"
@@ -709,26 +710,17 @@ function db_download
             SRC_REQ="$SRC"
         fi
 
-        #Getting folder content
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC_REQ\", \"recursive\": false, \"include_deleted\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
-        check_http_response
-
-        #Extracting directory content [...]
-        #and replacing "}, {" with "}\n{"
-        #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
-        local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
-{/g')
-
-        #Extracting files and subfolders
-        TMP_DIR_CONTENT_FILE="${RESPONSE_FILE}_$RANDOM"
-        echo "$DIR_CONTENT" | sed -n 's/".tag": *"\([^"]*\).*"path_display": *"\([^"]*\).*/\2:\1/p' > $TMP_DIR_CONTENT_FILE
+        OUT_FILE=$(db_list_outfile "$SRC_REQ")
 
         #For each entry...
         while read -r line; do
 
             local FILE=${line%:*}
-            local TYPE=${line##*:}
+            local META=${line##*:}
+            local TYPE=${META%;*}
+            local SIZE=${META#*;}
 
+            #Removing unneeded /
             FILE=${FILE##*/}
 
             if [[ $TYPE == "file" ]]; then
@@ -737,9 +729,9 @@ function db_download
                 db_download "$SRC/$FILE" "$DEST_DIR"
             fi
 
-        done < $TMP_DIR_CONTENT_FILE
+        done < $OUT_FILE
 
-        rm -fr $TMP_DIR_CONTENT_FILE
+        rm -fr $OUT_FILE
 
     #It's a file
     elif [[ $TYPE == "FILE" ]]; then
@@ -1032,6 +1024,66 @@ function db_mkdir
     fi
 }
 
+#List a remote folder and returns the path to the file containing the output
+#$1 = Remote directory
+function db_list_outfile
+{
+
+    local DIR_DST="$1"
+    local HAS_MORE="false"
+    local CURSOR=""
+
+    OUT_FILE="$TMP_DIR/du_tmp_out_$RANDOM"
+
+    while (true); do
+
+        if [[ $HAS_MORE == "true" ]]; then
+            $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"cursor\": \"$CURSOR\"}" "$API_LIST_FOLDER_CONTINUE_URL" 2> /dev/null
+        else
+            $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
+        fi
+
+        check_http_response
+
+        HAS_MORE=$(sed -n 's/.*"has_more": *\([a-z]*\).*/\1/p' "$RESPONSE_FILE")
+        CURSOR=$(sed -n 's/.*"cursor": *"\([^"]*\)".*/\1/p' "$RESPONSE_FILE")
+
+        #Check
+        if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+
+            #Extracting directory content [...]
+            #and replacing "}, {" with "}\n{"
+            #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
+            local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
+    {/g')
+
+            #Converting escaped quotes to unicode format
+            echo "$DIR_CONTENT" | sed 's/\\"/\\u0022/' > "$TEMP_FILE"
+
+            #Extracting files and subfolders
+            while read -r line; do
+
+                local FILE=$(echo "$line" | sed -n 's/.*"path_display": *"\([^"]*\)".*/\1/p')
+                local TYPE=$(echo "$line" | sed -n 's/.*".tag": *"\([^"]*\).*/\1/p')
+                local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"size": *\([0-9]*\).*/\1/p'))
+
+                echo -e "$FILE:$TYPE;$SIZE" >> "$OUT_FILE"
+
+            done < "$TEMP_FILE"
+
+            if [[ $HAS_MORE == "false" ]]; then
+                break
+            fi
+
+        else
+            return
+        fi
+
+    done
+
+    echo $OUT_FILE
+}
+
 #List remote directory
 #$1 = Remote directory
 function db_list
@@ -1044,89 +1096,65 @@ function db_list
         DIR_DST=""
     fi
 
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
-    check_http_response
-
-    #Check
-    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-
-        print "DONE\n"
-
-        #Extracting directory content [...]
-        #and replacing "}, {" with "}\n{"
-        #I don't like this piece of code... but seems to be the only way to do this with SED, writing a portable code...
-        local DIR_CONTENT=$(sed -n 's/.*: \[{\(.*\)/\1/p' "$RESPONSE_FILE" | sed 's/}, *{/}\
-{/g')
-
-        #Converting escaped quotes to unicode format
-        echo "$DIR_CONTENT" | sed 's/\\"/\\u0022/' > "$TEMP_FILE"
-
-        #Extracting files and subfolders
-        rm -fr "$RESPONSE_FILE"
-        while read -r line; do
-
-            local FILE=$(echo "$line" | sed -n 's/.*"path_display": *"\([^"]*\)".*/\1/p')
-            local TYPE=$(echo "$line" | sed -n 's/.*".tag": *"\([^"]*\).*/\1/p')
-            local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"size": *\([0-9]*\).*/\1/p'))
-
-            echo -e "$FILE:$TYPE;$SIZE" >> "$RESPONSE_FILE"
-
-        done < "$TEMP_FILE"
-
-        #Looking for the biggest file size
-        #to calculate the padding to use
-        local padding=0
-        while read -r line; do
-            local FILE=${line%:*}
-            local META=${line##*:}
-            local SIZE=${META#*;}
-
-            if [[ ${#SIZE} -gt $padding ]]; then
-                padding=${#SIZE}
-            fi
-        done < "$RESPONSE_FILE"
-
-        #For each entry, printing directories...
-        while read -r line; do
-
-            local FILE=${line%:*}
-            local META=${line##*:}
-            local TYPE=${META%;*}
-            local SIZE=${META#*;}
-
-            #Removing unneeded /
-            FILE=${FILE##*/}
-
-            if [[ $TYPE == "folder" ]]; then
-                FILE=$(echo -e "$FILE")
-                $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
-            fi
-
-        done < "$RESPONSE_FILE"
-
-        #For each entry, printing files...
-        while read -r line; do
-
-            local FILE=${line%:*}
-            local META=${line##*:}
-            local TYPE=${META%;*}
-            local SIZE=${META#*;}
-
-            #Removing unneeded /
-            FILE=${FILE##*/}
-
-            if [[ $TYPE == "file" ]]; then
-                FILE=$(echo -e "$FILE")
-                $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
-            fi
-
-        done < "$RESPONSE_FILE"
-
-
-    else
+    OUT_FILE=$(db_list_outfile "$DIR_DST")
+    if [ -z "$OUT_FILE" ]; then
         print "FAILED\n"
         ERROR_STATUS=1
+        return
+    else
+        print "DONE\n"
     fi
+
+    #Looking for the biggest file size
+    #to calculate the padding to use
+    local padding=0
+    while read -r line; do
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local SIZE=${META#*;}
+
+        if [[ ${#SIZE} -gt $padding ]]; then
+            padding=${#SIZE}
+        fi
+    done < "$OUT_FILE"
+
+    #For each entry, printing directories...
+    while read -r line; do
+
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local TYPE=${META%;*}
+        local SIZE=${META#*;}
+
+        #Removing unneeded /
+        FILE=${FILE##*/}
+
+        if [[ $TYPE == "folder" ]]; then
+            FILE=$(echo -e "$FILE")
+            $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+        fi
+
+    done < "$OUT_FILE"
+
+    #For each entry, printing files...
+    while read -r line; do
+
+        local FILE=${line%:*}
+        local META=${line##*:}
+        local TYPE=${META%;*}
+        local SIZE=${META#*;}
+
+        #Removing unneeded /
+        FILE=${FILE##*/}
+
+        if [[ $TYPE == "file" ]]; then
+            FILE=$(echo -e "$FILE")
+            $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
+        fi
+
+    done < "$OUT_FILE"
+
+    rm -fr "$OUT_FILE"
 }
 
 #Longpoll remote directory
