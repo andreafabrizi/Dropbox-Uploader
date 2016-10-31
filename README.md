@@ -25,6 +25,7 @@ Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wik
 * Shell wildcard expansion (only for upload)
 * Delete/Move/Rename/Copy/List/Share files
 * Create share link
+* Monitor for changes
 
 ## Getting started
 
@@ -84,13 +85,13 @@ Move or rename a remote file or directory
 Copy a remote file or directory
 
 * **mkdir** &lt;REMOTE_DIR&gt;  
-Create a remote directory on DropBox
+Create a remote directory on Dropbox
 
 * **list** [REMOTE_DIR]  
 List the contents of the remote Dropbox folder
 
-* **longpoll** &lt;TIMEOUT&gt; [REMOTE_DIR]  
-The connection will block until there are changes available or a timeout occurs. Returns 0 or 1 in case of error.
+* **monitor** [REMOTE_DIR] [TIMEOUT]
+Monitor the remote Dropbox folder for changes. If timeout is specified, at the first change event the function will return.
 
 * **share** &lt;REMOTE_FILE&gt;  
 Get a public share link for the specified file or directory
