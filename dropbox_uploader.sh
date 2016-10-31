@@ -263,7 +263,7 @@ function usage
     echo -e "\t copy     <REMOTE_FILE/DIR> <REMOTE_FILE/DIR>"
     echo -e "\t mkdir    <REMOTE_DIR>"
     echo -e "\t list     [REMOTE_DIR]"
-    echo -e "\t longpoll <TIMEOUT> [REMOTE_DIR]"
+    echo -e "\t monitor  [REMOTE_DIR] [TIMEOUT]"
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
     echo -e "\t search   <QUERY>"
@@ -1026,12 +1026,18 @@ function db_mkdir
 
 #List a remote folder and returns the path to the file containing the output
 #$1 = Remote directory
+#$2 = Cursor (Optional)
 function db_list_outfile
 {
 
     local DIR_DST="$1"
     local HAS_MORE="false"
     local CURSOR=""
+
+    if [[ -n "$2" ]]; then
+        CURSOR="$2"
+        HAS_MORE="true"
+    fi
 
     OUT_FILE="$TMP_DIR/du_tmp_out_$RANDOM"
 
@@ -1157,46 +1163,30 @@ function db_list
     rm -fr "$OUT_FILE"
 }
 
-#Longpoll remote directory
-#$1 = Remote directory
-function db_longpoll
+#Longpoll remote directory only once
+#$1 = Timeout
+#$2 = Remote directory
+function db_monitor_nonblock
 {
     local TIMEOUT=$1
     local DIR_DST=$(normalize_path "$2")
-
-    print " > Longpoll'ing \"$DIR_DST\"... "
 
     if [[ "$DIR_DST" == "/" ]]; then
         DIR_DST=""
     fi
 
-
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
     check_http_response
 
-    #Check
-    local CURSOR
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-        CURSOR=$(grep '"cursor"' "$RESPONSE_FILE" | sed -e 's/.*"cursor" *: *"//' -e 's/".*//')
-    fi
 
-    if [[ ! -n $CURSOR ]]; then
-        print "FAILED to get cursor\n"
-        ERROR_STATUS=1
-        return 1
-    fi
+        local CURSOR=$(sed -n 's/.*"cursor": *"\([^"]*\)".*/\1/p' "$RESPONSE_FILE")
 
-    local CHANGES
-    local BACKOFF
-    while sleep ${BACKOFF:-0}; do
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Content-Type: application/json" --data "{\"cursor\": \"$CURSOR\",\"timeout\": ${TIMEOUT}}" "$API_LONGPOLL_FOLDER" 2> /dev/null
         check_http_response
 
-        CHANGES=
-        BACKOFF=
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-            CHANGES=$(grep '"changes"' "$RESPONSE_FILE" | sed -e 's/.*"changes" *: *//' -e 's/[,"}].*//')
-            BACKOFF=$(grep '"backoff"' "$RESPONSE_FILE" | sed -e 's/.*"backoff" *: *//' -e 's/[,"}].*//')
+            local CHANGES=$(sed -n 's/.*"changes" *: *\([a-z]*\).*/\1/p' "$RESPONSE_FILE")
         else
             ERROR_MSG=$(grep "Error in call" "$RESPONSE_FILE")
             print "FAILED to longpoll (http error): $ERROR_MSG\n"
@@ -1204,16 +1194,66 @@ function db_longpoll
             return 1
         fi
 
-        if [[ ! -n $CHANGES ]]; then
+        if [[ -z "$CHANGES" ]]; then
             print "FAILED to longpoll (unexpected response)\n"
             ERROR_STATUS=1
             return 1
         fi
 
         if [ "$CHANGES" == "true" ]; then
-            print "Changes detected\n"
-            return 0
+
+            OUT_FILE=$(db_list_outfile "$DIR_DST" "$CURSOR")
+
+            if [ -z "$OUT_FILE" ]; then
+                print "FAILED to list changes\n"
+                ERROR_STATUS=1
+                return
+            fi
+
+            #For each entry, printing directories...
+            while read -r line; do
+
+                local FILE=${line%:*}
+                local META=${line##*:}
+                local TYPE=${META%;*}
+                local SIZE=${META#*;}
+
+                #Removing unneeded /
+                FILE=${FILE##*/}
+
+                if [[ $TYPE == "folder" ]]; then
+                    FILE=$(echo -e "$FILE")
+                    $PRINTF " [D] %s\n" "$FILE"
+                elif [[ $TYPE == "file" ]]; then
+                    FILE=$(echo -e "$FILE")
+                    $PRINTF " [F] %s %s\n" "$SIZE" "$FILE"
+                elif [[ $TYPE == "deleted" ]]; then
+                    FILE=$(echo -e "$FILE")
+                    $PRINTF " [-] %s\n" "$FILE"
+                fi
+
+            done < "$OUT_FILE"
+
+            rm -fr "$OUT_FILE"
         fi
+
+    else
+        ERROR_STATUS=1
+        return 1
+    fi
+
+}
+
+#Longpoll continuously remote directory
+#$1 = Timeout
+#$2 = Remote directory
+function db_monitor
+{
+    local TIMEOUT=$1
+    local DIR_DST=$(normalize_path "$2")
+
+    while (true); do
+        db_monitor_nonblock "$TIMEOUT" "$2"
     done
 }
 
@@ -1545,21 +1585,25 @@ case $COMMAND in
 
     ;;
 
-    longpoll)
+    monitor)
 
-        TIMEOUT=$ARG1
-        DIR_DST=$ARG2
+        DIR_DST=$ARG1
+        TIMEOUT=$ARG2
 
         #Checking DIR_DST
         if [[ $DIR_DST == "" ]]; then
             DIR_DST="/"
         fi
 
-        db_longpoll "$TIMEOUT" "/$DIR_DST"
-        ERROR_STATUS=$?
+        print " > Monitoring \"$DIR_DST\" for changes...\n"
+
+        if [[ -n $TIMEOUT ]]; then
+            db_monitor_nonblock $TIMEOUT "/$DIR_DST"
+        else
+            db_monitor 60 "/$DIR_DST"
+        fi
 
     ;;
-
 
     unlink)
 
