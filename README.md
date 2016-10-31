@@ -89,6 +89,9 @@ Create a remote directory on DropBox
 * **list** [REMOTE_DIR]  
 List the contents of the remote Dropbox folder
 
+* **longpoll** &lt;TIMEOUT&gt; [REMOTE_DIR]  
+The connection will block until there are changes available or a timeout occurs. Returns 0 or 1 in case of error.
+
 * **share** &lt;REMOTE_FILE&gt;  
 Get a public share link for the specified file or directory
 
