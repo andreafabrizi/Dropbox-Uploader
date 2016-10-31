@@ -41,7 +41,6 @@ ERROR_STATUS=0
 
 #Don't edit these...
 API_MIGRATE_V2="https://api.dropboxapi.com/1/oauth2/token_from_oauth1"
-API_LIST_FOLDER="https://api.dropboxapi.com/2/files/list_folder"
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
 API_CHUNKED_UPLOAD_START_URL="https://content.dropboxapi.com/2/files/upload_session/start"
 API_CHUNKED_UPLOAD_FINISH_URL="https://content.dropboxapi.com/2/files/upload_session/finish"
@@ -52,7 +51,7 @@ API_DELETE_URL="https://api.dropboxapi.com/2/files/delete"
 API_MOVE_URL="https://api.dropboxapi.com/2/files/move"
 API_COPY_URL="https://api.dropboxapi.com/2/files/copy"
 API_METADATA_URL="https://api.dropboxapi.com/2/files/get_metadata"
-API_FOLDER_LIST_URL="https://api.dropboxapi.com/2/files/list_folder"
+API_LIST_FOLDER_URL="https://api.dropboxapi.com/2/files/list_folder"
 API_ACCOUNT_INFO_URL="https://api.dropboxapi.com/2/users/get_current_account"
 API_ACCOUNT_SPACE_URL="https://api.dropboxapi.com/2/users/get_space_usage"
 API_MKDIR_URL="https://api.dropboxapi.com/2/files/create_folder"
@@ -711,7 +710,7 @@ function db_download
         fi
 
         #Getting folder content
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC_REQ\", \"recursive\": false, \"include_deleted\": false}" "$API_FOLDER_LIST_URL" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC_REQ\", \"recursive\": false, \"include_deleted\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
         check_http_response
 
         #Extracting directory content [...]
@@ -1045,7 +1044,7 @@ function db_list
         DIR_DST=""
     fi
 
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
     check_http_response
 
     #Check
@@ -1143,8 +1142,8 @@ function db_longpoll
         DIR_DST=""
     fi
 
- 
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER" 2> /dev/null
+
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$DIR_DST\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_LIST_FOLDER_URL" 2> /dev/null
     check_http_response
 
     #Check
@@ -1152,12 +1151,12 @@ function db_longpoll
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         CURSOR=$(grep '"cursor"' "$RESPONSE_FILE" | sed -e 's/.*"cursor" *: *"//' -e 's/".*//')
     fi
+
     if [[ ! -n $CURSOR ]]; then
         print "FAILED to get cursor\n"
         ERROR_STATUS=1
-        return
+        return 1
     fi
-    echo using ${CURSOR}
 
     local CHANGES
     local BACKOFF
@@ -1171,19 +1170,21 @@ function db_longpoll
             CHANGES=$(grep '"changes"' "$RESPONSE_FILE" | sed -e 's/.*"changes" *: *//' -e 's/[,"}].*//')
             BACKOFF=$(grep '"backoff"' "$RESPONSE_FILE" | sed -e 's/.*"backoff" *: *//' -e 's/[,"}].*//')
         else
-            print "FAILED to longpoll (http error)\n"
+            ERROR_MSG=$(grep "Error in call" "$RESPONSE_FILE")
+            print "FAILED to longpoll (http error): $ERROR_MSG\n"
             ERROR_STATUS=1
-            return
+            return 1
         fi
+
         if [[ ! -n $CHANGES ]]; then
             print "FAILED to longpoll (unexpected response)\n"
             ERROR_STATUS=1
-            return
+            return 1
         fi
 
         if [ "$CHANGES" == "true" ]; then
-            echo changes detected
-            return
+            print "Changes detected\n"
+            return 0
         fi
     done
 }
@@ -1527,6 +1528,7 @@ case $COMMAND in
         fi
 
         db_longpoll "$TIMEOUT" "/$DIR_DST"
+        ERROR_STATUS=$?
 
     ;;
 
