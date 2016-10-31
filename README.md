@@ -65,10 +65,10 @@ The syntax is quite simple:
 
 * **upload** &lt;LOCAL_FILE/DIR ...&gt; &lt;REMOTE_FILE/DIR&gt;  
 Upload a local file or directory to a remote Dropbox folder.  
-If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); 
+If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); 
 in this case a . (dot) is printed for every chunk successfully uploaded and a * (star) if an error 
 occurs (the upload is retried for a maximum of three times).
-Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is used
+Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is specified
 the default curl progress bar is displayed during the upload process.  
 The local file/dir parameter supports wildcards expansion.
 
