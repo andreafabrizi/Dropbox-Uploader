@@ -391,7 +391,11 @@ function normalize_path
 #Returns FILE/DIR/ERR
 function db_stat
 {
-    local FILE=$(normalize_path "$1")
+    local HANDLE=$1
+    if [[ ${HANDLE: -1} == "*" ]]; then
+        HANDLE=${HANDLE%?}
+    fi
+    local FILE=$(normalize_path "$HANDLE")
 
     if [[ $FILE == "/" ]]; then
         echo "DIR"
@@ -670,6 +674,13 @@ function db_download
     local SRC=$(normalize_path "$1")
     local DST=$(normalize_path "$2")
 
+    if [[ ${SRC: -1} == "*" ]]; then
+        local WILDCARD="true"
+        SRC=${SRC%?}
+    else
+        local WILDCARD="false"
+    fi
+
     TYPE=$(db_stat "$SRC")
 
     #It's a directory
@@ -684,7 +695,11 @@ function db_download
         if [[ ! -d $DST ]]; then
             local basedir=""
         else
-            local basedir=$(basename "$SRC")
+            if [[ $WILDCARD == "true" ]]; then
+                local basedir=""
+            else
+                local basedir=$(basename "$SRC")
+            fi
         fi
 
         local DEST_DIR=$(normalize_path "$DST/$basedir")
