@@ -57,6 +57,7 @@ API_ACCOUNT_INFO_URL="https://api.dropboxapi.com/2/users/get_current_account"
 API_ACCOUNT_SPACE_URL="https://api.dropboxapi.com/2/users/get_space_usage"
 API_MKDIR_URL="https://api.dropboxapi.com/2/files/create_folder"
 API_SHARE_URL="https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings"
+API_SHARE_LIST="https://api.dropboxapi.com/2/sharing/list_shared_links"
 API_SAVEURL_URL="https://api.dropboxapi.com/2/files/save_url"
 API_SAVEURL_JOBSTATUS_URL="https://api.dropboxapi.com/2/files/save_url/check_job_status"
 API_SEARCH_URL="https://api.dropboxapi.com/2/files/search"
@@ -1264,6 +1265,24 @@ function db_share
     local FILE_DST=$(normalize_path "$1")
 
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE_DST\",\"settings\": {\"requested_visibility\": \"public\"}}" "$API_SHARE_URL" 2> /dev/null
+    check_http_response
+
+    #Check
+    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print " > Share link: "
+        SHARE_LINK=$(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+        echo "$SHARE_LINK"
+    else
+        get_Share "$FILE_DST"
+    fi
+}
+
+#Query existing shared link
+#$1 = Remote file
+function get_Share
+{
+    local FILE_DST=$(normalize_path "$1")
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE_DST\"}" "$API_SHARE_LIST"
     check_http_response
 
     #Check
