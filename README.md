@@ -71,6 +71,7 @@ occurs (the upload is retried for a maximum of three times).
 Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is specified
 the default curl progress bar is displayed during the upload process.  
 The local file/dir parameter supports wildcards expansion.
+If you specify - (dash) instead of an actual local file, data from standard input will be read and uploaded. In this case, a remote file name is mandatory.
 
 * **download** &lt;REMOTE_FILE/DIR&gt; [LOCAL_FILE/DIR]  
 Download file or directory from Dropbox to a local folder
@@ -139,6 +140,7 @@ Doesn't check for SSL certificates (insecure)
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload *.zip /
+    ./dropbox_uploader.sh upload - /myfiles/somefile.txt
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/

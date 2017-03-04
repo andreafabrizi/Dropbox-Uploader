@@ -64,7 +64,8 @@ APP_CREATE_URL="https://www.dropbox.com/developers/apps"
 RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
-BIN_DEPS="sed basename date grep stat dd mkdir"
+STDIN_FILE="$TMP_DIR/du_stdin_$RANDOM"
+BIN_DEPS="sed basename date grep stat dd mkdir cat"
 VERSION="1.0"
 
 umask 077
@@ -199,6 +200,7 @@ function remove_temp_files
         rm -fr "$RESPONSE_FILE"
         rm -fr "$CHUNK_FILE"
         rm -fr "$TEMP_FILE"
+        rm -fr "$STDIN_FILE"
     fi
 }
 
@@ -1455,6 +1457,12 @@ case $COMMAND in
 
         for (( i=$OPTIND+1; i<$#; i++ )); do
             FILE_SRC=${@:$i:1}
+
+            #Read STDIN into STDIN_FILE if necessary
+            if [ "$FILE_SRC" == "-" ]; then
+                cat < /dev/stdin > $STDIN_FILE
+                FILE_SRC="$STDIN_FILE"
+            fi
             db_upload "$FILE_SRC" "/$FILE_DST"
         done
 
