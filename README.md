@@ -247,6 +247,8 @@ Using the script with docker makes it also possible to run the script even on wi
 
 To use a proxy, just set the mentioned environment variables via the docker `-e` parameter.
 
+## Related projects
+[thunar-dropbox](https://github.com/mDfRg/Thunar-Dropbox-Uploader-plugin/tree/thunar-dropbox/plugins/thunar): A simple extension to Dropbox Uploader that provides a convenient method to share your Dropbox files with one click!
 
 ## Donations
 
