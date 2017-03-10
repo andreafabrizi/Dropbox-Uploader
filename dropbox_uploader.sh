@@ -57,6 +57,7 @@ API_ACCOUNT_INFO_URL="https://api.dropboxapi.com/2/users/get_current_account"
 API_ACCOUNT_SPACE_URL="https://api.dropboxapi.com/2/users/get_space_usage"
 API_MKDIR_URL="https://api.dropboxapi.com/2/files/create_folder"
 API_SHARE_URL="https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings"
+API_SHARE_LIST="https://api.dropboxapi.com/2/sharing/list_shared_links"
 API_SAVEURL_URL="https://api.dropboxapi.com/2/files/save_url"
 API_SAVEURL_JOBSTATUS_URL="https://api.dropboxapi.com/2/files/save_url/check_job_status"
 API_SEARCH_URL="https://api.dropboxapi.com/2/files/search"
@@ -190,7 +191,7 @@ function print
 #Returns unix timestamp
 function utime
 {
-    echo $(date +%s)
+    date '+%s'
 }
 
 #Remove temporary files
@@ -379,7 +380,7 @@ function normalize_path
         new_path=$(readlink -m "$path")
 
         #Adding back the final slash, if present in the source
-        if [[ ${path: -1} == "/" && ${#path} > 1 ]]; then
+        if [[ ${path: -1} == "/" && ${#path} -gt 1 ]]; then
             new_path="$new_path/"
         fi
 
@@ -582,7 +583,7 @@ function db_chunked_upload_file
     SESSION_ID=$(sed -n 's/{"session_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
 
     #Uploading chunks...
-    while ([[ $OFFSET != $FILE_SIZE ]]); do
+    while ([[ $OFFSET != "$FILE_SIZE" ]]); do
 
         let OFFSET_MB=$OFFSET/1024/1024
 
@@ -906,7 +907,7 @@ function db_account_space
         let used_mb=$used/1024/1024
         echo -e "Used:\t$used_mb Mb"
 
-        let free_mb=($quota-$used)/1024/1024
+		let free_mb=$((quota-used))/1024/1024
         echo -e "Free:\t$free_mb Mb"
 
         echo ""
@@ -921,7 +922,7 @@ function db_account_space
 function db_unlink
 {
     echo -ne "Are you sure you want unlink this script from your Dropbox account? [y/n]"
-    read answer
+    read -r answer
     if [[ $answer == "y" ]]; then
         rm -fr "$CONFIG_FILE"
         echo -ne "DONE\n"
@@ -1274,6 +1275,24 @@ function db_share
         SHARE_LINK=$(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
         echo "$SHARE_LINK"
     else
+        get_Share "$FILE_DST"
+    fi
+}
+
+#Query existing shared link
+#$1 = Remote file
+function get_Share
+{
+    local FILE_DST=$(normalize_path "$1")
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE_DST\"}" "$API_SHARE_LIST"
+    check_http_response
+
+    #Check
+    if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+        print " > Share link: "
+        SHARE_LINK=$(sed -n 's/.*"url": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+        echo "$SHARE_LINK"
+    else
         print "FAILED\n"
         MESSAGE=$(sed -n 's/.*"error_summary": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
         print " > Error: $MESSAGE\n"
@@ -1418,10 +1437,10 @@ else
     echo -ne " under the 'Generated access token' section, then copy and paste the new access token here:\n\n"
 
     echo -ne " # Access token: "
-    read OAUTH_ACCESS_TOKEN
+    read -r OAUTH_ACCESS_TOKEN
 
     echo -ne "\n > The access token is $OAUTH_ACCESS_TOKEN. Looks ok? [y/N]: "
-    read answer
+    read -r answer
     if [[ $answer != "y" ]]; then
         remove_temp_files
         exit 1
@@ -1438,9 +1457,9 @@ fi
 #### START  ####
 ################
 
-COMMAND=${@:$OPTIND:1}
-ARG1=${@:$OPTIND+1:1}
-ARG2=${@:$OPTIND+2:1}
+COMMAND=${*:$OPTIND:1}
+ARG1=${*:$OPTIND+1:1}
+ARG2=${*:$OPTIND+2:1}
 
 let argnum=$#-$OPTIND
 
@@ -1453,10 +1472,10 @@ case $COMMAND in
             usage
         fi
 
-        FILE_DST=${@:$#:1}
+        FILE_DST=${*:$#:1}
 
         for (( i=$OPTIND+1; i<$#; i++ )); do
-            FILE_SRC=${@:$i:1}
+            FILE_SRC=${*:$i:1}
 
             #Read STDIN into STDIN_FILE if necessary
             if [ "$FILE_SRC" == "-" ]; then
