@@ -341,7 +341,7 @@ function check_http_response
 
         case $ERROR_MSG in
              *access?attempt?failed?because?this?app?is?not?configured?to?have*)
-                echo -e "\nError: The Permission type/Access level configured doesn't match the DropBox App settings!\nPlease run \"$0 unlink\" and try again."
+                echo -e "\nError: The Permission type/Access level configured doesn't match the DropBox App settings!\nPlease run \"$0 unlink\" and try again." 1>&2
                 exit 1
             ;;
         esac
@@ -436,14 +436,14 @@ function db_upload
 
     #Checking if the file/dir exists
     if [[ ! -e $SRC && ! -d $SRC ]]; then
-        print " > No such file or directory: $SRC\n"
+        print " > No such file or directory: $SRC\n" 1>&2
         ERROR_STATUS=1
         return
     fi
 
     #Checking if the file/dir has read permissions
     if [[ ! -r $SRC ]]; then
-        print " > Error reading file $SRC: permission denied\n"
+        print " > Error reading file $SRC: permission denied\n" 1>&2
         ERROR_STATUS=1
         return
     fi
@@ -479,7 +479,7 @@ function db_upload
 
     #Unsupported object...
     else
-        print " > Skipping not regular file \"$SRC\"\n"
+        print " > Skipping not regular file \"$SRC\"\n" 1>&2
     fi
 }
 
@@ -552,8 +552,8 @@ function db_simple_upload_file
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
-        print "An error occurred requesting /upload\n"
+        print "FAILED\n" 1>&2
+        print "An error occurred requesting /upload\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -606,8 +606,8 @@ function db_chunked_upload_file
 
             #On error, the upload is retried for max 3 times
             if [[ $UPLOAD_ERROR -gt 2 ]]; then
-                print " FAILED\n"
-                print "An error occurred requesting /chunked_upload\n"
+                print " FAILED\n" 1>&2
+                print "An error occurred requesting /chunked_upload\n" 1>&2
                 ERROR_STATUS=1
                 return
             fi
@@ -635,8 +635,8 @@ function db_chunked_upload_file
 
             #On error, the commit is retried for max 3 times
             if [[ $UPLOAD_ERROR -gt 2 ]]; then
-                print " FAILED\n"
-                print "An error occurred requesting /commit_chunked_upload\n"
+                print " FAILED\n" 1>&2
+                print "An error occurred requesting /commit_chunked_upload\n" 1>&2
                 ERROR_STATUS=1
                 return
             fi
@@ -699,7 +699,7 @@ function db_download
             if [[ $? == 0 ]]; then
                 print "DONE\n"
             else
-                print "FAILED\n"
+                print "FAILED\n" 1>&2
                 ERROR_STATUS=1
                 return
             fi
@@ -751,7 +751,7 @@ function db_download
 
     #Doesn't exists
     else
-        print " > No such file or directory: $SRC\n"
+        print " > No such file or directory: $SRC\n" 1>&2
         ERROR_STATUS=1
         return
     fi
@@ -784,7 +784,7 @@ function db_download_file
     #2) Curl doesn't automatically creates files with 0 bytes size
     dd if=/dev/zero of="$FILE_DST" count=0 2> /dev/null
     if [[ $? != 0 ]]; then
-        print " > Error writing file $FILE_DST: permission denied\n"
+        print " > Error writing file $FILE_DST: permission denied\n" 1>&2
         ERROR_STATUS=1
         return
     fi
@@ -797,7 +797,7 @@ function db_download_file
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         rm -fr "$FILE_DST"
         ERROR_STATUS=1
         return
@@ -842,9 +842,9 @@ function db_saveurl
             ;;
 
             failed)
-                print " ERROR\n"
+                print " ERROR\n" 1>&2
                 MESSAGE=$(sed -n 's/.*"error_summary": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-                print " > Error: $MESSAGE\n"
+                print " > Error: $MESSAGE\n" 1>&2
                 break
             ;;
 
@@ -881,7 +881,7 @@ function db_account_info
         echo ""
 
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -911,7 +911,7 @@ function db_account_space
         echo ""
 
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -941,7 +941,7 @@ function db_delete
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -970,7 +970,7 @@ function db_move
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -999,7 +999,7 @@ function db_copy
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -1020,7 +1020,7 @@ function db_mkdir
     elif grep -q "^HTTP/1.1 403 Forbidden" "$RESPONSE_FILE"; then
         print "ALREADY EXISTS\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -1105,7 +1105,7 @@ function db_list
 
     OUT_FILE=$(db_list_outfile "$DIR_DST")
     if [ -z "$OUT_FILE" ]; then
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
         return
     else
@@ -1190,13 +1190,13 @@ function db_monitor_nonblock
             local CHANGES=$(sed -n 's/.*"changes" *: *\([a-z]*\).*/\1/p' "$RESPONSE_FILE")
         else
             ERROR_MSG=$(grep "Error in call" "$RESPONSE_FILE")
-            print "FAILED to longpoll (http error): $ERROR_MSG\n"
+            print "FAILED to longpoll (http error): $ERROR_MSG\n" 1>&2
             ERROR_STATUS=1
             return 1
         fi
 
         if [[ -z "$CHANGES" ]]; then
-            print "FAILED to longpoll (unexpected response)\n"
+            print "FAILED to longpoll (unexpected response)\n" 1>&2
             ERROR_STATUS=1
             return 1
         fi
@@ -1206,7 +1206,7 @@ function db_monitor_nonblock
             OUT_FILE=$(db_list_outfile "$DIR_DST" "$CURSOR")
 
             if [ -z "$OUT_FILE" ]; then
-                print "FAILED to list changes\n"
+                print "FAILED to list changes\n" 1>&2
                 ERROR_STATUS=1
                 return
             fi
@@ -1293,7 +1293,7 @@ function get_Share
     else
         print "FAILED\n"
         MESSAGE=$(sed -n 's/.*"error_summary": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
-        print " > Error: $MESSAGE\n"
+        print " > Error: $MESSAGE\n" 1>&2
         ERROR_STATUS=1
     fi
 }
@@ -1313,7 +1313,7 @@ function db_search
     if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
         print "DONE\n"
     else
-        print "FAILED\n"
+        print "FAILED\n" 1>&2
         ERROR_STATUS=1
     fi
 
@@ -1633,7 +1633,7 @@ case $COMMAND in
     *)
 
         if [[ $COMMAND != "" ]]; then
-            print "Error: Unknown command: $COMMAND\n\n"
+            print "Error: Unknown command: $COMMAND\n\n" 1>&2
             ERROR_STATUS=1
         fi
         usage
