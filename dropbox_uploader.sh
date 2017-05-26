@@ -268,8 +268,6 @@ function usage
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
     echo -e "\t search   <QUERY>"
-    echo -e "\t sha      <REMOTE_FILE>"
-    echo -e "\t sha_local <LOCAL_FILE>"
     echo -e "\t info"
     echo -e "\t space"
     echo -e "\t unlink"
@@ -526,7 +524,7 @@ function db_upload_file
         sha_src=$(db_sha_local "$FILE_SRC")
         sha_dst=$(db_sha "$FILE_DST")
         if [[ $sha_src == $sha_dst ]]; then
-            print "> Skipping file \"$FILE_SRC\", existing file has same SHA256Sum\n"
+            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
             return
         fi
     fi
@@ -1688,28 +1686,6 @@ case $COMMAND in
     unlink)
 
         db_unlink
-
-    ;;
-
-    sha)
-
-        if [[ $argnum -lt 1 ]]; then
-            usage
-        fi
-
-        FILE_DST=$ARG1
-        db_sha $FILE_DST
-
-    ;;
-
-    sha_local)
-
-        if [[ $argnum -lt 1 ]]; then
-            usage
-        fi
-
-        FILE_SRC=$ARG1
-        db_sha_local $FILE_SRC
 
     ;;
 
