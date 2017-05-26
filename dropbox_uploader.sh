@@ -268,6 +268,8 @@ function usage
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
     echo -e "\t search   <QUERY>"
+    echo -e "\t sha      <REMOTE_FILE>"
+    echo -e "\t sha_local <LOCAL_FILE>"
     echo -e "\t info"
     echo -e "\t space"
     echo -e "\t unlink"
@@ -517,6 +519,16 @@ function db_upload_file
     if [[ $TYPE != "ERR" && $SKIP_EXISTING_FILES == 1 ]]; then
         print " > Skipping already existing file \"$FILE_DST\"\n"
         return
+    fi
+
+    # Checking if the file has the correct check sum
+    if [[ $TYPE != "ERR" ]]; then
+        sha_src=$(db_sha_local "$FILE_SRC")
+        sha_dst=$(db_sha "$FILE_DST")
+        if [[ $sha_src == $sha_dst ]]; then
+            print "> Skipping file \"$FILE_SRC\", existing file has same SHA256Sum\n"
+            return
+        fi
     fi
 
     if [[ $FILE_SIZE -gt 157286000 ]]; then
@@ -1383,6 +1395,55 @@ function db_search
 
 }
 
+#Query the sha256-dropbox-sum of a remote file
+#see https://www.dropbox.com/developers/reference/content-hash for more information
+#$1 = Remote file
+function db_sha
+{
+    local FILE=$(normalize_path "$1")
+
+    if [[ $FILE == "/" ]]; then
+        echo "ERR"
+        return
+    fi
+
+    #Checking if it's a file or a directory and get the sha-sum
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE\"}" "$API_METADATA_URL" 2> /dev/null
+    check_http_response
+
+    local TYPE=$(sed -n 's/{".tag": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+    if [[ $TYPE == "folder" ]]; then
+        echo "ERR"
+        return
+    fi
+
+    local SHA256=$(sed -n 's/.*"content_hash": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+    echo "$SHA256"
+}
+
+#Query the sha256-dropbox-sum of a local file
+#see https://www.dropbox.com/developers/reference/content-hash for more information
+#$1 = Local file
+function db_sha_local
+{
+    local FILE=$(normalize_path "$1")
+    local FILE_SIZE=$(file_size "$FILE")
+    local OFFSET=0
+    local SKIP=0
+    local SHA_CONCAT=""
+
+    while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
+        dd if="$FILE_SRC" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
+        local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
+        SHA_CONCAT="${SHA_CONCAT}${SHA}"
+
+        let OFFSET=$OFFSET+4194304
+        let SKIP=$SKIP+1
+    done
+
+    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | sha256sum | awk '{print $1}'
+}
+
 ################
 #### SETUP  ####
 ################
@@ -1627,6 +1688,28 @@ case $COMMAND in
     unlink)
 
         db_unlink
+
+    ;;
+
+    sha)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_DST=$ARG1
+        db_sha $FILE_DST
+
+    ;;
+
+    sha_local)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_SRC=$ARG1
+        db_sha_local $FILE_SRC
 
     ;;
 
