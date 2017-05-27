@@ -523,7 +523,7 @@ function db_upload_file
     if [[ $TYPE != "ERR" ]]; then
         sha_src=$(db_sha_local "$FILE_SRC")
         sha_dst=$(db_sha "$FILE_DST")
-        if [[ $sha_src == $sha_dst ]]; then
+        if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
             print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
             return
         fi
@@ -1429,6 +1429,12 @@ function db_sha_local
     local OFFSET=0
     local SKIP=0
     local SHA_CONCAT=""
+
+    which shasum > /dev/null
+    if [[ $? != 0 ]]; then
+        echo "ERR"
+        return
+    fi
 
     while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
         dd if="$FILE_SRC" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
