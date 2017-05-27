@@ -1432,14 +1432,14 @@ function db_sha_local
 
     while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
         dd if="$FILE_SRC" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
-        local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
+        local SHA=$(shasum -a 256 "$CHUNK_FILE" | awk '{print $1}')
         SHA_CONCAT="${SHA_CONCAT}${SHA}"
 
         let OFFSET=$OFFSET+4194304
         let SKIP=$SKIP+1
     done
 
-    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | sha256sum | awk '{print $1}'
+    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | shasum -a 256 | awk '{print $1}'
 }
 
 ################
