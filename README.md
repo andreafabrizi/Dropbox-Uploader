@@ -236,10 +236,16 @@ andrea@Dropbox:/$ ls
 andrea@DropBox:/ServerBackup$ get notes.txt
 ```
 
-## Running as Docker Container
-If you have installed docker on your system and don't want to deal with downloading the script and ensuring the correct curl versions etc., you can run Dropbox-Uploader via docker as well:
+## Building Docker image for Raspberry Pi
+You can build the docker image for a Raspberry Pi:
 ```bash
-andrea@Dropbox:/$ docker run -it --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT> peez/dropbox-uploader <Arguments> 
+pi@raspberrypi:/$ docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile.pi -t <TAG>
+```
+
+## Running as Docker Container
+Run the container with:
+```bash
+pi@raspberrypi:/$ docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT> <TAG> <Arguments> 
 ```
 This will store the auth token information in the given local directory in `<LOCAL_CONFIG_PATH>`. To ensure access to your mounted directories it can be important to pass a UID and GID to the docker deamon (as stated in the example by the --user argument)
 
