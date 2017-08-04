@@ -54,24 +54,29 @@ for i in $BIN_DEPS; do
     fi
 done
 
+function normalize_path
+{
+    if [ "${OSTYPE:0:7}" == "FreeBSD" ]; then
+        p=$(realpath "$1")
+    else
+        p=$($READLINK -m "$1")
+    fi
+    echo "$p"
+}
+
 #Check DropBox Uploader
 if [ ! -f "$DU" ]; then
     echo "Dropbox Uploader not found: $DU"
     echo "Please change the 'DU' variable according to the Dropbox Uploader location."
     exit 1
 else
-    DU=$($READLINK -m "$DU")
+    DU=$(normalize_path "$DU")
 fi
 
 #Returns the current user
 function get_current_user
 {
     id -nu
-}
-
-function normalize_path
-{
-    $READLINK -m "$1"
 }
 
 ################
