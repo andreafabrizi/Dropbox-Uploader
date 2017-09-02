@@ -38,6 +38,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+EXCLUDE=()
 
 #Don't edit these...
 API_MIGRATE_V2="https://api.dropboxapi.com/1/oauth2/token_from_oauth1"
@@ -87,7 +88,7 @@ if [[ ! -d "$TMP_DIR" ]]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:" opt; do
+while getopts ":qpskdhfx:" opt; do
     case $opt in
 
     f)
@@ -116,6 +117,10 @@ while getopts ":qpskdhf:" opt; do
 
     h)
       HUMAN_READABLE_SIZE=1
+    ;;
+
+    x)
+      EXCLUDE+=( $OPTARG )
     ;;
 
     \?)
@@ -280,6 +285,7 @@ function usage
     echo -e "\t-h            Show file sizes in human readable format"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-x            Ignores/excludes directories or files from syncing. -x filename -x directoryname. example: -x .git"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -433,6 +439,14 @@ function db_upload
 {
     local SRC=$(normalize_path "$1")
     local DST=$(normalize_path "$2")
+
+    for j in "${EXCLUDE[@]}"
+        do :
+            if [[ $(echo "$SRC" | grep "$j" | wc -l) -gt 0 ]]; then
+                print "Skipping excluded file/dir: "$j
+                return
+            fi
+    done
 
     #Checking if the file/dir exists
     if [[ ! -e $SRC && ! -d $SRC ]]; then
