@@ -20,7 +20,8 @@
 #
 
 #Default configuration file
-CONFIG_FILE=~/.dropbox_uploader
+CURRENT_PATH=$(cd `dirname $0`; pwd)
+CONFIG_FILE=$CURRENT_PATH/.dropbox_uploader
 
 #Default chunk size in Mb for the upload process
 #It is recommended to increase this value only if you have enough free space on your /tmp partition

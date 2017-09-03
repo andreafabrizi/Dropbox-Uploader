@@ -1,6 +1,7 @@
 #!/bin/bash
 
-DU=./dropbox_uploader.sh
+CURRENT_PATH=$(cd `dirname $0`; pwd)
+DU=$CURRENT_PATH/dropbox_uploader.sh
 
 function check_exit
 {

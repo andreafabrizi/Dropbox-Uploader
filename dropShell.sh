@@ -19,9 +19,10 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
+CURRENT_PATH=$(cd `dirname $0`; pwd)
 #Looking for dropbox uploader
-if [ -f "./dropbox_uploader.sh" ]; then
-    DU="./dropbox_uploader.sh"
+if [ -f "$CURRENT_PATH/dropbox_uploader.sh" ]; then
+    DU="$CURRENT_PATH/dropbox_uploader.sh"
 else
     DU=$(which dropbox_uploader.sh)
     if [ $? -ne 0 ]; then
@@ -38,7 +39,7 @@ else
     READLINK="readlink"
 fi
 
-SHELL_HISTORY=~/.dropshell_history
+SHELL_HISTORY=$CURRENT_PATH/.dropshell_history
 DU_OPT="-q"
 BIN_DEPS="id $READLINK ls basename ls pwd cut"
 VERSION="0.2"
