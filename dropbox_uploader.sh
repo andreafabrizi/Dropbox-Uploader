@@ -575,7 +575,7 @@ function db_chunked_upload_file
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
+    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\" by chunks ...\n"
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
@@ -589,6 +589,7 @@ function db_chunked_upload_file
 
     SESSION_ID=$(sed -n 's/{"session_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
 
+    n=1
     #Uploading chunks...
     while ([[ $OFFSET != "$FILE_SIZE" ]]); do
 
@@ -598,19 +599,20 @@ function db_chunked_upload_file
         dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1048576 skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
         local CHUNK_REAL_SIZE=$(file_size "$CHUNK_FILE")
 
+        print " >> Uploading chunks $n\n"
         #Uploading the chunk...
         echo > "$RESPONSE_FILE"
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST --progress-bar --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL" 
         #check_http_response not needed, because we have to retry the request in case of error
-
-        let OFFSET=$OFFSET+$CHUNK_REAL_SIZE
 
         #Check
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-            print "."
+            let OFFSET=$OFFSET+$CHUNK_REAL_SIZE
+            #print "done\n"
             UPLOAD_ERROR=0
+            ((n=n+1))
         else
-            print "*"
+            print "failed\n"
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the upload is retried for max 3 times
