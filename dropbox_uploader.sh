@@ -40,7 +40,6 @@ SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
 
 #Don't edit these...
-API_MIGRATE_V2="https://api.dropboxapi.com/1/oauth2/token_from_oauth1"
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
 API_CHUNKED_UPLOAD_START_URL="https://content.dropboxapi.com/2/files/upload_session/start"
 API_CHUNKED_UPLOAD_FINISH_URL="https://content.dropboxapi.com/2/files/upload_session/finish"
@@ -1462,19 +1461,10 @@ if [[ -e $CONFIG_FILE ]]; then
 
     #Checking if it's still a v1 API configuration file
     if [[ $APPKEY != "" || $APPSECRET != "" ]]; then
-        echo -ne "The config file contains the old v1 oauth tokens. A new oauth v2 token will be requested.\n"
-        echo -ne "Requesting new oauth2 token... "
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" "$API_MIGRATE_V2/?oauth_consumer_key=$APPKEY&oauth_token=$OAUTH_ACCESS_TOKEN&oauth_signature_method=PLAINTEXT&oauth_signature=$APPSECRET%26$OAUTH_ACCESS_TOKEN_SECRET&oauth_timestamp=$(utime)&oauth_nonce=$RANDOM" 2> /dev/null
-        OAUTH_ACCESS_TOKEN=$(sed -n 's/.*access_token": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
-
-        if [[ $OAUTH_ACCESS_TOKEN == "" ]]; then
-            echo "Error getting access tocken, please try again!"
-            remove_temp_files
-            exit 1
-        fi
-
-        echo "DONE"
-        echo "OAUTH_ACCESS_TOKEN=$OAUTH_ACCESS_TOKEN" > "$CONFIG_FILE"
+        echo -ne "The config file contains the old deprecated v1 oauth tokens.\n"
+        echo -ne "Please run again the script and follow the configuration wizard. The old configuration file has been backed up to $CONFIG_FILE.old\n"
+        mv "$CONFIG_FILE" "$CONFIG_FILE".old
+        exit 1
     fi
 
     #Checking loaded data
