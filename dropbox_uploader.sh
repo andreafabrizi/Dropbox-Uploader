@@ -603,10 +603,9 @@ function db_chunked_upload_file
         $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL" 2> /dev/null
         #check_http_response not needed, because we have to retry the request in case of error
 
-        let OFFSET=$OFFSET+$CHUNK_REAL_SIZE
-
         #Check
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
+            let OFFSET=$OFFSET+$CHUNK_REAL_SIZE
             print "."
             UPLOAD_ERROR=0
         else
