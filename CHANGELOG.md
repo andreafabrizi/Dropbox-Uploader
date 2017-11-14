@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Version 1.0 - 10 Aug 2016
+* Add search option
+* Increase chunk size to 50MB for better performance
+* Add testUnit script
+* Upgrade to API v2
+* Fix #278: Documentation issue for command line
+* Add -h option to show human readable file sizes
+* Fix issue #240: the connection is retried in case of error for chunked uploads
+* The file name encoding problems including the issue #139 should be fixed now
+* Add system info to debug output
+* Fix issue #230: Version String isn't updated in dropbox_uploader
+* Fixed issue #227
+
 ## Version 0.16 - 31 Jul 2015
 * Add saveurl command to download remote files directly into a dropbox folder
 * Fixed issue #174: $DU needs quoting in dropShell

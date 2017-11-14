@@ -4,32 +4,35 @@ Dropbox Uploader is a **BASH** script which can be used to upload, download, del
 
 It's written in BASH scripting language and only needs **cURL**.
 
+You can take a look to the [GiHub project page](https://github.com/andreafabrizi/Dropbox-Uploader).
+
 **Why use this script?**
 
-* **Portable:** It's written in BASH scripting and only needs *cURL* (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
-* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API for the authentication process. 
+* **Portable:** It's written in BASH scripting and only needs `cURL` (curl is a tool to transfer data from or to a server, available for all operating systems and installed by default in many linux distributions).
+* **Secure:** It's not required to provide your username/password to this script, because it uses the official Dropbox API v2 for the authentication process. 
 
-Please refer to the &lt;Wiki&gt;(https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
+Please refer to the [Wiki](https://github.com/andreafabrizi/Dropbox-Uploader/wiki) for tips and additional information about this project. The Wiki is also the place where you can share your scripts and examples related to Dropbox Uploader.
 
 ## Features
 
 * Cross platform
-* Support for the official Dropbox API
+* Support for the official Dropbox API v2
 * No password required or stored
 * Simple step-by-step configuration wizard
 * Simple and chunked file upload
 * File and recursive directory download
 * File and recursive directory upload
 * Shell wildcard expansion (only for upload)
-* Delete/Move/Rename/Copy/List files
+* Delete/Move/Rename/Copy/List/Share files
 * Create share link
+* Monitor for changes
 
 ## Getting started
 
 First, clone the repository using git (recommended):
 
 ```bash
-git clone https://github.com/andreafabrizi/Dropbox-Uploader/
+git clone https://github.com/andreafabrizi/Dropbox-Uploader.git
 ```
 
 or download the script manually using this command:
@@ -47,10 +50,6 @@ Then give the execution permission to the script and run it:
 
 The first time you run `dropbox_uploader`, you'll be guided through a wizard in order to configure access to your Dropbox. This configuration will be stored in `~/.dropbox_uploader`.
 
-### Configuration wizard
-
-The configuration wizard is pretty self-explanatory. One thing to notice is that if you choose "App permission", your uploads will end up on Dropbox under an `App/<your_app_name>` folder. To have them stored in another folder, such as in `/dir/`, you'll need to give Dropbox-Uploader permission to all Dropbox files.
-
 ## Usage
 
 The syntax is quite simple:
@@ -66,10 +65,10 @@ The syntax is quite simple:
 
 * **upload** &lt;LOCAL_FILE/DIR ...&gt; &lt;REMOTE_FILE/DIR&gt;  
 Upload a local file or directory to a remote Dropbox folder.  
-If the file is bigger than 150Mb the file is uploaded using small chunks (default 4Mb); 
+If the file is bigger than 150Mb the file is uploaded using small chunks (default 50Mb); 
 in this case a . (dot) is printed for every chunk successfully uploaded and a * (star) if an error 
 occurs (the upload is retried for a maximum of three times).
-Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is used
+Only if the file is smaller than 150Mb, the standard upload API is used, and if the -p option is specified
 the default curl progress bar is displayed during the upload process.  
 The local file/dir parameter supports wildcards expansion.
 
@@ -86,10 +85,13 @@ Move or rename a remote file or directory
 Copy a remote file or directory
 
 * **mkdir** &lt;REMOTE_DIR&gt;  
-Create a remote directory on DropBox
+Create a remote directory on Dropbox
 
 * **list** [REMOTE_DIR]  
 List the contents of the remote Dropbox folder
+
+* **monitor** [REMOTE_DIR] [TIMEOUT]  
+Monitor the remote Dropbox folder for changes. If timeout is specified, at the first change event the function will return.
 
 * **share** &lt;REMOTE_FILE&gt;  
 Get a public share link for the specified file or directory
@@ -97,8 +99,14 @@ Get a public share link for the specified file or directory
 * **saveurl** &lt;URL&gt; &lt;REMOTE_DIR&gt;  
 Download a file from an URL to a Dropbox folder directly (the file is NOT downloaded locally)
 
+* **search** &lt;QUERY&gt;
+Search for a specific pattern on Dropbox and returns the list of matching files or directories
+
 * **info**  
 Print some info about your Dropbox account
+
+* **space**
+Print some info about the space usage on your Dropbox account
 
 * **unlink**  
 Unlink the script from your Dropbox account
@@ -155,10 +163,11 @@ Doesn't check for SSL certificates (insecure)
 If you have successfully tested this script on others systems or platforms please let me know!
 
 ## Running as cron job
-Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is HOME_DIRECTORY/.dropbox_uploader. This means that if you do the setup with your user and then you try to run a cron job as root, it won't works.  
+Dropbox Uploader relies on a different configuration file for each system user. The default configuration file location is `$HOME/.dropbox_uploader`. This means that if you setup the script with your user and then you try to run a cron job as root, it won't work.
 So, when running this script using cron, please keep in mind the following:
 * Remember to setup the script with the user used to run the cron job
-* Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly
+* Always specify the full script path when running it (e.g.  /path/to/dropbox_uploader.sh)
+* Use always the -f option to specify the full configuration file path, because sometimes in the cron environment the home folder path is not detected correctly (e.g. -f /home/youruser/.dropbox_uploader)
 * My advice is, for security reasons, to not share the same configuration file with different users
 
 ## How to setup a proxy
@@ -227,8 +236,22 @@ andrea@Dropbox:/$ ls
 andrea@DropBox:/ServerBackup$ get notes.txt
 ```
 
+## Running as Docker Container
+If you have installed docker on your system and don't want to deal with downloading the script and ensuring the correct curl versions etc., you can run Dropbox-Uploader via docker as well:
+```bash
+andrea@Dropbox:/$ docker run -it --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT> peez/dropbox-uploader <Arguments> 
+```
+This will store the auth token information in the given local directory in `<LOCAL_CONFIG_PATH>`. To ensure access to your mounted directories it can be important to pass a UID and GID to the docker deamon (as stated in the example by the --user argument)
+
+Using the script with docker makes it also possible to run the script even on windows machines.
+
+To use a proxy, just set the mentioned environment variables via the docker `-e` parameter.
+
+## Related projects
+[thunar-dropbox](https://github.com/mDfRg/Thunar-Dropbox-Uploader-plugin/tree/thunar-dropbox/plugins/thunar): A simple extension to Dropbox Uploader that provides a convenient method to share your Dropbox files with one click!
+
 ## Donations
 
  If you want to support this project, please consider donating:
- * PayPal: andrea.fabrizi@gmail.com
+ * PayPal: https://www.paypal.me/AndreaFabrizi83
  * BTC: 1JHCGAMpKqUwBjcT3Kno9Wd5z16K6WKPqG
