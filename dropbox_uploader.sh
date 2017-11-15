@@ -65,7 +65,7 @@ RESPONSE_FILE="$TMP_DIR/du_resp_$RANDOM"
 CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
 BIN_DEPS="sed basename date grep stat dd mkdir"
-VERSION="1.0"
+VERSION="1.1"
 
 umask 077
 
@@ -270,6 +270,7 @@ function usage
     echo -e "\t info"
     echo -e "\t space"
     echo -e "\t unlink"
+    echo -e "\t match    <LOCAL_FILE> <REMOTE_FILE>"
 
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
@@ -1681,6 +1682,30 @@ case $COMMAND in
     unlink)
 
         db_unlink
+
+    ;;
+
+    match)
+
+        if [[ $argnum -lt 2 ]]; then
+            usage
+        fi
+
+        FILE_SRC=$ARG1
+        FILE_DST=$ARG2
+
+        sha_src=$(db_sha_local "$FILE_SRC")
+        sha_dst=$(db_sha "$FILE_DST")
+
+        if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
+            print "Files \"$FILE_SRC\" and \"$FILE_DST\" match\n"
+            ERROR_STATUS=0
+        elif [[ $sha_src != $sha_dst ]]; then
+            print "Files \"$FILE_SRC\" and \"$FILE_DST\" do not match\n"
+            ERROR_STATUS=1
+        elif [[ $sha_src == "ERR" ]]; then
+            print "An error occurred. Is shasum in path?\n"
+        fi
 
     ;;
 
