@@ -796,10 +796,10 @@ function db_download
 #$1 = Remote source file
 #$2 = Local destination file
 function db_download_file
-{
+{    
     local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
-
+    local FILE_DST=$(normalize_path "$2")   
+    
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="-L --progress-bar"
         LINE_CR="\n"
@@ -814,6 +814,16 @@ function db_download_file
         return
     fi
 
+    # Checking if the file has the correct check sum
+    if [[ $TYPE != "ERR" ]]; then
+        sha_src=$(db_sha "$FILE_SRC")
+        sha_dst=$(db_sha_local "$FILE_DST")
+        if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
+            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
+            return
+        fi
+    fi    
+    
     #Creating the empty file, that for two reasons:
     #1) In this way I can check if the destination file is writable or not
     #2) Curl doesn't automatically creates files with 0 bytes size
@@ -1462,7 +1472,7 @@ function db_sha_local
     fi
 
     while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
-        dd if="$FILE_SRC" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
+        dd if="$FILE" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
         local SHA=$(shasum -a 256 "$CHUNK_FILE" | awk '{print $1}')
         SHA_CONCAT="${SHA_CONCAT}${SHA}"
 
@@ -1470,7 +1480,8 @@ function db_sha_local
         let SKIP=$SKIP+1
     done
 
-    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | shasum -a 256 | awk '{print $1}'
+    shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
+    echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
 }
 
 ################
