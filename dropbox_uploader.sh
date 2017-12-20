@@ -1453,7 +1453,8 @@ function db_sha_local
         let SKIP=$SKIP+1
     done
 
-    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | shasum -a 256 | awk '{print $1}'
+    shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
+    echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
 }
 
 ################
