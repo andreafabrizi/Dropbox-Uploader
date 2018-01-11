@@ -307,7 +307,7 @@ function check_http_response
         ;;
 
         #Missing CA certificates
-        60|58)
+        60|58|77)
             print "\nError: cURL is not able to performs peer SSL certificate verification.\n"
             print "Please, install the default ca-certificates bundle.\n"
             print "To do this in a Debian/Ubuntu based system, try:\n"
