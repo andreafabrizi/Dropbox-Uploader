@@ -1,4 +1,3 @@
-#FROM resin/rpi-raspbian
 FROM hypriot/rpi-alpine-scratch
 MAINTAINER github@vanefferenonline.nl
 
