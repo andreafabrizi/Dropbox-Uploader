@@ -575,7 +575,16 @@ function db_chunked_upload_file
     local FILE_SRC=$(normalize_path "$1")
     local FILE_DST=$(normalize_path "$2")
 
-    print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\""
+     
+    if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
+        VERBOSE=1
+        CURL_PARAMETERS="--progress-bar"        
+    else
+        VERBOSE=0
+        CURL_PARAMETERS="-L -s"        
+    fi
+    
+   
 
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
@@ -583,12 +592,22 @@ function db_chunked_upload_file
     local UPLOAD_ERROR=0
     local CHUNK_PARAMS=""
 
+    ## Ceil division
+    let NUMBEROFCHUNK=($FILE_SIZE/1024/1024+$CHUNK_SIZE-1)/$CHUNK_SIZE
+    
+    if [[ $VERBOSE == 1 ]]; then
+        print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\" by $NUMBEROFCHUNK chunks ...\n"
+    else
+        print " > Uploading \"$FILE_SRC\" to \"$FILE_DST\" by $NUMBEROFCHUNK chunks "
+    fi    
+    
     #Starting a new upload session
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @/dev/null "$API_CHUNKED_UPLOAD_START_URL" 2> /dev/null
     check_http_response
 
     SESSION_ID=$(sed -n 's/{"session_id": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
 
+    chunkNumber=1
     #Uploading chunks...
     while ([[ $OFFSET != "$FILE_SIZE" ]]); do
 
@@ -598,18 +617,27 @@ function db_chunked_upload_file
         dd if="$FILE_SRC" of="$CHUNK_FILE" bs=1048576 skip=$OFFSET_MB count=$CHUNK_SIZE 2> /dev/null
         local CHUNK_REAL_SIZE=$(file_size "$CHUNK_FILE")
 
+        if [[ $VERBOSE == 1 ]]; then
+            print " >> Uploading chunk $chunkNumber of $NUMBEROFCHUNK\n"
+        fi
+        
         #Uploading the chunk...
         echo > "$RESPONSE_FILE"
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL" 2> /dev/null
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST $CURL_PARAMETERS --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL" 
         #check_http_response not needed, because we have to retry the request in case of error
 
         #Check
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
             let OFFSET=$OFFSET+$CHUNK_REAL_SIZE
-            print "."
             UPLOAD_ERROR=0
+            if [[ $VERBOSE != 1 ]]; then
+                print "."
+            fi
+            ((chunkNumber=chunkNumber+1))
         else
-            print "*"
+            if [[ $VERBOSE != 1 ]]; then
+                print "*"
+            fi
             let UPLOAD_ERROR=$UPLOAD_ERROR+1
 
             #On error, the upload is retried for max 3 times
@@ -634,7 +662,6 @@ function db_chunked_upload_file
 
         #Check
         if grep -q "^HTTP/1.1 200 OK" "$RESPONSE_FILE"; then
-            print "."
             UPLOAD_ERROR=0
             break
         else
@@ -769,10 +796,10 @@ function db_download
 #$1 = Remote source file
 #$2 = Local destination file
 function db_download_file
-{
+{    
     local FILE_SRC=$(normalize_path "$1")
-    local FILE_DST=$(normalize_path "$2")
-
+    local FILE_DST=$(normalize_path "$2")   
+    
     if [[ $SHOW_PROGRESSBAR == 1 && $QUIET == 0 ]]; then
         CURL_PARAMETERS="-L --progress-bar"
         LINE_CR="\n"
@@ -787,6 +814,16 @@ function db_download_file
         return
     fi
 
+    # Checking if the file has the correct check sum
+    if [[ $TYPE != "ERR" ]]; then
+        sha_src=$(db_sha "$FILE_SRC")
+        sha_dst=$(db_sha_local "$FILE_DST")
+        if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
+            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
+            return
+        fi
+    fi    
+    
     #Creating the empty file, that for two reasons:
     #1) In this way I can check if the destination file is writable or not
     #2) Curl doesn't automatically creates files with 0 bytes size
@@ -1435,7 +1472,7 @@ function db_sha_local
     fi
 
     while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
-        dd if="$FILE_SRC" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
+        dd if="$FILE" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
         local SHA=$(shasum -a 256 "$CHUNK_FILE" | awk '{print $1}')
         SHA_CONCAT="${SHA_CONCAT}${SHA}"
 
@@ -1443,7 +1480,8 @@ function db_sha_local
         let SKIP=$SKIP+1
     done
 
-    echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\\\\\x\1/gI' | xargs printf | shasum -a 256 | awk '{print $1}'
+    shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
+    echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
 }
 
 ################
