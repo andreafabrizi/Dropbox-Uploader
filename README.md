@@ -134,11 +134,15 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-x &lt;FILENAME&gt;**  
+Ignores/excludes directories or files from syncing.
+-x filename -x directoryname. 
 
 **Examples:**
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload *.zip /
+    ./dropbox_uploader.sh -x .git upload ./project /
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
@@ -237,9 +241,17 @@ andrea@DropBox:/ServerBackup$ get notes.txt
 ```
 
 ## Running as Docker Container
-If you have installed docker on your system and don't want to deal with downloading the script and ensuring the correct curl versions etc., you can run Dropbox-Uploader via docker as well:
+First build the docker image:
 ```bash
-andrea@Dropbox:/$ docker run -it --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT> peez/dropbox-uploader <Arguments> 
+docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile -t <TAG>
+```
+or for RaspBerry:
+```bash
+docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile.pi -t <TAG>
+```
+then, you can run it as following:
+```bash
+docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT>:/workdir <TAG> <Arguments> 
 ```
 This will store the auth token information in the given local directory in `<LOCAL_CONFIG_PATH>`. To ensure access to your mounted directories it can be important to pass a UID and GID to the docker deamon (as stated in the example by the --user argument)
 

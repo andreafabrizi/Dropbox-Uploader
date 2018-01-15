@@ -38,6 +38,7 @@ QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
+EXCLUDE=()
 
 #Don't edit these...
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
@@ -86,7 +87,7 @@ if [[ ! -d "$TMP_DIR" ]]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:" opt; do
+while getopts ":qpskdhfx:" opt; do
     case $opt in
 
     f)
@@ -115,6 +116,10 @@ while getopts ":qpskdhf:" opt; do
 
     h)
       HUMAN_READABLE_SIZE=1
+    ;;
+
+    x)
+      EXCLUDE+=( $OPTARG )
     ;;
 
     \?)
@@ -279,6 +284,7 @@ function usage
     echo -e "\t-h            Show file sizes in human readable format"
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
+    echo -e "\t-x            Ignores/excludes directories or files from syncing. -x filename -x directoryname. example: -x .git"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -307,7 +313,7 @@ function check_http_response
         ;;
 
         #Missing CA certificates
-        60|58)
+        60|58|77)
             print "\nError: cURL is not able to performs peer SSL certificate verification.\n"
             print "Please, install the default ca-certificates bundle.\n"
             print "To do this in a Debian/Ubuntu based system, try:\n"
@@ -432,6 +438,14 @@ function db_upload
 {
     local SRC=$(normalize_path "$1")
     local DST=$(normalize_path "$2")
+
+    for j in "${EXCLUDE[@]}"
+        do :
+            if [[ $(echo "$SRC" | grep "$j" | wc -l) -gt 0 ]]; then
+                print "Skipping excluded file/dir: "$j
+                return
+            fi
+    done
 
     #Checking if the file/dir exists
     if [[ ! -e $SRC && ! -d $SRC ]]; then
@@ -1327,7 +1341,7 @@ function db_share
 function get_Share
 {
     local FILE_DST=$(normalize_path "$1")
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE_DST\"}" "$API_SHARE_LIST"
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE_DST\",\"direct_only\": true}" "$API_SHARE_LIST"
     check_http_response
 
     #Check
