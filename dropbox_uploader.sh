@@ -1735,4 +1735,9 @@ case $COMMAND in
 esac
 
 remove_temp_files
+
+if [[ $ERROR_STATUS -ne 0 ]]; then
+    echo "Some error occured. Please check the log."
+fi
+
 exit $ERROR_STATUS
