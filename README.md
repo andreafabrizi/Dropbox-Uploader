@@ -251,7 +251,7 @@ docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile.pi -t
 ```
 then, you can run it as following:
 ```bash
-pi@raspberrypi:/$ docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT>:/workdir <TAG> <Arguments> 
+docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT>:/workdir <TAG> <Arguments> 
 ```
 This will store the auth token information in the given local directory in `<LOCAL_CONFIG_PATH>`. To ensure access to your mounted directories it can be important to pass a UID and GID to the docker deamon (as stated in the example by the --user argument)
 
