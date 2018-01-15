@@ -134,11 +134,15 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-x &lt;FILENAME&gt;**  
+Ignores/excludes directories or files from syncing.
+-x filename -x directoryname. 
 
 **Examples:**
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload *.zip /
+    ./dropbox_uploader.sh -x .git upload ./project /
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
@@ -236,16 +240,18 @@ andrea@Dropbox:/$ ls
 andrea@DropBox:/ServerBackup$ get notes.txt
 ```
 
-## Building Docker image for Raspberry Pi
-You can build the docker image for a Raspberry Pi:
-```bash
-pi@raspberrypi:/$ docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile.pi -t <TAG>
-```
-
 ## Running as Docker Container
-Run the container with:
+First build the docker image:
 ```bash
-pi@raspberrypi:/$ docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT> <TAG> <Arguments> 
+docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile -t <TAG>
+```
+or for RaspBerry:
+```bash
+docker build https://github.com/sircuri/Dropbox-Uploader.git -f Dockerfile.pi -t <TAG>
+```
+then, you can run it as following:
+```bash
+pi@raspberrypi:/$ docker run -i --rm --user=$(id -u):$(id -g) -v <LOCAL_CONFIG_PATH>:/config -v <YOUR_DATA_DIR_MOUNT>:/workdir <TAG> <Arguments> 
 ```
 This will store the auth token information in the given local directory in `<LOCAL_CONFIG_PATH>`. To ensure access to your mounted directories it can be important to pass a UID and GID to the docker deamon (as stated in the example by the --user argument)
 
@@ -259,5 +265,5 @@ To use a proxy, just set the mentioned environment variables via the docker `-e`
 ## Donations
 
  If you want to support this project, please consider donating:
- * PayPal: andrea.fabrizi@gmail.com
+ * PayPal: https://www.paypal.me/AndreaFabrizi83
  * BTC: 1JHCGAMpKqUwBjcT3Kno9Wd5z16K6WKPqG
