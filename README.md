@@ -134,11 +134,15 @@ Show cURL progress meter
 * **-k**  
 Doesn't check for SSL certificates (insecure)
 
+* **-x &lt;FILENAME&gt;**  
+Ignores/excludes directories or files from syncing.
+-x filename -x directoryname. 
 
 **Examples:**
 ```bash
     ./dropbox_uploader.sh upload /etc/passwd /myfiles/passwd.old
     ./dropbox_uploader.sh upload *.zip /
+    ./dropbox_uploader.sh -x .git upload ./project /
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
