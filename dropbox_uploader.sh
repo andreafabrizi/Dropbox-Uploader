@@ -761,7 +761,13 @@ function db_download
         fi
 
         OUT_FILE=$(db_list_outfile "$SRC_REQ")
-
+        if [ $? -ne 0 ]; then
+            # When db_list_outfile fail, the error message is OUT_FILE
+            print "$OUT_FILE\n"
+            ERROR_STATUS=1
+            return
+        fi
+            
         #For each entry...
         while read -r line; do
 
