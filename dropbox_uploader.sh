@@ -1567,9 +1567,9 @@ fi
 #### START  ####
 ################
 
-COMMAND=${*:$OPTIND:1}
-ARG1=${*:$OPTIND+1:1}
-ARG2=${*:$OPTIND+2:1}
+COMMAND="${*:$OPTIND:1}"
+ARG1="${*:$OPTIND+1:1}"
+ARG2="${*:$OPTIND+2:1}"
 
 let argnum=$#-$OPTIND
 
@@ -1582,10 +1582,10 @@ case $COMMAND in
             usage
         fi
 
-        FILE_DST=${*:$#:1}
+        FILE_DST="${*:$#:1}"
 
         for (( i=OPTIND+1; i<$#; i++ )); do
-            FILE_SRC=${*:$i:1}
+            FILE_SRC="${*:$i:1}"
             db_upload "$FILE_SRC" "/$FILE_DST"
         done
 
@@ -1597,8 +1597,8 @@ case $COMMAND in
             usage
         fi
 
-        FILE_SRC=$ARG1
-        FILE_DST=$ARG2
+        FILE_SRC="$ARG1"
+        FILE_DST="$ARG2"
 
         db_download "/$FILE_SRC" "$FILE_DST"
 
@@ -1611,7 +1611,7 @@ case $COMMAND in
         fi
 
         URL=$ARG1
-        FILE_DST=$ARG2
+        FILE_DST="$ARG2"
 
         db_saveurl "$URL" "/$FILE_DST"
 
@@ -1623,7 +1623,7 @@ case $COMMAND in
             usage
         fi
 
-        FILE_DST=$ARG1
+        FILE_DST="$ARG1"
 
         db_share "/$FILE_DST"
 
@@ -1647,7 +1647,7 @@ case $COMMAND in
             usage
         fi
 
-        FILE_DST=$ARG1
+        FILE_DST="$ARG1"
 
         db_delete "/$FILE_DST"
 
@@ -1659,8 +1659,8 @@ case $COMMAND in
             usage
         fi
 
-        FILE_SRC=$ARG1
-        FILE_DST=$ARG2
+        FILE_SRC="$ARG1"
+        FILE_DST="$ARG2"
 
         db_move "/$FILE_SRC" "/$FILE_DST"
 
@@ -1672,8 +1672,8 @@ case $COMMAND in
             usage
         fi
 
-        FILE_SRC=$ARG1
-        FILE_DST=$ARG2
+        FILE_SRC="$ARG1"
+        FILE_DST="$ARG2"
 
         db_copy "/$FILE_SRC" "/$FILE_DST"
 
@@ -1685,7 +1685,7 @@ case $COMMAND in
             usage
         fi
 
-        DIR_DST=$ARG1
+        DIR_DST="$ARG1"
 
         db_mkdir "/$DIR_DST"
 
@@ -1705,7 +1705,7 @@ case $COMMAND in
 
     list)
 
-        DIR_DST=$ARG1
+        DIR_DST="$ARG1"
 
         #Checking DIR_DST
         if [[ $DIR_DST == "" ]]; then
@@ -1718,7 +1718,7 @@ case $COMMAND in
 
     monitor)
 
-        DIR_DST=$ARG1
+        DIR_DST="$ARG1"
         TIMEOUT=$ARG2
 
         #Checking DIR_DST
