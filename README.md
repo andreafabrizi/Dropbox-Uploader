@@ -265,5 +265,5 @@ To use a proxy, just set the mentioned environment variables via the docker `-e`
 ## Donations
 
  If you want to support this project, please consider donating:
- * PayPal: https://www.paypal.me/AndreaFabrizi83
+ * PayPal: https://paypal.me/AndreaF83
  * BTC: 1JHCGAMpKqUwBjcT3Kno9Wd5z16K6WKPqG
