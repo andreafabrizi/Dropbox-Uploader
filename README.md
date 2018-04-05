@@ -163,6 +163,7 @@ Ignores/excludes directories or files from syncing.
 * OpenWRT
 * Chrome OS
 * OpenBSD
+* Termux
 
 If you have successfully tested this script on others systems or platforms please let me know!
 
