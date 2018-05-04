@@ -217,7 +217,7 @@ Andrea Fabrizi - andrea.fabrizi@gmail.com
 
 Type help for the list of the available commands.
 
-andrea@Dropbox:/$ ls
+andrea@Dropbox:/$ ls -l
  [D] 0       Apps
  [D] 0       Camera Uploads
  [D] 0       Public
