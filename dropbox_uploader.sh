@@ -87,7 +87,7 @@ if [[ ! -d "$TMP_DIR" ]]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpskdhfx:" opt; do
+while getopts ":qpskdhf:x:" opt; do
     case $opt in
 
     f)
