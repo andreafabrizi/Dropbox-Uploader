@@ -598,8 +598,6 @@ function db_chunked_upload_file
         CURL_PARAMETERS="-L -s"
     fi
 
-
-
     local FILE_SIZE=$(file_size "$FILE_SRC")
     local OFFSET=0
     local UPLOAD_ID=""
@@ -1484,16 +1482,27 @@ function db_sha_local
     local OFFSET=0
     local SKIP=0
     local SHA_CONCAT=""
+    local IS_SHA256SUM=0
 
-    which shasum > /dev/null
+    which shasum > /dev/null 2>&1
     if [[ $? != 0 ]]; then
-        echo "ERR"
-        return
+        which sha256sum > /dev/null 2>&1
+        if [[ $? != 0 ]]; then
+            echo "ERR"
+            return
+        else
+            IS_SHA256SUM=1
+        fi
     fi
 
     while ([[ $OFFSET -lt "$FILE_SIZE" ]]); do
         dd if="$FILE" of="$CHUNK_FILE" bs=4194304 skip=$SKIP count=1 2> /dev/null
-        local SHA=$(shasum -a 256 "$CHUNK_FILE" | awk '{print $1}')
+        if (( $IS_SHA256SUM  == 1 ))
+        then
+            local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
+        else
+            local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
+        fi 
         SHA_CONCAT="${SHA_CONCAT}${SHA}"
 
         let OFFSET=$OFFSET+4194304
@@ -1501,7 +1510,12 @@ function db_sha_local
     done
 
     shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
-    echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
+    if (( $IS_SHA256SUM  == 1 ))
+    then
+        echo -ne $shaHex | sha256sum | awk '{print $1}'
+    else 
+        echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
+    fi
 }
 
 ################
