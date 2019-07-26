@@ -37,6 +37,7 @@ DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
+SKIP_CHECKSUM=0
 ERROR_STATUS=0
 EXCLUDE=()
 
@@ -87,7 +88,7 @@ if [[ ! -d "$TMP_DIR" ]]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:x:" opt; do
+while getopts ":qpsckdhf:x:" opt; do
     case $opt in
 
     f)
@@ -112,6 +113,9 @@ while getopts ":qpskdhf:x:" opt; do
 
     s)
       SKIP_EXISTING_FILES=1
+    ;;
+    c)
+      SKIP_CHECKSUM=1
     ;;
 
     h)
@@ -279,6 +283,7 @@ function usage
     echo -e "\nOptional parameters:"
     echo -e "\t-f <FILENAME> Load the configuration file from a specific file"
     echo -e "\t-s            Skip already existing files when download/upload. Default: Overwrite"
+    echo -e "\t-c            Skip checksum comparison when download/upload. Default: do checksum"
     echo -e "\t-d            Enable DEBUG mode"
     echo -e "\t-q            Quiet mode. Don't show messages"
     echo -e "\t-h            Show file sizes in human readable format"
@@ -533,7 +538,7 @@ function db_upload_file
     fi
 
     # Checking if the file has the correct check sum
-    if [[ $TYPE != "ERR" ]]; then
+    if [[ $TYPE != "ERR" && $SKIP_CHECKSUM == 0 ]]; then
         sha_src=$(db_sha_local "$FILE_SRC")
         sha_dst=$(db_sha "$FILE_DST")
         if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
@@ -836,7 +841,7 @@ function db_download_file
         fi
         
         # Checking if the file has the correct check sum
-        if [[ $TYPE != "ERR" ]]; then
+        if [[ $TYPE != "ERR" && $SKIP_CHECKSUM == 0 ]]; then
             sha_src=$(db_sha "$FILE_SRC")
             sha_dst=$(db_sha_local "$FILE_DST")
             if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
