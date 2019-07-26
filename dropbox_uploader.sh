@@ -829,18 +829,20 @@ function db_download_file
     fi
 
     #Checking if the file already exists
-    if [[ -e $FILE_DST && $SKIP_EXISTING_FILES == 1 ]]; then
-        print " > Skipping already existing file \"$FILE_DST\"\n"
-        return
-    fi
-
-    # Checking if the file has the correct check sum
-    if [[ $TYPE != "ERR" ]]; then
-        sha_src=$(db_sha "$FILE_SRC")
-        sha_dst=$(db_sha_local "$FILE_DST")
-        if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
-            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
+    if [[ -e $FILE_DST ]]; then
+        if [[ $SKIP_EXISTING_FILES == 1 ]]; then
+            print " > Skipping already existing file \"$FILE_DST\"\n"
             return
+        fi
+        
+        # Checking if the file has the correct check sum
+        if [[ $TYPE != "ERR" ]]; then
+            sha_src=$(db_sha "$FILE_SRC")
+            sha_dst=$(db_sha_local "$FILE_DST")
+            if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
+                print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
+                return
+            fi
         fi
     fi
 
