@@ -336,6 +336,10 @@ while (true); do
 
     #Reading command from shell
     read -e -p "$username@Dropbox:$CWD$ " input
+    if [ $? == 1 ]; then
+	    echo ""
+	    break
+    fi
 
     #Tokenizing command
     eval tokens=($input)
