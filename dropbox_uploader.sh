@@ -770,11 +770,11 @@ function db_download
 
         #For each entry...
         while read -r line; do
-
-            local FILE=$(echo $line | awk -F '[:;]' '{print $1}')
-            local TYPE=$(echo $line | awk -F '[:;]' '{print $2}')
-            local SIZE=$(echo $line | awk -F '[:;]' '{print $3}')
-            local HASH=$(echo $line | awk -F '[:;]' '{print $4}')
+            IFS=':;' read -r -a METADATA <<< "$line"
+            local FILE="${METADATA[0]}"
+            local TYPE="${METADATA[1]}"
+            local SIZE="${METADATA[2]}"
+            local HASH="${METADATA[3]}"
 
             #Removing unneeded /
             FILE=${FILE##*/}
