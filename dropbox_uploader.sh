@@ -1501,8 +1501,8 @@ function db_sha_local
         then
             local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
         else
-            local SHA=$(sha256sum "$CHUNK_FILE" | awk '{print $1}')
-        fi 
+            local SHA=$(shasum -a 256 "$CHUNK_FILE" | awk '{print $1}')
+        fi
         SHA_CONCAT="${SHA_CONCAT}${SHA}"
 
         let OFFSET=$OFFSET+4194304
@@ -1513,7 +1513,7 @@ function db_sha_local
     if (( $IS_SHA256SUM  == 1 ))
     then
         echo -ne $shaHex | sha256sum | awk '{print $1}'
-    else 
+    else
         echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
     fi
 }
