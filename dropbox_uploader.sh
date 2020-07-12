@@ -860,6 +860,7 @@ function db_download_file
 
     #Check
     if grep -q "^HTTP/[12].* 200" "$RESPONSE_FILE"; then
+        touch -d "$(db_client_modified "$FILE_SRC")" "$FILE_DST"
         print "DONE\n"
     else
         print "FAILED\n"
@@ -1446,6 +1447,25 @@ function db_search
 
     done < "$RESPONSE_FILE"
 
+}
+
+#Query the client_modified timestamp of a remote file
+#$1 = Remote file
+function db_client_modified
+{
+    local FILE=$(normalize_path "$1")
+
+    if [[ $FILE == "/" ]]; then
+        echo "ERR"
+        return
+    fi
+
+    #Checking if it's a file or a directory and get the client_modified timestamp
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$FILE\"}" "$API_METADATA_URL" 2> /dev/null
+    check_http_response
+
+    local CLIENT_MODIFIED=$(sed -n 's/.*"client_modified": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+    echo "$CLIENT_MODIFIED"
 }
 
 #Query the sha256-dropbox-sum of a remote file
