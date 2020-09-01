@@ -32,13 +32,27 @@ CHUNK_SIZE=50
 #CURL_BIN="/usr/bin/curl"
 
 #Default values
-TMP_DIR="/tmp"
 DEBUG=0
 QUIET=0
 SHOW_PROGRESSBAR=0
 SKIP_EXISTING_FILES=0
 ERROR_STATUS=0
 EXCLUDE=()
+
+#Check the shell
+if [ -z "$BASH_VERSION" ]; then
+    echo -e "Error: this script requires the BASH shell!"
+    exit 1
+fi
+
+#Create and check temp folder
+TMP_DIR=$(mktemp -d)
+if [[ ! -d "$TMP_DIR" ]]; then
+    echo -e "Error: the temporary folder $TMP_DIR doesn't exists!"
+    echo -e "Please ensure that the mktemp command can create a valid temporary folder to use."
+    exit 1
+fi
+
 
 #Don't edit these...
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
@@ -70,21 +84,8 @@ VERSION="1.0"
 
 umask 077
 
-#Check the shell
-if [ -z "$BASH_VERSION" ]; then
-    echo -e "Error: this script requires the BASH shell!"
-    exit 1
-fi
-
 shopt -s nullglob #Bash allows filename patterns which match no files to expand to a null string, rather than themselves
 shopt -s dotglob  #Bash includes filenames beginning with a "." in the results of filename expansion
-
-#Check temp folder
-if [[ ! -d "$TMP_DIR" ]]; then
-    echo -e "Error: the temporary folder $TMP_DIR doesn't exists!"
-    echo -e "Please edit this script and set the TMP_DIR variable to a valid temporary folder to use."
-    exit 1
-fi
 
 #Look for optional config file parameter
 while getopts ":qpskdhf:x:" opt; do
@@ -201,9 +202,7 @@ function utime
 function remove_temp_files
 {
     if [[ $DEBUG == 0 ]]; then
-        rm -fr "$RESPONSE_FILE"
-        rm -fr "$CHUNK_FILE"
-        rm -fr "$TEMP_FILE"
+	rm -fr $TMP_DIR
     fi
 }
 
