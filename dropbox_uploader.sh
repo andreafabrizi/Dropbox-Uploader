@@ -53,6 +53,9 @@ if [[ ! -d "$TMP_DIR" ]]; then
     exit 1
 fi
 
+# Make sure we exit on signals and that the temp folder gets removed even if the script exits abnormally.
+trap "exit 1" HUP INT PIPE QUIT TERM
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 #Don't edit these...
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
@@ -202,7 +205,7 @@ function utime
 function remove_temp_files
 {
     if [[ $DEBUG == 0 ]]; then
-	rm -fr $TMP_DIR
+	rm -fr "$TMP_DIR"
     fi
 }
 
