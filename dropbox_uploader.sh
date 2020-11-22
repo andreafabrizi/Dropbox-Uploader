@@ -41,6 +41,8 @@ ERROR_STATUS=0
 EXCLUDE=()
 
 #Don't edit these...
+API_OAUTH_TOKEN="https://api.dropbox.com/oauth2/token"
+API_OAUTH_AUTHORIZE="https://www.dropbox.com/oauth2/authorize"
 API_LONGPOLL_FOLDER="https://notify.dropboxapi.com/2/files/list_folder/longpoll"
 API_CHUNKED_UPLOAD_START_URL="https://content.dropboxapi.com/2/files/upload_session/start"
 API_CHUNKED_UPLOAD_FINISH_URL="https://content.dropboxapi.com/2/files/upload_session/finish"
@@ -1511,21 +1513,19 @@ function db_sha_local
 #CHECKING FOR AUTH FILE
 if [[ -e $CONFIG_FILE ]]; then
 
-    #Loading data... and change old format config if necesary.
-    source "$CONFIG_FILE" 2>/dev/null || {
-        sed -i'' 's/:/=/' "$CONFIG_FILE" && source "$CONFIG_FILE" 2>/dev/null
-    }
+    #Loading data...
+    source "$CONFIG_FILE" 2>/dev/null
 
     #Checking if it's still a v1 API configuration file
-    if [[ $APPKEY != "" || $APPSECRET != "" ]]; then
-        echo -ne "The config file contains the old deprecated v1 oauth tokens.\n"
+    if [[ $CONFIGFILE_VERSION != "2.0" ]]; then
+        echo -ne "The config file contains the old deprecated v1 or v2 oauth tokens.\n"
         echo -ne "Please run again the script and follow the configuration wizard. The old configuration file has been backed up to $CONFIG_FILE.old\n"
         mv "$CONFIG_FILE" "$CONFIG_FILE".old
         exit 1
     fi
 
     #Checking loaded data
-    if [[ $OAUTH_ACCESS_TOKEN = "" ]]; then
+    if [[ $OAUTH_APP_KEY = "" || $OAUTH_APP_SECRET = "" || $OAUTH_REFRESH_TOKEN = "" ]]; then
         echo -ne "Error loading data from $CONFIG_FILE...\n"
         echo -ne "It is recommended to run $0 unlink\n"
         remove_temp_files
@@ -1534,7 +1534,6 @@ if [[ -e $CONFIG_FILE ]]; then
 
 #NEW SETUP...
 else
-
     echo -ne "\n This is the first time you run this script, please follow the instructions:\n\n"
     echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
     echo -ne " 2) Click on \"Create App\", then select \"Dropbox API app\"\n"
@@ -1543,25 +1542,47 @@ else
 
     echo -ne " Now, click on the \"Create App\" button.\n\n"
 
-    echo -ne " When your new App is successfully created, please click on the Generate button\n"
-    echo -ne " under the 'Generated access token' section, then copy and paste the new access token here:\n\n"
+    echo -ne " When your new App is successfully created, please provide the following information:\n"
+    
+    echo -ne " App key: "
+    read -r OAUTH_APP_KEY
 
-    echo -ne " # Access token: "
-    read -r OAUTH_ACCESS_TOKEN
+    echo -ne " App secret: "
+    read -r OAUTH_APP_SECRET
 
-    echo -ne "\n > The access token is $OAUTH_ACCESS_TOKEN. Looks ok? [y/N]: "
+    url="${API_OAUTH_AUTHORIZE}?client_id=${OAUTH_APP_KEY}&token_access_type=offline&response_type=code"
+    echo -ne "  Open the following URL in your Browser and allow suggested permissions: ${url}\n"
+    echo -ne " Please provide the access code: "
+    read -r access_code
+
+    echo -ne "\n > App key: ${OAUTH_APP_KEY}\n" 
+    echo -ne " > App secret: '${OAUTH_APP_SECRET}\n"
+    echo -ne " > Access code: '${access_code}'. Looks ok? [y/N]: "
     read -r answer
     if [[ $answer != "y" ]]; then
         remove_temp_files
         exit 1
     fi
 
-    echo "OAUTH_ACCESS_TOKEN=$OAUTH_ACCESS_TOKEN" > "$CONFIG_FILE"
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES $API_OAUTH_TOKEN -d code=$access_code -d grant_type=authorization_code -u $OAUTH_APP_KEY:$OAUTH_APP_SECRET -o "$RESPONSE_FILE" 2>/dev/null
+    check_http_response
+    OAUTH_REFRESH_TOKEN=$(sed -n 's/.*"refresh_token": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+
+    echo "CONFIGFILE_VERSION=2.0" > "$CONFIG_FILE"
+    echo "OAUTH_APP_KEY=$OAUTH_APP_KEY" >> "$CONFIG_FILE"
+    echo "OAUTH_APP_SECRET=$OAUTH_APP_SECRET" >> "$CONFIG_FILE"
+    echo "OAUTH_REFRESH_TOKEN=$OAUTH_REFRESH_TOKEN" >> "$CONFIG_FILE"
     echo "   The configuration has been saved."
 
     remove_temp_files
     exit 0
 fi
+
+# GET ACCESS TOKEN
+$CURL_BIN $CURL_ACCEPT_CERTIFICATES $API_OAUTH_TOKEN -d grant_type=refresh_token -d refresh_token=$OAUTH_REFRESH_TOKEN -u $OAUTH_APP_KEY:$OAUTH_APP_SECRET -o "$RESPONSE_FILE" 2>/dev/null
+check_http_response
+OAUTH_ACCESS_TOKEN=$(sed -n 's/.*"access_token": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
+
 
 ################
 #### START  ####
