@@ -363,14 +363,9 @@ function ensure_accesstoken
 {
     local now=`date +%s`
 
-    echo "now: $now"
-    echo "expires: $OAUTH_ACCESS_TOKEN_EXPIRE"
     if [[ $OAUTH_ACCESS_TOKEN_EXPIRE > $now ]]; then
-	 echo "Not expired"
 	 return
     fi
-
-    echo "Creating new token"
 
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $API_OAUTH_TOKEN -d grant_type=refresh_token -d refresh_token=$OAUTH_REFRESH_TOKEN -u $OAUTH_APP_KEY:$OAUTH_APP_SECRET -o "$RESPONSE_FILE" 2>/dev/null
     check_http_response
