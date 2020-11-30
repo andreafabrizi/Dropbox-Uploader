@@ -1577,14 +1577,16 @@ if [[ -e $CONFIG_FILE ]]; then
 #NEW SETUP...
 else
     echo -ne "\n This is the first time you run this script, please follow the instructions:\n\n"
+    echo -ne "note: Dropropbox will change there API from 30.9.2021.\n"
+    echo -ne "When using dropbox_uploader.sh configured in the past with the old API, have a look at README.md, before continue.\n\n"
     echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
-    echo -ne " 2) Click on \"Create App\", then select \"Dropbox API app\"\n"
-    echo -ne " 3) Now go on with the configuration, choosing the app permissions and access restrictions to your DropBox folder\n"
-    echo -ne " 4) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM)\n\n"
-
+    echo -ne " 2) Click on \"Create App\", then select \"Choose an API: Scoped Access\"\n"
+    echo -ne " 3) \"Choose the type of access you need: App folder\"\n"
+    echo -ne " 4) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM), must be uniqe\n\n"
     echo -ne " Now, click on the \"Create App\" button.\n\n"
-
-    echo -ne " When your new App is successfully created, please provide the following information:\n"
+    echo -ne " 5) Now the new configuration is opened, switch to tab \"permissions\" and check \"files.metadata.read/write\" and \"files.content.read/write\"\n"
+    echo -ne " Now, click on the \"Submit\" button.\n\n"
+    echo -ne " 6) Now to tab \"settings\" and provide the following information:\n"
     
     echo -ne " App key: "
     read -r OAUTH_APP_KEY
@@ -1818,7 +1820,7 @@ esac
 remove_temp_files
 
 if [[ $ERROR_STATUS -ne 0 ]]; then
-    echo "Some error occured. Please check the log."
+    echo "Some error occured. rerun the script with \"-d\" option and check the output and logfile: $RESPONSE_FILE."
 fi
 
 exit $ERROR_STATUS
