@@ -1577,8 +1577,8 @@ if [[ -e $CONFIG_FILE ]]; then
 #NEW SETUP...
 else
     echo -ne "\n This is the first time you run this script, please follow the instructions:\n\n"
-    echo -ne "note: Dropropbox will change there API from 30.9.2021.\n"
-    echo -ne "When using dropbox_uploader.sh configured in the past with the old API, have a look at README.md, before continue.\n\n"
+    echo -ne "(note: Dropropbox will change there API from 30.9.2021.\n"
+    echo -ne "When using dropbox_uploader.sh configured in the past with the old API, have a look at README.md, before continue.)\n\n"
     echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
     echo -ne " 2) Click on \"Create App\", then select \"Choose an API: Scoped Access\"\n"
     echo -ne " 3) \"Choose the type of access you need: App folder\"\n"
