@@ -370,7 +370,7 @@ function ensure_accesstoken
     $CURL_BIN $CURL_ACCEPT_CERTIFICATES $API_OAUTH_TOKEN -d grant_type=refresh_token -d refresh_token=$OAUTH_REFRESH_TOKEN -u $OAUTH_APP_KEY:$OAUTH_APP_SECRET -o "$RESPONSE_FILE" 2>/dev/null
     check_http_response
     OAUTH_ACCESS_TOKEN=$(sed -n 's/.*"access_token": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
-    
+
     local expires_in=$(sed -n 's/.*"expires_in": \([0-9]*\).*/\1/p' "$RESPONSE_FILE")
 
     # one minute safety buffer
@@ -1544,7 +1544,15 @@ function db_sha_local
         let SKIP=$SKIP+1
     done
 
-    shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
+    if [[ "`uname -s`" = "Darwin" ]]
+    then
+    		# sed for macOS will give an error "bad flag in substitute command: 'I'"
+    		# when using the original syntax. This option works instead.
+		shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-Fa-f]\{2\}\)/\\x\1/g')
+    else
+	    shaHex=$(echo $SHA_CONCAT | sed 's/\([0-9A-F]\{2\}\)/\\x\1/gI')
+	fi
+
     echo -ne $shaHex | shasum -a 256 | awk '{print $1}'
 }
 
@@ -1587,7 +1595,7 @@ else
     echo -ne " 5) Now the new configuration is opened, switch to tab \"permissions\" and check \"files.metadata.read/write\" and \"files.content.read/write\"\n"
     echo -ne " Now, click on the \"Submit\" button.\n\n"
     echo -ne " 6) Now to tab \"settings\" and provide the following information:\n"
-    
+
     echo -ne " App key: "
     read -r OAUTH_APP_KEY
 
@@ -1599,7 +1607,7 @@ else
     echo -ne " Please provide the access code: "
     read -r access_code
 
-    echo -ne "\n > App key: ${OAUTH_APP_KEY}\n" 
+    echo -ne "\n > App key: ${OAUTH_APP_KEY}\n"
     echo -ne " > App secret: '${OAUTH_APP_SECRET}\n"
     echo -ne " > Access code: '${access_code}'. Looks ok? [y/N]: "
     read -r answer
