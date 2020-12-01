@@ -264,11 +264,11 @@ To use a proxy, just set the mentioned environment variables via the docker `-e`
 [thunar-dropbox](https://github.com/mDfRg/Thunar-Dropbox-Uploader-plugin/tree/thunar-dropbox/plugins/thunar): A simple extension to Dropbox Uploader that provides a convenient method to share your Dropbox files with one click!
 
 ## Upgrading from old dropbox API
-Starting September 30th, 2021, the Dropbox is usable with new API
-dropbox_uploader.sh configurations made with the old API will not longer work.
-then reconfigure dropbox_uploader.sh:
-*  goto https://www.dropbox.com/account/connected_apps expand youre configuration and click the button 'Disconnect'
-*  rename or delete youre configuration file .dropbox_uploader
+Starting September 30th, 2021, Dropbox is updating their API (OAuth scopes, PKCE, refresh tokens, and short-lived access tokens)
+dropbox_uploader.sh configurations made with the old API will not longer work after that date.
+Reconfigure dropbox_uploader.sh:
+*  Go to https://www.dropbox.com/account/connected_apps, expand your configuration, and click the button 'Disconnect'
+*  Rename or delete your configuration file .dropbox_uploader
 
 ## Donations
 
