@@ -265,6 +265,9 @@ Using the script with docker makes it also possible to run the script even on wi
 
 To use a proxy, just set the mentioned environment variables via the docker `-e` parameter.
 
+### Prebuilt containers
+* Rpi4 (ARM/v8) [ARM/V8 Dropbox Uploader on Dockerhub](https://hub.docker.com/layers/ummarbhutta/dropboxuploader/1.1-armv8/images/sha256-16312dea974c08ada6c47156c13b5f09ffb8f2293f787a543269398daa11a396?context=explore)
+
 ## Related projects
 [thunar-dropbox](https://github.com/mDfRg/Thunar-Dropbox-Uploader-plugin/tree/thunar-dropbox/plugins/thunar): A simple extension to Dropbox Uploader that provides a convenient method to share your Dropbox files with one click!
 
