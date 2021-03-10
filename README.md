@@ -102,6 +102,9 @@ Download a file from an URL to a Dropbox folder directly (the file is NOT downlo
 * **search** &lt;QUERY&gt;
 Search for a specific pattern on Dropbox and returns the list of matching files or directories
 
+* **meta** &lt;REMOTE_FILE&gt;
+Get metadata of provided file. Prints Lastmodfied date/time and size in bytes. Not valid for folders
+
 * **info**  
 Print some info about your Dropbox account
 
@@ -146,6 +149,7 @@ Ignores/excludes directories or files from syncing.
     ./dropbox_uploader.sh download /backup.zip
     ./dropbox_uploader.sh delete /backup.zip
     ./dropbox_uploader.sh mkdir /myDir/
+    ./dropbox_uploader.sh meta /path/to/remotefile.zip
     ./dropbox_uploader.sh upload "My File.txt" "My File 2.txt"
     ./dropbox_uploader.sh share "My File.txt"
     ./dropbox_uploader.sh list
@@ -158,6 +162,7 @@ Ignores/excludes directories or files from syncing.
 * MacOSX
 * Windows/Cygwin
 * Raspberry Pi
+* Raspberry Pi 4 (64-bit Debian OS)
 * QNAP
 * iOS
 * OpenWRT
