@@ -1249,7 +1249,7 @@ function db_list
 
         if [[ $TYPE == "folder" ]]; then
             FILE=$(echo -e "$FILE")
-            $PRINTF " [D] %${padding}s %s %s\n" "$SIZE" "$SMOD" "$FILE"
+            $PRINTF " [D] %${padding}s %s %s\n" "$SIZE" "                    " "$FILE"
         fi
 
     done < "$OUT_FILE"
