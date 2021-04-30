@@ -2,7 +2,7 @@
 #
 # Dropbox Uploader
 #
-# Copyright (C) 2010-2017 Andrea Fabrizi <andrea.fabrizi@gmail.com>
+# Copyright (C) 2010-2021 Andrea Fabrizi <andrea.fabrizi@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1118,7 +1118,7 @@ function db_mkdir
     #Check
     if grep -q "^HTTP/[12].* 200" "$RESPONSE_FILE"; then
         print "DONE\n"
-    elif grep -q "^HTTP/[12].* 403" "$RESPONSE_FILE"; then
+    elif grep -q "{\"error_summary\": \"path/conflict/folder/" "$RESPONSE_FILE"; then
         print "ALREADY EXISTS\n"
     else
         print "FAILED\n"

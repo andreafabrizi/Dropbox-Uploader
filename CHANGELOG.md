@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## Version _._ - __ ___ 20__
+* Fix issue #371: Creating directory exits 1 if it already exists
+
 ## Version 1.0 - 10 Aug 2016
 * Add search option
 * Increase chunk size to 50MB for better performance
