@@ -1,5 +1,5 @@
-FROM alpine:3.5
-MAINTAINER peez@stiffi.de
+FROM arm64v8/alpine:3.13
+MAINTAINER ummar_bhutta@yahoo.com
 
 RUN apk add --no-cache bash curl
 COPY / /opt/dropbox_uploader

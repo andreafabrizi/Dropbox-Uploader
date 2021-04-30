@@ -69,7 +69,7 @@ CHUNK_FILE="$TMP_DIR/du_chunk_$RANDOM"
 TEMP_FILE="$TMP_DIR/du_tmp_$RANDOM"
 AUTH_ACCESS_TOKEN_EXPIRE="0"
 BIN_DEPS="sed basename date grep stat dd mkdir"
-VERSION="1.0"
+VERSION="1.1"
 
 umask 077
 
@@ -275,6 +275,7 @@ function usage
     echo -e "\t share    <REMOTE_FILE>"
     echo -e "\t saveurl  <URL> <REMOTE_DIR>"
     echo -e "\t search   <QUERY>"
+    echo -e "\t meta     <REMOTE_FILE>"
     echo -e "\t info"
     echo -e "\t space"
     echo -e "\t unlink"
@@ -1011,6 +1012,44 @@ function db_account_space
         print "FAILED\n"
         ERROR_STATUS=1
     fi
+}
+
+#Get metadata of file
+#$1 Source path (File)
+#Returns Lastmodified(DateTime) and Size
+function db_getmeta
+{
+    local SRC=$(normalize_path "$1")
+
+    print "Dropbox Uploader v$VERSION\n\n"
+    print " > Getting meta data for $SRC\n\n"
+
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$SRC\",\"include_media_info\": false,\"include_deleted\": false,\"include_has_explicit_shared_members\": false}" "$API_METADATA_URL" 2> /dev/null
+    check_http_response
+
+    #Check
+    if grep -q "^HTTP/[12].* 200" "$RESPONSE_FILE"; then
+
+        type=$(sed -n 's/{".tag": *"*\([^"]*\)"*.*/\1/p' "$RESPONSE_FILE")
+        
+
+        if [[ $type = "file" ]]; then
+
+            client_modified=$(sed -n 's/.* "server_modified": *"\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}Z\)".*/\1/p' "$RESPONSE_FILE")
+            echo -e "LastModified:\t$client_modified"
+
+            size=$(sed -n 's/.*"size": *\([0-9]*\).*/\1/p' "$RESPONSE_FILE")
+            echo -e "Size:\t$size"
+        else
+            print "FAILED: Only files are supported.\n"
+            ERROR_STATUS=1    
+        fi
+
+    else
+        print "FAILED\n"
+        ERROR_STATUS=1
+    fi
+
 }
 
 #Account unlink
@@ -1810,6 +1849,18 @@ case $COMMAND in
     unlink)
 
         db_unlink
+
+    ;;
+
+    meta)
+
+        if [[ $argnum -lt 1 ]]; then
+            usage
+        fi
+
+        FILE_SRC="$ARG1"
+
+        db_getmeta "/$FILE_SRC"
 
     ;;
 
