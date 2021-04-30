@@ -1590,7 +1590,7 @@ else
     echo -ne " 1) Open the following URL in your Browser, and log in using your account: $APP_CREATE_URL\n"
     echo -ne " 2) Click on \"Create App\", then select \"Choose an API: Scoped Access\"\n"
     echo -ne " 3) \"Choose the type of access you need: App folder\"\n"
-    echo -ne " 4) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM), must be uniqe\n\n"
+    echo -ne " 4) Enter the \"App Name\" that you prefer (e.g. MyUploader$RANDOM$RANDOM$RANDOM), must be unique\n\n"
     echo -ne " Now, click on the \"Create App\" button.\n\n"
     echo -ne " 5) Now the new configuration is opened, switch to tab \"permissions\" and check \"files.metadata.read/write\" and \"files.content.read/write\"\n"
     echo -ne " Now, click on the \"Submit\" button.\n\n"
