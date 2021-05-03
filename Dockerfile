@@ -1,5 +1,6 @@
-FROM alpine:3.5
-MAINTAINER peez@stiffi.de
+FROM alpine:3.13
+
+LABEL maintainer="peez@stiffi.de"
 
 RUN apk add --no-cache bash curl
 COPY / /opt/dropbox_uploader
