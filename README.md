@@ -112,27 +112,30 @@ Print some info about the space usage on your Dropbox account
 Unlink the script from your Dropbox account
 
 
-**Optional parameters:**  
-* **-f &lt;FILENAME&gt;**  
+**Optional parameters:**
+* **-f &lt;FILENAME&gt;**
 Load the configuration file from a specific file
 
-* **-s**  
+* **-s**
 Skip already existing files when download/upload. Default: Overwrite
 
-* **-d**  
+* **-d**
 Enable DEBUG mode
 
-* **-q**  
+* **-q**
 Quiet mode. Don't show progress meter or messages
 
-* **-h**  
+* **-h**
 Show file sizes in human readable format
 
-* **-p**  
+* **-p**
 Show cURL progress meter
 
-* **-k**  
+* **-k**
 Doesn't check for SSL certificates (insecure)
+
+* **-l**
+Upload rate limit (e.g. 10M limits the upload bandwidth to 10MiB/s)
 
 * **-x &lt;FILENAME&gt;**  
 Ignores/excludes directories or files from syncing.
