@@ -90,7 +90,7 @@ if [[ ! -d "$TMP_DIR" ]]; then
 fi
 
 #Look for optional config file parameter
-while getopts ":qpskdhf:x:" opt; do
+while getopts ":qpskdhf:l:x:" opt; do
     case $opt in
 
     f)
@@ -125,6 +125,10 @@ while getopts ":qpskdhf:x:" opt; do
       EXCLUDE+=( $OPTARG )
     ;;
 
+    l)
+      RATE_LIMIT=$OPTARG
+    ;;
+
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -137,6 +141,10 @@ while getopts ":qpskdhf:x:" opt; do
 
   esac
 done
+
+if [[ ! -z ${RATE_LIMIT+x} ]]; then
+   RATE_LIMIT="--limit-rate $RATE_LIMIT"
+fi
 
 if [[ $DEBUG != 0 ]]; then
     echo $VERSION
@@ -288,6 +296,7 @@ function usage
     echo -e "\t-p            Show cURL progress meter"
     echo -e "\t-k            Doesn't check for SSL certificates (insecure)"
     echo -e "\t-x            Ignores/excludes directories or files from syncing. -x filename -x directoryname. example: -x .git"
+    echo -e "\t-l            Upload rate limit (e.g. 10M limits the upload bandwidth to 10MiB/s)"
 
     echo -en "\nFor more info and examples, please see the README file.\n\n"
     remove_temp_files
@@ -663,7 +672,7 @@ function db_chunked_upload_file
         #Uploading the chunk...
         echo > "$RESPONSE_FILE"
         ensure_accesstoken
-        $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST $CURL_PARAMETERS --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL"
+        $CURL_BIN $CURL_ACCEPT_CERTIFICATES $RATE_LIMIT -X POST $CURL_PARAMETERS --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Dropbox-API-Arg: {\"cursor\": {\"session_id\": \"$SESSION_ID\",\"offset\": $OFFSET},\"close\": false}" --header "Content-Type: application/octet-stream" --data-binary @"$CHUNK_FILE" "$API_CHUNKED_UPLOAD_APPEND_URL"
         #check_http_response not needed, because we have to retry the request in case of error
 
         #Check
