@@ -1622,9 +1622,9 @@ else
   echo -ne " Please provide the access code: "
   read -r ACCESS_CODE
 
-    echo -ne "\n > App key: \'${OAUTH_APP_KEY}\'\n"
-    echo -ne " > App secret: \'${OAUTH_APP_SECRET}\'\n"
-    echo -ne " > Access code: \'${ACCESS_CODE}\'. Looks ok? [y/N]: "
+    echo -ne "\n > App key: '${OAUTH_APP_KEY}'\n"
+    echo -ne " > App secret: '${OAUTH_APP_SECRET}'\n"
+    echo -ne " > Access code: '${ACCESS_CODE}'. Looks ok? [y/N]: "
     read -r answer
     if [[ $answer != "y" ]]; then
         remove_temp_files
