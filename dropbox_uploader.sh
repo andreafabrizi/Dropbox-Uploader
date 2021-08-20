@@ -1628,9 +1628,7 @@ else
     fi
   $CURL_BIN $CURL_ACCEPT_CERTIFICATES $API_OAUTH_TOKEN -d code=$ACCESS_CODE -d grant_type=authorization_code -u $OAUTH_APP_KEY:$OAUTH_APP_SECRET -o "$RESPONSE_FILE" 2>/dev/null
   check_http_response $?
-
   OAUTH_REFRESH_TOKEN=$(sed -n 's/.*"refresh_token": "\([^"]*\).*/\1/p' "$RESPONSE_FILE")
-echo "OAUTH_REFRESH_TOKEN: ${OAUTH_REFRESH_TOKEN}"
   {
     echo "CONFIGFILE_VERSION=2.0"
     echo "OAUTH_APP_KEY=$OAUTH_APP_KEY"
