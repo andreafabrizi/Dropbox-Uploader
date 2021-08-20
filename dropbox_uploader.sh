@@ -458,8 +458,6 @@ function db_upload() {
   src=$(normalize_path "$1")
   dst=$(normalize_path "$2")
 
-  echo "SRC: ${src}"
-  echo "DST: ${dst}"
   for j in "${EXCLUDE[@]}"; do
     echo "$src" | grep -c "$j"
     if [[ $(echo "$src" | grep -c "$j") -gt 0 ]]; then
@@ -507,12 +505,10 @@ function db_upload() {
 
   #It's a directory
   if [[ -d $src ]]; then
-    echo "It's dir"
     db_upload_dir "$src" "$dst"
 
   #It's a file
   elif [[ -e $src ]]; then
-    echo "It's file"
     db_upload_file "$src" "$dst"
 
   #Unsupported object...
