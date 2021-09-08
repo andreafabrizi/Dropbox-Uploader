@@ -1410,11 +1410,12 @@ function get_Share
 function db_search
 {
     local QUERY="$1"
+    local REMOTE_DIRECTORY=$(normalize_path "$2")
 
-    print " > Searching for \"$QUERY\"... "
+    print " > Searching for \"$QUERY\"... in \"$REMOTE_DIRECTORY\" "
 
     ensure_accesstoken
-    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"\",\"query\": \"$QUERY\",\"start\": 0,\"max_results\": 1000,\"mode\": \"filename\"}" "$API_SEARCH_URL" 2> /dev/null
+    $CURL_BIN $CURL_ACCEPT_CERTIFICATES -X POST -L -s --show-error --globoff -i -o "$RESPONSE_FILE" --header "Authorization: Bearer $OAUTH_ACCESS_TOKEN" --header "Content-Type: application/json" --data "{\"path\": \"$REMOTE_DIRECTORY\",\"query\": \"$QUERY\",\"start\": 0,\"max_results\": 1000,\"mode\": \"filename\"}" "$API_SEARCH_URL" 2> /dev/null
     check_http_response
 
     #Check
@@ -1768,9 +1769,10 @@ case $COMMAND in
             usage
         fi
 
-        QUERY=$ARG1
+        QUERY="$ARG1"
+        REMOTE_DIRECTORY="$ARG2"
 
-        db_search "$QUERY"
+        db_search "$QUERY" "/$REMOTE_DIRECTORY"
 
     ;;
 
