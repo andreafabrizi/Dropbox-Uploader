@@ -99,7 +99,7 @@ Get a public share link for the specified file or directory
 * **saveurl** &lt;URL&gt; &lt;REMOTE_DIR&gt;  
 Download a file from an URL to a Dropbox folder directly (the file is NOT downloaded locally)
 
-* **search** &lt;QUERY&gt;
+* **search** &lt;QUERY&gt; [REMOTE_DIR]  
 Search for a specific pattern on Dropbox and returns the list of matching files or directories
 
 * **info**  
