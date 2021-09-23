@@ -798,10 +798,12 @@ function db_download
         #For each entry...
         while read -r line; do
 
-            local FILE=${line%:*}
-            local META=${line##*:}
-            local TYPE=${META%;*}
+            local FILE=${line%|*}
+            local META=${line##*|}
+            local TYPE=${META%%;*}
             local SIZE=${META#*;}
+            local SIZE=${SIZE%;*}
+            local SMOD=${META##*;}
 
             #Removing unneeded /
             FILE=${FILE##*/}
@@ -1176,8 +1178,9 @@ function db_list_outfile
                 local FILE=$(echo "$line" | sed -n 's/.*"path_display": *"\([^"]*\)".*/\1/p')
                 local TYPE=$(echo "$line" | sed -n 's/.*".tag": *"\([^"]*\).*/\1/p')
                 local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"size": *\([0-9]*\).*/\1/p'))
+                local SMOD=$(echo "$line" | sed -n 's/.*"server_modified": *"\([^"]*\).*/\1/p')
 
-                echo -e "$FILE:$TYPE;$SIZE" >> "$OUT_FILE"
+                echo -e "$FILE|$TYPE;$SIZE;$SMOD" >> "$OUT_FILE"
 
             done < "$TEMP_FILE"
 
@@ -1219,9 +1222,12 @@ function db_list
     #to calculate the padding to use
     local padding=0
     while read -r line; do
-        local FILE=${line%:*}
-        local META=${line##*:}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         if [[ ${#SIZE} -gt $padding ]]; then
             padding=${#SIZE}
@@ -1231,17 +1237,19 @@ function db_list
     #For each entry, printing directories...
     while read -r line; do
 
-        local FILE=${line%:*}
-        local META=${line##*:}
-        local TYPE=${META%;*}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         #Removing unneeded /
         FILE=${FILE##*/}
 
         if [[ $TYPE == "folder" ]]; then
             FILE=$(echo -e "$FILE")
-            $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+            $PRINTF " [D] %${padding}s %s %s\n" "$SIZE" "                    " "$FILE"
         fi
 
     done < "$OUT_FILE"
@@ -1249,17 +1257,19 @@ function db_list
     #For each entry, printing files...
     while read -r line; do
 
-        local FILE=${line%:*}
-        local META=${line##*:}
-        local TYPE=${META%;*}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         #Removing unneeded /
         FILE=${FILE##*/}
 
         if [[ $TYPE == "file" ]]; then
             FILE=$(echo -e "$FILE")
-            $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
+            $PRINTF " [F] %${padding}s %s %s\n" "$SIZE" "$SMOD" "$FILE"
         fi
 
     done < "$OUT_FILE"
@@ -1319,10 +1329,12 @@ function db_monitor_nonblock
             #For each entry, printing directories...
             while read -r line; do
 
-                local FILE=${line%:*}
-                local META=${line##*:}
-                local TYPE=${META%;*}
+                local FILE=${line%|*}
+                local META=${line##*|}
+                local TYPE=${META%%;*}
                 local SIZE=${META#*;}
+                local SIZE=${SIZE%;*}
+                local SMOD=${META##*;}
 
                 #Removing unneeded /
                 FILE=${FILE##*/}
@@ -1332,7 +1344,7 @@ function db_monitor_nonblock
                     $PRINTF " [D] %s\n" "$FILE"
                 elif [[ $TYPE == "file" ]]; then
                     FILE=$(echo -e "$FILE")
-                    $PRINTF " [F] %s %s\n" "$SIZE" "$FILE"
+                    $PRINTF " [F] %s %s %s\n" "$SIZE" "$FILE" "$SMOD"
                 elif [[ $TYPE == "deleted" ]]; then
                     FILE=$(echo -e "$FILE")
                     $PRINTF " [-] %s\n" "$FILE"
@@ -1441,8 +1453,9 @@ function db_search
         local FILE=$(echo "$line" | sed -n 's/.*"path_display": *"\([^"]*\)".*/\1/p')
         local TYPE=$(echo "$line" | sed -n 's/.*".tag": *"\([^"]*\).*/\1/p')
         local SIZE=$(convert_bytes $(echo "$line" | sed -n 's/.*"size": *\([0-9]*\).*/\1/p'))
+        local SMOD=$(echo "$line" | sed -n 's/.*"server_modified": *"\([^"]*\).*/\1/p')
 
-        echo -e "$FILE:$TYPE;$SIZE" >> "$RESPONSE_FILE"
+        echo -e "$FILE|$TYPE;$SIZE;$SMOD" >> "$RESPONSE_FILE"
 
     done < "$TEMP_FILE"
 
@@ -1450,9 +1463,12 @@ function db_search
     #to calculate the padding to use
     local padding=0
     while read -r line; do
-        local FILE=${line%:*}
-        local META=${line##*:}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         if [[ ${#SIZE} -gt $padding ]]; then
             padding=${#SIZE}
@@ -1461,15 +1477,16 @@ function db_search
 
     #For each entry, printing directories...
     while read -r line; do
-
-        local FILE=${line%:*}
-        local META=${line##*:}
-        local TYPE=${META%;*}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         if [[ $TYPE == "folder" ]]; then
             FILE=$(echo -e "$FILE")
-            $PRINTF " [D] %-${padding}s %s\n" "$SIZE" "$FILE"
+            $PRINTF " [D] %${padding}s %s %s\n" "$SIZE" "$SMOD" "$FILE"
         fi
 
     done < "$RESPONSE_FILE"
@@ -1477,14 +1494,16 @@ function db_search
     #For each entry, printing files...
     while read -r line; do
 
-        local FILE=${line%:*}
-        local META=${line##*:}
-        local TYPE=${META%;*}
+        local FILE=${line%|*}
+        local META=${line##*|}
+        local TYPE=${META%%;*}
         local SIZE=${META#*;}
+        local SIZE=${SIZE%;*}
+        local SMOD=${META##*;}
 
         if [[ $TYPE == "file" ]]; then
             FILE=$(echo -e "$FILE")
-            $PRINTF " [F] %-${padding}s %s\n" "$SIZE" "$FILE"
+            $PRINTF " [F] %${padding}s %s %s\n" "$SIZE" "$SMOD" "$FILE"
         fi
 
     done < "$RESPONSE_FILE"
