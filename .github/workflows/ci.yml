@@ -7,6 +7,8 @@ on:
     branches:
     - main
   env:
+    # The CI needs these three secrets set up on the repository 
+    # see https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
     OAUTH_APP_KEY: ${{ secrets.DROPBOX_OAUTH_APP_KEY }}
     OAUTH_APP_SECRET: ${{ secrets.DROPBOX_OAUTH_APP_SECRET }}
     OAUTH_REFRESH_TOKEN: ${{ secrets.DROPBOX_OAUTH_REFRESH_TOKEN }}
