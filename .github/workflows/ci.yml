@@ -1,0 +1,60 @@
+name: CI
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  env:
+    OAUTH_APP_KEY: ${{ secrets.DROPBOX_OAUTH_APP_KEY }}
+    OAUTH_APP_SECRET: ${{ secrets.DROPBOX_OAUTH_APP_SECRET }}
+    OAUTH_REFRESH_TOKEN: ${{ secrets.DROPBOX_OAUTH_REFRESH_TOKEN }}
+    BASE_FOLDER: "repo/Dropbox-Uploader/pr"
+jobs:
+  tests:
+    name: Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Dropbox CLI 
+        run: |
+          sudo apt-get update
+          sudo apt-get install tree
+          echo "CONFIGFILE_VERSION=2.0" > ~/.dropbox_uploader
+          echo "OAUTH_APP_KEY=$OAUTH_APP_KEY" >> ~/.dropbox_uploader
+          echo "OAUTH_APP_SECRET=$OAUTH_APP_SECRET" >> ~/.dropbox_uploader
+          echo "OAUTH_REFRESH_TOKEN=$OAUTH_REFRESH_TOKEN" >> ~/.dropbox_uploader
+          cat ~/.dropbox_uploader
+          curl "https://raw.githubusercontent.com/livelyhood/Dropbox-Uploader/master/dropbox_uploader.sh" -o dropbox_uploader.sh
+          chmod +x dropbox_uploader.sh
+      - name: Test mkdir
+        id: collect_artifacts
+        if: always() 
+        run: |
+          timestamp=$(date +%s)
+          TEST_FOLDER=$timestamp
+          ./dropbox_uploader.sh mkdir $BASE_FOLDER/$TEST_FOLDER
+      - name: Test upload
+        id: collect_artifacts
+        if: always() 
+        run: |
+          timestamp=$(date +%s)
+          echo "timestamp" > timestamp.txt
+          ./dropbox_uploader.sh upload timestamp.txt $BASE_FOLDER
+      - name: 'Report Failure'
+        uses: actions/github-script@0.3.0
+        if: github.event_name == 'pull_request' && failure()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { issue: { number: issue_number }, repo: { owner, repo } } = context;
+            github.issues.createComment({ issue_number, owner, repo, body: '💔 Oh No! The Tests Broke in Run ${{ github.run_number }} 💔!' });
+      - name: 'Report Success'
+        uses: actions/github-script@0.3.0
+        if: github.event_name == 'pull_request' && success()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { issue: { number: issue_number }, repo: { owner, repo }  } = context;
+            github.issues.createComment({ issue_number, owner, repo, body: '💚 Yay! Your tests passed! 💚' });
