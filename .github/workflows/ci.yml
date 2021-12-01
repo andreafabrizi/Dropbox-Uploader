@@ -30,6 +30,10 @@ jobs:
           chmod +x dropbox_uploader.sh
           sleep 5s
           ls -la
+      - name: Test help
+        if: always() 
+        run: |
+          ./dropbox_uploader.sh
       - name: Test mkdir
         if: always() 
         run: |
