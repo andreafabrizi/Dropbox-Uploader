@@ -31,14 +31,12 @@ jobs:
           curl "https://raw.githubusercontent.com/livelyhood/Dropbox-Uploader/master/dropbox_uploader.sh" -o dropbox_uploader.sh
           chmod +x dropbox_uploader.sh
       - name: Test mkdir
-        id: collect_artifacts
         if: always() 
         run: |
           timestamp=$(date +%s)
           TEST_FOLDER=$timestamp
           ./dropbox_uploader.sh mkdir $BASE_FOLDER/$TEST_FOLDER
       - name: Test upload
-        id: collect_artifacts
         if: always() 
         run: |
           timestamp=$(date +%s)
