@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup Dropbox CLI 
         run: |
-          sudo apt-get update
-          sudo apt-get install tree
           echo "CONFIGFILE_VERSION=2.0" > ~/.dropbox_uploader
           echo "OAUTH_APP_KEY=$OAUTH_APP_KEY" >> ~/.dropbox_uploader
           echo "OAUTH_APP_SECRET=$OAUTH_APP_SECRET" >> ~/.dropbox_uploader
