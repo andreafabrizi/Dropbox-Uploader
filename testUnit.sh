@@ -21,11 +21,14 @@ dd if=/dev/urandom of="testData/file 2 ù.txt" bs=1M count=5
 mkdir -p "testData/recurse"
 dd if=/dev/urandom of="testData/recurse/file 3.txt" bs=1M count=1
 dd if=/dev/urandom of="testData/recurse/test_Ü.txt" bs=1M count=1
+dd if=/dev/urandom of="testData/recurse/test%20test.txt" bs=1M count=1
 mkdir -p "testData/recurse/dir 1/"
 dd if=/dev/urandom of="testData/recurse/dir 1/file 4.txt" bs=1M count=1
 mkdir -p "testData/recurse/dir 1/dir 3/"
 dd if=/dev/urandom of="testData/recurse/dir 1/dir 3/file 5.txt" bs=1M count=1
 mkdir -p "testData/recurse/dir 2/"
+
+dd if=/dev/urandom of="testData/file%20file.txt" bs=1M count=1
 
 rm -fr recurse
 
@@ -50,13 +53,23 @@ $DU -q list du_tests | grep "file 1.txt" > /dev/null
 check_exit
 
 #Simple upload 2
-echo -ne " - Simple file upload with special chars..."
+echo -ne " - Simple file upload with unicode chars..."
 $DU -q upload testData/file\ 2* du_tests
 check_exit
 
 #Checking with list
 echo -ne " - Checking file..."
 $DU -q list du_tests | grep "file 2 ù.txt" > /dev/null
+check_exit
+
+#Simple upload 3
+echo -ne " - Simple file upload with printf formats..."
+$DU -q upload "testData/file%20file.txt" du_tests
+check_exit
+
+#Checking with list
+echo -ne " - Checking file..."
+$DU -q list du_tests | grep "file%20file.txt" > /dev/null
 check_exit
 
 #Recursive directory upload

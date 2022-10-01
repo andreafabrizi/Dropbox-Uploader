@@ -4,7 +4,7 @@ Dropbox Uploader is a **BASH** script which can be used to upload, download, del
 
 It's written in BASH scripting language and only needs **cURL**.
 
-You can take a look to the [GiHub project page](https://github.com/andreafabrizi/Dropbox-Uploader).
+You can take a look to the [GitHub project page](https://github.com/andreafabrizi/Dropbox-Uploader).
 
 **Why use this script?**
 
@@ -270,6 +270,13 @@ To use a proxy, just set the mentioned environment variables via the docker `-e`
 
 ## Related projects
 [thunar-dropbox](https://github.com/mDfRg/Thunar-Dropbox-Uploader-plugin/tree/thunar-dropbox/plugins/thunar): A simple extension to Dropbox Uploader that provides a convenient method to share your Dropbox files with one click!
+
+## Upgrading from old dropbox API
+Starting September 30th, 2021, Dropbox is updating their API (OAuth scopes, PKCE, refresh tokens, and short-lived access tokens)
+dropbox_uploader.sh configurations made with the old API will not longer work after that date.
+Reconfigure dropbox_uploader.sh:
+*  Go to https://www.dropbox.com/account/connected_apps, expand your configuration, and click the button 'Disconnect'
+*  Rename or delete your configuration file .dropbox_uploader
 
 ## Donations
 
