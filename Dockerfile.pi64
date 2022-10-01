@@ -1,8 +1,8 @@
-FROM hypriot/rpi-alpine-scratch
-MAINTAINER github@vanefferenonline.nl
+FROM arm64v8/alpine:3.13
+MAINTAINER ummar_bhutta@yahoo.com
 
-RUN apk update && apk add bash curl
-COPY *.sh /opt/dropbox_uploader/
+RUN apk add --no-cache bash curl
+COPY / /opt/dropbox_uploader
 RUN mkdir -p /config && mkdir -p /workdir
 RUN apk --no-cache add zip
 # for zip file testing
