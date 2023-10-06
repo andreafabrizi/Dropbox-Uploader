@@ -105,7 +105,7 @@ Search for a specific pattern on Dropbox and returns the list of matching files 
 * **info**  
 Print some info about your Dropbox account
 
-* **space**
+* **space**  
 Print some info about the space usage on your Dropbox account
 
 * **unlink**  
